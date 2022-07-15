@@ -19,17 +19,32 @@ FROM ubuntu:22.04
 
 SHELL ["/bin/bash","-c"]
 # install essentials
-RUN apt-get update -y && apt-get install -y vim make cmake git gcc g++ openmpi-bin spack
+RUN apt-get update -y && apt-get install -y vim make cmake git python3 gcc g++ openmpi-bin xz-utils pip sudo
+
+RUN pip install --user clingo
 
 # add user
-RUN useradd -ms /bin/bash user
+RUN useradd -ms /bin/bash user  && echo "user:user" | chpasswd && adduser user sudo
 USER user
 # create working directory
 WORKDIR /home/user/
+
+
+
+
 # clone repository
 RUN git clone https://github.com/constracktor/hpx_project.git
 
-RUN spack install hpx
+# install spack
+RUN git clone -c feature.manyFiles=true https://github.com/spack/spack.git
+# configure spack
+RUN spack/bin/spack compiler find && spack/bin/spack external find python
+# install hpx
+#RUN spack/bin/spack install hpx
+
+#spack/bin/spack compiler find
+#spack/bin/spack external find python
+#pip install --user clingo
 
 
 
