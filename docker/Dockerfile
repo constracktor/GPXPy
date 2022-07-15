@@ -45,6 +45,7 @@ RUN spack/bin/spack compiler find && spack/bin/spack external find python
 #spack/bin/spack compiler find
 #spack/bin/spack external find python
 #pip install --user clingo
+#/home/user/spack/opt/spack/linux-ubuntu22.04-skylake/gcc-11.2.0/hpx-1.8.0-rrzfvta5vlvp2r62ysqnnkjnfwbjal7d
 
 
 
