@@ -6,7 +6,7 @@
 # sudo docker run -it --rm --user user --name hpx_container hpx_image
 #
 # Compile Code:
-# cd hpx_project && mkdir build && cd build && cmake .. && make all
+# cd hpx_project && git pull --rebase && mkdir build && cd build && cmake .. && make all
 #
 # Run Code:
 # ./hpx_program
@@ -35,8 +35,9 @@ RUN git clone https://github.com/constracktor/hpx_project.git
 RUN git clone -c fesature.manyFiles=true https://github.com/spack/spack.git
 # configure spack
 RUN spack/bin/spack compiler find && spack/bin/spack external find python
-# install hpx as root
+# install git and hpx as root
+RUN echo user | sudo -S spack/bin/spack install git@2.37.0
 RUN echo user | sudo -S spack/bin/spack install hpx@1.8.0
 
 # remove docker error message (somehow does not work and needs to be done manually)
-RUN export OMPI_MCA_btl_vader_single_copy_mechanism=none
+# RUN export OMPI_MCA_btl_vader_single_copy_mechanism=none
