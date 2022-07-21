@@ -8,5 +8,8 @@ target_link_libraries(hpx_program HPX::hpx HPX::wrap_main HPX::iostreams_compone
 add_executable(lu_tiled src/lu_tiled.cpp)
 target_link_libraries(lu_tiled HPX::hpx HPX::wrap_main HPX::iostreams_component)
 
-add_executable(lu_tiled_dist src/lu_tiled.cpp)
-target_link_libraries(lu_tiled_dist HPX::hpx HPX::wrap_main HPX::iostreams_component)
+#add_executable(lu_tiled_dist src/lu_tiled_dist.cpp)
+#target_link_libraries(lu_tiled_dist HPX::hpx HPX::wrap_main HPX::iostreams_component)
+
+add_executable(test src/test.cpp)
+target_link_libraries(test HPX::hpx HPX::wrap_main HPX::iostreams_component)
