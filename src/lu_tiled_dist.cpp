@@ -1,5 +1,6 @@
-#include <hpx/hpx.hpp>
-#include <hpx/hpx_init.hpp>
+#include <hpx/local/algorithm.hpp>
+#include <hpx/local/future.hpp>
+#include <hpx/local/init.hpp>
 #include <hpx/runtime/serialization/serialize.hpp>
 #include <hpx/util/unused.hpp>
 
@@ -473,7 +474,7 @@ int hpx_main(boost::program_options::variables_map& vm)
         std::cout << "The number of tiles should not be smaller than "
                      "the number of localities"
                   << std::endl;
-        return hpx::finalize();
+        return hpx::local::finalize();
     }
 
     // Create the stepper object
@@ -503,21 +504,23 @@ int hpx_main(boost::program_options::variables_map& vm)
     std::uint64_t const num_worker_threads = hpx::get_num_worker_threads();
     hpx::future<std::uint32_t> locs = hpx::get_num_localities();
 
-    return hpx::finalize();
+    return hpx::local::finalize();
 }
 
 int main(int argc, char* argv[])
 {
-    using namespace boost::program_options;
+    hpx::program_options::options_description desc_commandline;
 
-    options_description desc_commandline;
     desc_commandline.add_options()(
         "print-matrices", "print generated A and computed LU (default: false)")("N",
-        value<std::uint64_t>()->default_value(10),
+        hpx::program_options::value<std::uint64_t>()->default_value(10),
         "Dimension of the submatrices")("T",
-        value<std::uint64_t>()->default_value(10),
+        hpx::program_options::value<std::uint64_t>()->default_value(10),
         "Number of subblocks in each dimension");
 
     // Initialize and run HPX
-    return hpx::init(desc_commandline, argc, argv);
+    hpx::local::init_params init_args;
+    init_args.desc_cmdline = desc_commandline;
+
+    return hpx::local::init(hpx_main, argc, argv, init_args);
 }
