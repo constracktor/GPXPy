@@ -8,9 +8,9 @@
 
 int hpx_main(hpx::program_options::variables_map& vm)
 {
-    std::size_t N = vm["N"].as<std::size_t>();
-    std::size_t T = vm["T"].as<std::size_t>();
-    std::string out = vm["out"].as<std::string>();
+    //std::size_t N = vm["N"].as<std::size_t>();
+    //std::size_t T = vm["T"].as<std::size_t>();
+    //std::string out = vm["out"].as<std::string>();
 
     hpx::chrono::high_resolution_timer t;
     /*
@@ -55,18 +55,32 @@ int hpx_main(hpx::program_options::variables_map& vm)
 }
 
 int main(int argc, char* argv[])
-  { // GP parameters
-    int       n_train = 1 * 1000;  //max 100*1000
-    int       n_test = 1 * 1000;     //max 5*1000
-    int       n_regressors = 100;
+  {
+    // hpx
+    hpx::program_options::options_description desc_commandline;
+    hpx::local::init_params init_args;
+    ////////////////////////////////////////////////////////////////////////////
+    // Setup input arguments
+    desc_commandline.add_options()
+        ("n_train", hpx::program_options::value<std::size_t>()->default_value(1 * 1000),
+         "Number of training samples (max 100 000)")
+        ("n_test", hpx::program_options::value<std::size_t>()->default_value(1 * 1000),
+         "Number of test samples (max 5 000)")
+        ("n_regressors", hpx::program_options::value<std::size_t>()->default_value(100),
+        "Number of delayed input regressors")
+    ;
+    hpx::program_options::variables_map vm;
+    hpx::program_options::store(hpx::program_options::parse_command_line(argc, argv, desc_commandline), vm);
+    // GP parameters
+    int       n_train = vm["n_train"].as<std::size_t>();  //max 100*1000
+    int       n_test = vm["n_test"].as<std::size_t>();     //max 5*1000
+    int       n_regressors = vm["n_regressors"].as<std::size_t>();
     CALC_TYPE    hyperparameters[3];
     // initalize hyperparameters to empirical moments of the data
     hyperparameters[0] = 1.0;   // lengthscale = variance of training_output
     hyperparameters[1] = 1.0;   // vertical_lengthscale = standard deviation of training_input
     hyperparameters[2] = 0.001; // noise_variance = small value
-    // hpx
-    hpx::program_options::options_description desc_commandline;
-    hpx::local::init_params init_args;
+
     // data holders for assembly
     CALC_TYPE  training_input[n_train];
     CALC_TYPE   training_output[n_train];
@@ -77,16 +91,7 @@ int main(int argc, char* argv[])
     FILE    *training_output_file;
     FILE    *test_input_file;
     FILE    *test_output_file;
-    // Setup input arguments
-    desc_commandline.add_options()
-        ("N", hpx::program_options::value<std::size_t>()->default_value(10),
-         "Dimension of each Tile (N*N elements per tile)")
-        ("T", hpx::program_options::value<std::size_t>()->default_value(10),
-         "Number of Tiles in each dimension (T*T tiles)")
-        ("out", hpx::program_options::value<std::string>()->default_value("no"),
-         "(debug) => print matrices in coo format")
-    ;
-    init_args.desc_cmdline = desc_commandline;
+
     ////////////////////////////////////////////////////////////////////////////
     // Load data
     training_input_file = fopen("../src/data/training/training_input.txt", "r");
@@ -115,7 +120,9 @@ int main(int argc, char* argv[])
     fclose(training_output_file);
     fclose(test_input_file);
     fclose(test_output_file);
+    printf("train %d, test %d, reg %d", n_train, n_test, n_regressors);
     ////////////////////////////////////////////////////////////////////////////
     // Run HPX
+    init_args.desc_cmdline = desc_commandline;
     return hpx::local::init(hpx_main, argc, argv, init_args);
 }
