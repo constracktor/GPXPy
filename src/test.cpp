@@ -89,10 +89,10 @@ int main(int argc, char* argv[])
     init_args.desc_cmdline = desc_commandline;
     ////////////////////////////////////////////////////////////////////////////
     // Load data
-    training_input_file = fopen("data/training/training_input.txt", "r");
-    training_output_file = fopen("data/training/training_output.txt", "r");
-    test_input_file = fopen("data/test/test_input_3.txt", "r");
-    test_output_file = fopen("data/test/test_output_3.txt", "r");
+    training_input_file = fopen("../src/data/training/training_input.txt", "r");
+    training_output_file = fopen("../src/data/training/training_output.txt", "r");
+    test_input_file = fopen("../src/data/test/test_input_3.txt", "r");
+    test_output_file = fopen("../src/data/test/test_output_3.txt", "r");
     if (training_input_file == NULL || training_output_file == NULL || test_input_file == NULL || test_output_file == NULL)
     {
       printf("return 1\n");
