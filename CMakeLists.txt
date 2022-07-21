@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 project(hpx_project CXX)
-list(APPEND CMAKE_PREFIX_PATH "/home/user/spack/opt/spack/linux-ubuntu22.04-skylake/gcc-11.2.0/hpx-1.8.0-rrzfvta5vlvp2r62ysqnnkjnfwbjal7d")
+list(APPEND CMAKE_PREFIX_PATH "/home/user/hpx/build/lib/lib/cmake/HPX/")
 find_package(HPX REQUIRED)
 add_executable(hpx_program src/main.cpp)
 target_link_libraries(hpx_program HPX::hpx HPX::wrap_main HPX::iostreams_component)
