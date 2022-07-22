@@ -8,24 +8,49 @@
 
 #include <boost/version.hpp>
 #include <boost/numeric/ublas/vector.hpp>
-//#include <boost/numeric/ublas.hpp>
+#include <boost/numeric/ublas/matrix.hpp>
+
+#include <iostream>
 
 namespace ublas = boost::numeric::ublas;
 
-std::vector<CALC_TYPE> gen_tile(std::size_t row, std::size_t col, std::size_t tile_size, std::size_t n_tiles)
+//A = A * B
+std::vector<CALC_TYPE> gemm(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
+                           hpx::shared_future<std::vector<CALC_TYPE>> ft_B,
+                           std::size_t N)
+{
+   std::vector<CALC_TYPE> result;
+   result.resize(N * N);
+
+   auto A = ft_A.get(); // improve
+   auto B = ft_B.get();
+   // convert to boost matrices
+   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
+   A_blas.data() = A;
+   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > B_blas(N, N);
+   B_blas.data() = B;
+   // Initialize result matrix
+   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > C_blas(N, N);
+   C_blas = ublas::prod(A_blas, B_blas);
+
+   result = C_blas.data();
+   return result;
+}
+
+std::vector<CALC_TYPE> gen_tile(std::size_t row, std::size_t col, std::size_t N, std::size_t n_tiles)
 {
    std::size_t i_global,j_global;
    // Initialize tile
    std::vector<CALC_TYPE> tile;
-   tile.resize(tile_size * tile_size);
+   tile.resize(N * N);
 
-   for(std::size_t i = 0; i < tile_size; i++)
+   for(std::size_t i = 0; i < N; i++)
    {
-      i_global = (n_tiles - 1) * tile_size + i;
-      for(std::size_t j = 0; j < tile_size; j++)
+      i_global = (n_tiles - 1) * N + i;
+      for(std::size_t j = 0; j < N; j++)
       {
-         j_global = (n_tiles - 1) * tile_size + j;
-         tile[i * tile_size + j] = 1; //covariance_function(i_global,j_global);
+         j_global = (n_tiles - 1) * N + j;
+         tile[i * N + j] = 1; //covariance_function(i_global,j_global);
       }
    }
    return tile;
@@ -44,12 +69,14 @@ int hpx_main(hpx::program_options::variables_map& vm)
 
 
   ublas::vector<CALC_TYPE> vec;
+
+/*
   std::cout << "Using Boost "
           << BOOST_VERSION / 100000     << "."  // major version
           << BOOST_VERSION / 100 % 1000 << "."  // minor version
           << BOOST_VERSION % 100                // patch level
           << std::endl;
-
+        */
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> K_tiles;
   K_tiles.resize(n_tiles * n_tiles);
   // Assemble K
@@ -62,6 +89,41 @@ int hpx_main(hpx::program_options::variables_map& vm)
   }
   // Compute Cholesky decomposition
   //left_looking_cholesky(K_tiles,tile_size, n_tiles)
+  // test gemm
+  int N = 4;
+  std::vector<CALC_TYPE> result;
+  result.resize(N * N);
+
+  std::vector<CALC_TYPE> A;
+  std::vector<CALC_TYPE> B;
+  A.resize(N * N);
+  B.resize(N * N);
+  for(int i = 0; i < N * N; i++)
+  {
+    A[i] = 1.0;
+    B[i] = 1.0;
+  }
+
+  // convert to boost matrices
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
+  A_blas.data() = A;
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > B_blas(N, N);
+  B_blas.data() = B;
+  // Initialize result matrix
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > C_blas(N, N);
+  C_blas = ublas::prod(A_blas, B_blas);
+
+  result = C_blas.data();
+
+  for(int i = 0; i < N * N; i++)
+  {
+    //std::cout << A[i] << std::endl;
+    //std::cout << B[i] << std::endl;
+    std::cout << result[i] << std::endl;
+    //std::cout << std::endl;
+  }
+
+
 
   double elapsed = t.elapsed();
   std::cout << "Elapsed " << elapsed << " s\n";
