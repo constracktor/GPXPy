@@ -6,21 +6,73 @@
 #include <hpx/local/init.hpp>
 #include <hpx/modules/format.hpp>
 
-#include <boost/version.hpp>
+#include <cassert>
+
 #include <boost/numeric/ublas/vector.hpp>
+#include <boost/numeric/ublas/vector_proxy.hpp>
+
 #include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/matrix_proxy.hpp>
+
+#include <boost/numeric/ublas/vector_expression.hpp>
+#include <boost/numeric/ublas/matrix_expression.hpp>
+
+#include <boost/numeric/ublas/triangular.hpp>
+
+
+
 
 #include <iostream>
 
 namespace ublas = boost::numeric::ublas;
 
-//A = A * B
+// Cholesky decomposition of A -> return factorized matrix L
+std::vector<CALC_TYPE> potrf(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
+                             std::size_t N)
+{
+  std::vector<CALC_TYPE> L;
+  L.resize(N * N);
+  std::fill(L.begin(), L.end(), 0.0);
+
+  auto A = ft_A.get(); // improve
+  // convert to boost matrices
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
+  A_blas.data() = A;
+  // Initialize result matrix
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > L_blas(N, N);
+  // compute Cholesky
+  for (size_t k=0 ; k < N; k++)
+  {
+    // compute squared diagonal entry
+    CALC_TYPE qL_kk = A_blas(k,k) - ublas::inner_prod( ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ), ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ) );
+    // check if positive
+    if (qL_kk <= 0)
+    {
+      // abort ?
+    }
+    else
+    {
+      CALC_TYPE L_kk = std::sqrt( qL_kk );
+      L_blas(k,k) = L_kk;
+
+      ublas::matrix_column<ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> >> cLk(L_blas, k);
+      ublas::project( cLk, ublas::range(k+1, N) )
+        = ( ublas::project( ublas::column(A_blas, k), ublas::range(k+1, N) )
+            - ublas::prod( ublas::project(L_blas, ublas::range(k+1, N), ublas::range(0, k)),
+                    ublas::project(ublas::row(L_blas, k), ublas::range(0, k) ) ) ) / L_kk;
+    }
+  }
+  L = L_blas.data();
+  return L;
+}
+
+//C = A * B
 std::vector<CALC_TYPE> gemm(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
                            hpx::shared_future<std::vector<CALC_TYPE>> ft_B,
                            std::size_t N)
 {
-   std::vector<CALC_TYPE> result;
-   result.resize(N * N);
+   std::vector<CALC_TYPE> C;
+   C.resize(N * N);
 
    auto A = ft_A.get(); // improve
    auto B = ft_B.get();
@@ -33,8 +85,8 @@ std::vector<CALC_TYPE> gemm(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
    ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > C_blas(N, N);
    C_blas = ublas::prod(A_blas, B_blas);
 
-   result = C_blas.data();
-   return result;
+   C = C_blas.data();
+   return C;
 }
 
 std::vector<CALC_TYPE> gen_tile(std::size_t row, std::size_t col, std::size_t N, std::size_t n_tiles)
@@ -90,7 +142,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   // Compute Cholesky decomposition
   //left_looking_cholesky(K_tiles,tile_size, n_tiles)
   // test gemm
-  int N = 4;
+  int N = 3;
   std::vector<CALC_TYPE> result;
   result.resize(N * N);
 
@@ -98,12 +150,12 @@ int hpx_main(hpx::program_options::variables_map& vm)
   std::vector<CALC_TYPE> B;
   A.resize(N * N);
   B.resize(N * N);
+  /*
   for(int i = 0; i < N * N; i++)
   {
     A[i] = 1.0;
     B[i] = 1.0;
   }
-
   // convert to boost matrices
   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
   A_blas.data() = A;
@@ -112,9 +164,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   // Initialize result matrix
   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > C_blas(N, N);
   C_blas = ublas::prod(A_blas, B_blas);
-
   result = C_blas.data();
-
   for(int i = 0; i < N * N; i++)
   {
     //std::cout << A[i] << std::endl;
@@ -122,7 +172,52 @@ int hpx_main(hpx::program_options::variables_map& vm)
     std::cout << result[i] << std::endl;
     //std::cout << std::endl;
   }
+  */
+  //
+  //template <class MATRIX>
+  //typedef typename MATRIX::value_type T;
+  //std::fill(A.begin(), A.end(), 0.0);
+  A[0] = 4.0;A[1] = 4.0;A[2] = 2.0;
+  A[3] = 4.0;A[4] = 8.0;A[5] =4.0;
+  A[6] = 2.0;A[7] = 4.0;A[8] = 3.0;
 
+  std::vector<CALC_TYPE> L;
+  L.resize(N * N);
+  std::fill(L.begin(), L.end(), 0.0);
+  // convert to boost matrices
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
+  A_blas.data() = A;
+  // Initialize result matrix
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > L_blas(N, N);
+  // compute Cholesky
+  for (size_t k=0 ; k < N; k++)
+  {
+    // compute squared diagonal entry
+    CALC_TYPE qL_kk = A_blas(k,k) - ublas::inner_prod( ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ), ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ) );
+    // check if positive
+    /*
+    if (qL_kk <= 0)
+    {
+      return ;
+    }
+
+    else*/
+    {
+      CALC_TYPE L_kk = std::sqrt( qL_kk );
+      L_blas(k,k) = L_kk;
+
+      ublas::matrix_column<ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> >> cLk(L_blas, k);
+      ublas::project( cLk, ublas::range(k+1, N) )
+        = ( ublas::project( ublas::column(A_blas, k), ublas::range(k+1, N) )
+            - ublas::prod( ublas::project(L_blas, ublas::range(k+1, N), ublas::range(0, k)),
+                    ublas::project(ublas::row(L_blas, k), ublas::range(0, k) ) ) ) / L_kk;
+    }
+  }
+  L = L_blas.data();
+  for(int i = 0; i < N * N; i++)
+  {
+    std::cout << L[i] << std::endl;
+  }
 
 
   double elapsed = t.elapsed();
