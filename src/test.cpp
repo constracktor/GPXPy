@@ -24,11 +24,16 @@
 
 namespace ublas = boost::numeric::ublas;
 
-std::vector<CALC_TYPE> trsm(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
-                             std::size_t N)
+// solve L*A = B where L triangular
+std::vector<CALC_TYPE> trsm(hpx::shared_future<std::vector<CALC_TYPE>> ft_L
+                            hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
+                            std::size_t N)
 
 { //TRSM
-  //ublas::blas_3::tsm (M1 &m1, const T &t, const M2 &m2, C)
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A(N, N);
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > B(N, N);
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > C(N, N);
+  ublas::blas_3::tsm (B,1.0, L, A)
 }
 
 //  A = A + B * B^T
