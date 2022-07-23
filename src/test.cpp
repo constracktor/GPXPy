@@ -17,30 +17,61 @@
 #include <boost/numeric/ublas/vector_expression.hpp>
 #include <boost/numeric/ublas/matrix_expression.hpp>
 
-#include <boost/numeric/ublas/triangular.hpp>
-
-
-
+//#include <boost/numeric/ublas/triangular.hpp>
+//https://eigen.tuxfamily.org/index.php?title=Benchmark
 
 #include <iostream>
 
 namespace ublas = boost::numeric::ublas;
 
+std::vector<CALC_TYPE> trsm(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
+                             std::size_t N)
+
+{ //TRSM
+  //ublas::blas_3::tsm (M1 &m1, const T &t, const M2 &m2, C)
+}
+
+//  A = A + B * B^T
+std::vector<CALC_TYPE> syrk(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
+                            hpx::shared_future<std::vector<CALC_TYPE>> ft_B,
+                            std::size_t N)
+
+{
+  auto A = ft_A.get(); // improve
+  auto B = ft_B.get();
+  // solution vector
+  std::vector<CALC_TYPE> A_updated;
+  A_updated.resize(N * N);
+  // convert to boost matrices
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
+  A_blas.data() = A;
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > B_blas(N, N);
+  B_blas.data() = B;
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_updated_blas(N, N);
+  //SYRK
+  //boost::numeric::ublas::blas_3::srk (M1 &m1, const T1 &t1, const T2 &t2, const M2 &m2) -> m1 = t * m1 + t2 * (m2 * m2T)
+  A_updated_blas = A_blas + ublas::prod(B_blas, ublas::trans(B_blas));
+  // reformat to std::vector
+  A_updated = A_updated_blas.data();
+  return A_updated;
+}
+
+
+
 // Cholesky decomposition of A -> return factorized matrix L
 std::vector<CALC_TYPE> potrf(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
                              std::size_t N)
 {
+  auto A = ft_A.get();
+  // solution vector
   std::vector<CALC_TYPE> L;
   L.resize(N * N);
   std::fill(L.begin(), L.end(), 0.0);
-
-  auto A = ft_A.get(); // improve
   // convert to boost matrices
   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
   A_blas.data() = A;
-  // Initialize result matrix
   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > L_blas(N, N);
-  // compute Cholesky
+  // POTRF (compute Cholesky)
   for (size_t k=0 ; k < N; k++)
   {
     // compute squared diagonal entry
@@ -52,9 +83,10 @@ std::vector<CALC_TYPE> potrf(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
     }
     else
     {
+      // set diagonal entry
       CALC_TYPE L_kk = std::sqrt( qL_kk );
       L_blas(k,k) = L_kk;
-
+      // compute corresponding column
       ublas::matrix_column<ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> >> cLk(L_blas, k);
       ublas::project( cLk, ublas::range(k+1, N) )
         = ( ublas::project( ublas::column(A_blas, k), ublas::range(k+1, N) )
@@ -62,29 +94,31 @@ std::vector<CALC_TYPE> potrf(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
                     ublas::project(ublas::row(L_blas, k), ublas::range(0, k) ) ) ) / L_kk;
     }
   }
+  // reformat to std::vector
   L = L_blas.data();
   return L;
 }
 
 //C = A * B
 std::vector<CALC_TYPE> gemm(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
-                           hpx::shared_future<std::vector<CALC_TYPE>> ft_B,
-                           std::size_t N)
+                            hpx::shared_future<std::vector<CALC_TYPE>> ft_B,
+                            std::size_t N)
 {
-   std::vector<CALC_TYPE> C;
-   C.resize(N * N);
-
    auto A = ft_A.get(); // improve
    auto B = ft_B.get();
+   // solution vector
+   std::vector<CALC_TYPE> C;
+   C.resize(N * N);
    // convert to boost matrices
    ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
    A_blas.data() = A;
    ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > B_blas(N, N);
    B_blas.data() = B;
-   // Initialize result matrix
    ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > C_blas(N, N);
+   // GEMM
+   //ublas::blas_3::gmm (M1 &m1, const T1 &t1, const T2 &t2, const M2 &m2, const M3 &m3)
    C_blas = ublas::prod(A_blas, B_blas);
-
+   // reformat to std::vector
    C = C_blas.data();
    return C;
 }
