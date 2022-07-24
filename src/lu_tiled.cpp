@@ -143,7 +143,6 @@ void lu_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles,
           }
        }
     }
-
 }
 
 int hpx_main(hpx::program_options::variables_map& vm)

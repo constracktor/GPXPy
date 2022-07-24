@@ -116,15 +116,17 @@ std::vector<CALC_TYPE> potrf(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
   return L;
 }
 
-//C = A * B
+//C = A * B + C
 std::vector<CALC_TYPE> gemm(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
                             hpx::shared_future<std::vector<CALC_TYPE>> ft_B,
+                            hpx::shared_future<std::vector<CALC_TYPE>> ft_C,
                             std::size_t N)
 {
    auto A = ft_A.get(); // improve
    auto B = ft_B.get();
+   auto C = ft_C.get();
    // solution vector
-   std::vector<CALC_TYPE> C;
+   std::vector<CALC_TYPE> C_updated;
    C.resize(N * N);
    // convert to boost matrices
    ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
@@ -132,12 +134,14 @@ std::vector<CALC_TYPE> gemm(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
    ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > B_blas(N, N);
    B_blas.data() = B;
    ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > C_blas(N, N);
+   C_blas.data() = C;
+   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > C_updated_blas(N, N);
    // GEMM
    //boost::numeric::ublas::blas_3::gmm (M1 &m1, const T1 &t1, const T2 &t2, const M2 &m2, const M3 &m3)
-   C_blas = ublas::prod(A_blas, B_blas);
+   C_updated_blas = ublas::prod(A_blas, B_blas) + C_blas;
    // reformat to std::vector
-   C = C_blas.data();
-   return C;
+   C_updated = C_updated_blas.data();
+   return C_updated;
 }
 
 std::vector<CALC_TYPE> gen_tile(std::size_t row, std::size_t col, std::size_t N, std::size_t n_tiles)
@@ -159,6 +163,34 @@ std::vector<CALC_TYPE> gen_tile(std::size_t row, std::size_t col, std::size_t N,
    return tile;
 }
 
+void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles, std::size_t N, std::size_t n_tiles)
+{
+  //std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> ft_cholesky;
+  //ft_cholesky.resize(n_tiles);
+
+  for (std::size_t k = 0; k < n_tiles - 1; k++)
+  {
+    // POTRF
+    ft_tiles[k * n_tiles + k] = hpx::dataflow(&potrf, ft_tiles[k * n_tiles + k], N);
+    for (std::size_t m = k + 1; m < n_tiles - 1; m++)
+    {
+      std::cout << "hello" << '\n';
+      // TRSM
+      ft_tiles[m * n_tiles + k] = hpx::dataflow(&trsm, ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
+    }
+    for (std::size_t m = k + 1; m < n_tiles - 1; m++)
+    {
+      // SYRK
+      ft_tiles[m * n_tiles + k] = hpx::dataflow(&syrk, ft_tiles[m * n_tiles + k], ft_tiles[m * n_tiles + m], N);
+      for (std::size_t n = k + 1; n < m - 1; n++)
+      {
+        // GEMM
+        ft_tiles[m * n_tiles + k] = hpx::dataflow(&gemm, ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
+      }
+    }
+  }
+}
+
 int hpx_main(hpx::program_options::variables_map& vm)
 {
   std::size_t n_train = vm["n_train"].as<std::size_t>();  //max 100*1000
@@ -170,16 +202,6 @@ int hpx_main(hpx::program_options::variables_map& vm)
 
   hpx::chrono::high_resolution_timer t;
 
-
-  ublas::vector<CALC_TYPE> vec;
-
-/*
-  std::cout << "Using Boost "
-          << BOOST_VERSION / 100000     << "."  // major version
-          << BOOST_VERSION / 100 % 1000 << "."  // minor version
-          << BOOST_VERSION % 100                // patch level
-          << std::endl;
-        */
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> K_tiles;
   K_tiles.resize(n_tiles * n_tiles);
   // Assemble K
@@ -192,6 +214,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   }
   // Compute Cholesky decomposition
   //left_looking_cholesky(K_tiles,tile_size, n_tiles)
+  right_looking_cholesky_tiled(K_tiles,tile_size, n_tiles);
 
   double elapsed = t.elapsed();
   std::cout << "Elapsed " << elapsed << " s\n";
