@@ -223,7 +223,7 @@ void left_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC
       for (std::size_t m = k + 1; m < n_tiles; m++)
       {
         // GEMM
-        ft_tiles[m * n_tiles + n] = hpx::dataflow(&gemm, ft_tiles[m * n_tiles + k], ft_tiles[k * n_tiles + n], ft_tiles[m * n_tiles + n], N);
+        //ft_tiles[m * n_tiles + n] = hpx::dataflow(&gemm, ft_tiles[m * n_tiles + k], ft_tiles[k * n_tiles + n], ft_tiles[m * n_tiles + n], N);
       }
     }
     // POTRF
