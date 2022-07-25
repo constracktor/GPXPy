@@ -6,7 +6,7 @@
 # sudo docker run -it --rm --user user --name hpx_container hpx_image
 #
 # Compile Code:
-# cd && cd hpx_project && git pull --rebase && mkdir build && cd build && cmake .. && make all
+# cd && cd hpx_project && rm -rf build && git pull --rebase && mkdir build && cd build && cmake .. && make all
 #
 # Run Code:
 # ./hpx_program

@@ -168,7 +168,7 @@ std::vector<CALC_TYPE> gen_tile(std::size_t row, std::size_t col, std::size_t N,
          {
            tile[i * N + j] = 2.0;
          }
-         else if( (i_global == N*n_tiles -1&& j_global == 0) || (i_global == 0 && j_global == N*n_tiles-1))
+         else if( (i_global == N*n_tiles -1&& j_global == 0) || (i_global == 0 && j_global == N*n_tiles-1) || (i_global + j_global)== 3*n_tiles*N/4)
          {
            tile[i * N + j] = .5;
          }
@@ -216,14 +216,14 @@ void left_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC
 {
   for (std::size_t k = 0; k < n_tiles; k++)
   {
-    for (std::size_t n = 0; k - 1; n++)
+    for (std::size_t n = 0; n < k; n++)
     {
       // SYRK
       ft_tiles[k * n_tiles + k] = hpx::dataflow(&syrk, ft_tiles[k * n_tiles + k], ft_tiles[k * n_tiles + n], N);
       for (std::size_t m = k + 1; m < n_tiles; m++)
       {
         // GEMM
-        //ft_tiles[m * n_tiles + n] = hpx::dataflow(&gemm, ft_tiles[m * n_tiles + k], ft_tiles[k * n_tiles + n], ft_tiles[m * n_tiles + n], N);
+        ft_tiles[m * n_tiles + k] = hpx::dataflow(&gemm, ft_tiles[m * n_tiles + n], ft_tiles[k * n_tiles + n], ft_tiles[m * n_tiles + k], N);
       }
     }
     // POTRF
@@ -233,6 +233,36 @@ void left_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC
       // TRSM
       ft_tiles[m * n_tiles + k] = hpx::dataflow(&trsm, ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
     }
+    // in theory not mandadory
+    for (std::size_t m = k + 1; m < n_tiles; m++)
+    {
+      // set zero
+      ft_tiles[k * n_tiles + m] = hpx::dataflow(&zeros, N);
+    }
+  }
+}
+
+void top_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles, std::size_t N, std::size_t n_tiles)
+{
+  for (std::size_t k = 0; k < n_tiles; k++)
+  {
+    for (std::size_t n = 0; n < k; n++)
+    {
+      for (std::size_t m = 0; m < n; m++)
+      {
+        // GEMM
+        ft_tiles[k * n_tiles + n] = hpx::dataflow(&gemm, ft_tiles[k * n_tiles + m], ft_tiles[n * n_tiles + m], ft_tiles[k * n_tiles + n], N);
+      }
+      // TRSM
+      ft_tiles[k * n_tiles + n] = hpx::dataflow(&trsm, ft_tiles[n * n_tiles + n], ft_tiles[k * n_tiles + n], N);
+    }
+    for (std::size_t n = 0; n < k; n++)
+    {
+      // SYRK
+      ft_tiles[k * n_tiles + k] = hpx::dataflow(&syrk, ft_tiles[k * n_tiles + k], ft_tiles[k * n_tiles + n], N);
+    }
+    // POTRF
+    ft_tiles[k * n_tiles + k] = hpx::dataflow(&potrf, ft_tiles[k * n_tiles + k], N);
     // in theory not mandadory
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
@@ -296,7 +326,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
        std::cout << std::endl;
      }
    }
-  left_looking_cholesky_tiled(tiles,N, T);
+  right_looking_cholesky_tiled(tiles,N, T);
   std::cout << "after:" << std::endl;
   for (std::size_t i = 0; i < T; i++)
   {
