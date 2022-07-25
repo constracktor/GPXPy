@@ -33,7 +33,7 @@ std::vector<CALC_TYPE> zeros(std::size_t N)
   return zeros;
 }
 
-// solve L * B^T = A^T where L triangular
+// solve L * B^T = A^T and return B where L triangular
 std::vector<CALC_TYPE> trsm(hpx::shared_future<std::vector<CALC_TYPE>> ft_L,
                             hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
                             std::size_t N)
@@ -81,8 +81,6 @@ std::vector<CALC_TYPE> syrk(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
   A_updated = A_updated_blas.data();
   return A_updated;
 }
-
-
 
 // Cholesky decomposition of A -> return factorized matrix L
 std::vector<CALC_TYPE> potrf(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
@@ -214,6 +212,36 @@ void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CAL
   }
 }
 
+void left_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles, std::size_t N, std::size_t n_tiles)
+{
+  for (std::size_t k = 0; k < n_tiles; k++)
+  {
+    for (std::size_t n = 0; k - 1; n++)
+    {
+      // SYRK
+      ft_tiles[k * n_tiles + k] = hpx::dataflow(&syrk, ft_tiles[k * n_tiles + k], ft_tiles[k * n_tiles + n], N);
+      for (std::size_t m = k + 1; m < n_tiles; m++)
+      {
+        // GEMM
+        ft_tiles[m * n_tiles + n] = hpx::dataflow(&gemm, ft_tiles[m * n_tiles + k], ft_tiles[k * n_tiles + n], ft_tiles[m * n_tiles + n], N);
+      }
+    }
+    // POTRF
+    ft_tiles[k * n_tiles + k] = hpx::dataflow(&potrf, ft_tiles[k * n_tiles + k], N);
+    for (std::size_t m = k + 1; m < n_tiles; m++)
+    {
+      // TRSM
+      ft_tiles[m * n_tiles + k] = hpx::dataflow(&trsm, ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
+    }
+    // in theory not mandadory
+    for (std::size_t m = k + 1; m < n_tiles; m++)
+    {
+      // set zero
+      ft_tiles[k * n_tiles + m] = hpx::dataflow(&zeros, N);
+    }
+  }
+}
+
 int hpx_main(hpx::program_options::variables_map& vm)
 {
   std::size_t n_train = vm["n_train"].as<std::size_t>();  //max 100*1000
@@ -268,7 +296,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
        std::cout << std::endl;
      }
    }
-  right_looking_cholesky_tiled(tiles,N, T);
+  left_looking_cholesky_tiled(tiles,N, T);
   std::cout << "after:" << std::endl;
   for (std::size_t i = 0; i < T; i++)
   {
