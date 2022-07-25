@@ -24,13 +24,21 @@
 namespace ublas = boost::numeric::ublas;
 // read access to a const matrix is faster!!!!!!!!!!!!!!
 
+// set tile to zero (required for inplace)
+std::vector<CALC_TYPE> zeros(std::size_t N)
+{
+  std::vector<CALC_TYPE> zeros;
+  zeros.resize(N * N);
+  std::fill(zeros.begin(), zeros.end(), 0.0);
+  return zeros;
+}
 // solve L*B = A where L triangular
 std::vector<CALC_TYPE> trsm(hpx::shared_future<std::vector<CALC_TYPE>> ft_L,
                             hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
                             std::size_t N)
 {
-  const auto L = ft_L.get(); // improve
-  const auto A = ft_A.get();
+  auto L = ft_L.get(); // improve
+  auto A = ft_A.get();
   // solution vector
   std::vector<CALC_TYPE> B;
   B.resize(N * N);
@@ -39,17 +47,17 @@ std::vector<CALC_TYPE> trsm(hpx::shared_future<std::vector<CALC_TYPE>> ft_L,
   L_blas.data() = L;
   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
   A_blas.data() = A;
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > B_blas(N, N);
+  ublas::matrix< CALC_TYPE, ublas::column_major, std::vector<CALC_TYPE> > B_blas(N, N);
   // TRSM
   //boost::numeric::ublas::blas_3::tsm (M1 &m1, const T &t, const M2 &m2, C)-> m2 * C = t * m1 ->   m1 = solve (m2, t * m1, C ());
-  B_blas = ublas::solve (L_blas, A_blas, ublas::lower_tag());
+  B_blas = ublas::solve(L_blas, A_blas, ublas::lower_tag());//ublas::trans(ublas::solve(L_blas, A_blas, ublas::lower_tag()));
   //ublas::inplace_solve (L_blas, A_blas, ublas::lower_tag());
   // reformat to std::vector
   B = B_blas.data();
   return B;
 }
 
-//  A = A + B * B^T
+//  A = A - B * B^T
 std::vector<CALC_TYPE> syrk(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
                             hpx::shared_future<std::vector<CALC_TYPE>> ft_B,
                             std::size_t N)
@@ -67,7 +75,7 @@ std::vector<CALC_TYPE> syrk(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_updated_blas(N, N);
   //SYRK
   //boost::numeric::ublas::blas_3::srk (M1 &m1, const T1 &t1, const T2 &t2, const M2 &m2) -> m1 = t * m1 + t2 * (m2 * m2T)
-  A_updated_blas = A_blas + ublas::prod(B_blas, ublas::trans(B_blas));
+  A_updated_blas = A_blas - ublas::prod(B_blas,ublas::trans(B_blas));
   // reformat to std::vector
   A_updated = A_updated_blas.data();
   return A_updated;
@@ -83,7 +91,6 @@ std::vector<CALC_TYPE> potrf(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
   // solution vector
   std::vector<CALC_TYPE> L;
   L.resize(N * N);
-  std::fill(L.begin(), L.end(), 0.0);
   // convert to boost matrices
   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
   A_blas.data() = A;
@@ -94,9 +101,10 @@ std::vector<CALC_TYPE> potrf(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
     // compute squared diagonal entry
     CALC_TYPE qL_kk = A_blas(k,k) - ublas::inner_prod( ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ), ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ) );
     // check if positive
+
     if (qL_kk <= 0)
     {
-      // abort ?
+      std::cout << qL_kk << '\n';
     }
     else
     {
@@ -116,7 +124,7 @@ std::vector<CALC_TYPE> potrf(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
   return L;
 }
 
-//C = A * B + C
+//C = C - A * B^T
 std::vector<CALC_TYPE> gemm(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
                             hpx::shared_future<std::vector<CALC_TYPE>> ft_B,
                             hpx::shared_future<std::vector<CALC_TYPE>> ft_C,
@@ -138,7 +146,7 @@ std::vector<CALC_TYPE> gemm(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
    ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > C_updated_blas(N, N);
    // GEMM
    //boost::numeric::ublas::blas_3::gmm (M1 &m1, const T1 &t1, const T2 &t2, const M2 &m2, const M3 &m3)
-   C_updated_blas = ublas::prod(A_blas, B_blas) + C_blas;
+   C_updated_blas = C_blas - ublas::prod(A_blas, ublas::trans(B_blas));
    // reformat to std::vector
    C_updated = C_updated_blas.data();
    return C_updated;
@@ -153,11 +161,20 @@ std::vector<CALC_TYPE> gen_tile(std::size_t row, std::size_t col, std::size_t N,
 
    for(std::size_t i = 0; i < N; i++)
    {
-      i_global = (n_tiles - 1) * N + i;
+      i_global = N * row + i;
       for(std::size_t j = 0; j < N; j++)
       {
-         j_global = (n_tiles - 1) * N + j;
-         tile[i * N + j] = 1; //covariance_function(i_global,j_global);
+         j_global = N * col + j;
+
+         if(i_global == j_global)
+         {
+           tile[i * N + j] = 2.0;
+         }
+         else
+         {
+           tile[i * N + j] = 1.0;
+         }
+         //tile[i * N + j] = 1.0; //covariance_function(i_global,j_global);
       }
    }
    return tile;
@@ -168,25 +185,29 @@ void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CAL
   //std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> ft_cholesky;
   //ft_cholesky.resize(n_tiles);
 
-  for (std::size_t k = 0; k < n_tiles - 1; k++)
+  for (std::size_t k = 0; k < n_tiles; k++)
   {
     // POTRF
     ft_tiles[k * n_tiles + k] = hpx::dataflow(&potrf, ft_tiles[k * n_tiles + k], N);
-    for (std::size_t m = k + 1; m < n_tiles - 1; m++)
+    for (std::size_t m = k + 1; m < n_tiles; m++)
     {
-      std::cout << "hello" << '\n';
       // TRSM
       ft_tiles[m * n_tiles + k] = hpx::dataflow(&trsm, ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
     }
-    for (std::size_t m = k + 1; m < n_tiles - 1; m++)
+    for (std::size_t m = k + 1; m < n_tiles; m++)
     {
       // SYRK
-      ft_tiles[m * n_tiles + k] = hpx::dataflow(&syrk, ft_tiles[m * n_tiles + k], ft_tiles[m * n_tiles + m], N);
-      for (std::size_t n = k + 1; n < m - 1; n++)
+      ft_tiles[m * n_tiles + m] = hpx::dataflow(&syrk, ft_tiles[m * n_tiles + m], ft_tiles[m * n_tiles + k], N);
+      for (std::size_t n = k + 1; n < m; n++)
       {
         // GEMM
-        ft_tiles[m * n_tiles + k] = hpx::dataflow(&gemm, ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
+        ft_tiles[m * n_tiles + n] = hpx::dataflow(&gemm, ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
       }
+    }
+    for (std::size_t m = k + 1; m < n_tiles; m++)
+    {
+      // set zero
+      ft_tiles[k * n_tiles + m] = hpx::dataflow(&zeros, N);
     }
   }
 }
@@ -214,7 +235,59 @@ int hpx_main(hpx::program_options::variables_map& vm)
   }
   // Compute Cholesky decomposition
   //left_looking_cholesky(K_tiles,tile_size, n_tiles)
-  right_looking_cholesky_tiled(K_tiles,tile_size, n_tiles);
+  std::size_t N = 3;
+  std::size_t T = 3;
+  std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> tiles;
+  tiles.resize(T * T);
+  for (std::size_t i = 0; i < T; ++i)
+  {
+     for (std::size_t j = 0; j < T; ++j)
+     {
+        tiles[i * T + j] = hpx::dataflow(&gen_tile, i, j, N, T);
+     }
+  }
+  std::cout << "before:"<< std::endl;
+  for (std::size_t i = 0; i < T; i++)
+  {
+     for (std::size_t j = 0; j < T; ++j)
+     {
+       std::vector<CALC_TYPE> A = tiles[i*T+j].get();
+       std::cout << "tile: " << i*T+j << std::endl;
+       for(int k = 0; k < N; ++k)
+       {
+          for(int m = 0; m < N; ++m)
+          {
+             std::ostringstream os;
+             os << A[k * N + m] << " ";
+             std::cout << os.str();
+          }
+          std::cout << std::endl;
+       }
+       std::cout << std::endl;
+     }
+   }
+  right_looking_cholesky_tiled(tiles,N, T);
+  std::cout << "after:" << std::endl;
+  for (std::size_t i = 0; i < T; i++)
+  {
+     //std::vector<CALC_TYPE> x = tiles[i];
+     for (std::size_t j = 0; j < T; ++j)
+     {
+       std::vector<CALC_TYPE> A = tiles[i*T+j].get();
+       std::cout << "tile: " << i*T+j << std::endl;
+       for(int k = 0; k < N; ++k)
+       {
+          for(int m = 0; m < N; ++m)
+          {
+             std::ostringstream os;
+             os << A[k * N + m] << " ";
+             std::cout << os.str();
+          }
+          std::cout << std::endl;
+       }
+       std::cout << std::endl;
+     }
+  }
 
   double elapsed = t.elapsed();
   std::cout << "Elapsed " << elapsed << " s\n";
