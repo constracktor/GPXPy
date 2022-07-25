@@ -32,7 +32,8 @@ std::vector<CALC_TYPE> zeros(std::size_t N)
   std::fill(zeros.begin(), zeros.end(), 0.0);
   return zeros;
 }
-// solve L*B = A where L triangular
+
+// solve L * B^T = A^T where L triangular
 std::vector<CALC_TYPE> trsm(hpx::shared_future<std::vector<CALC_TYPE>> ft_L,
                             hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
                             std::size_t N)
@@ -47,11 +48,11 @@ std::vector<CALC_TYPE> trsm(hpx::shared_future<std::vector<CALC_TYPE>> ft_L,
   L_blas.data() = L;
   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
   A_blas.data() = A;
-  ublas::matrix< CALC_TYPE, ublas::column_major, std::vector<CALC_TYPE> > B_blas(N, N);
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > B_blas(N, N);
   // TRSM
-  //boost::numeric::ublas::blas_3::tsm (M1 &m1, const T &t, const M2 &m2, C)-> m2 * C = t * m1 ->   m1 = solve (m2, t * m1, C ());
-  B_blas = ublas::solve(L_blas, A_blas, ublas::lower_tag());//ublas::trans(ublas::solve(L_blas, A_blas, ublas::lower_tag()));
-  //ublas::inplace_solve (L_blas, A_blas, ublas::lower_tag());
+  //boost::numeric::ublas::blas_3::tsm (M1 &m1, const T &t, const M2 &m2, C) -> m2 * C = t * m1 -> m1 = solve (m2, t * m1, C ());
+  B_blas = ublas::trans(ublas::solve(L_blas, ublas::trans(A_blas), ublas::lower_tag()));
+  //ublas::inplace_solve(L_blas, A_blas, ublas::lower_tag());
   // reformat to std::vector
   B = B_blas.data();
   return B;
@@ -101,7 +102,6 @@ std::vector<CALC_TYPE> potrf(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
     // compute squared diagonal entry
     CALC_TYPE qL_kk = A_blas(k,k) - ublas::inner_prod( ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ), ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ) );
     // check if positive
-
     if (qL_kk <= 0)
     {
       std::cout << qL_kk << '\n';
@@ -170,6 +170,10 @@ std::vector<CALC_TYPE> gen_tile(std::size_t row, std::size_t col, std::size_t N,
          {
            tile[i * N + j] = 2.0;
          }
+         else if( (i_global == N*n_tiles -1&& j_global == 0) || (i_global == 0 && j_global == N*n_tiles-1))
+         {
+           tile[i * N + j] = .5;
+         }
          else
          {
            tile[i * N + j] = 1.0;
@@ -182,9 +186,6 @@ std::vector<CALC_TYPE> gen_tile(std::size_t row, std::size_t col, std::size_t N,
 
 void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles, std::size_t N, std::size_t n_tiles)
 {
-  //std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> ft_cholesky;
-  //ft_cholesky.resize(n_tiles);
-
   for (std::size_t k = 0; k < n_tiles; k++)
   {
     // POTRF
@@ -204,6 +205,7 @@ void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CAL
         ft_tiles[m * n_tiles + n] = hpx::dataflow(&gemm, ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
       }
     }
+    // in theory not mandadory
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
       // set zero
