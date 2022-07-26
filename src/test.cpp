@@ -24,7 +24,7 @@
 namespace ublas = boost::numeric::ublas;
 // read access to a const matrix is faster!!!!!!!!!!!!!!
 
-// set tile to zero (required for inplace)
+// set tile to zero (for inplace)
 std::vector<CALC_TYPE> zeros(std::size_t N)
 {
   std::vector<CALC_TYPE> zeros;
@@ -50,9 +50,7 @@ std::vector<CALC_TYPE> trsm(hpx::shared_future<std::vector<CALC_TYPE>> ft_L,
   A_blas.data() = A;
   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > B_blas(N, N);
   // TRSM
-  //boost::numeric::ublas::blas_3::tsm (M1 &m1, const T &t, const M2 &m2, C) -> m2 * C = t * m1 -> m1 = solve (m2, t * m1, C ());
   B_blas = ublas::trans(ublas::solve(L_blas, ublas::trans(A_blas), ublas::lower_tag()));
-  //ublas::inplace_solve(L_blas, A_blas, ublas::lower_tag());
   // reformat to std::vector
   B = B_blas.data();
   return B;
@@ -75,7 +73,6 @@ std::vector<CALC_TYPE> syrk(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
   B_blas.data() = B;
   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_updated_blas(N, N);
   //SYRK
-  //boost::numeric::ublas::blas_3::srk (M1 &m1, const T1 &t1, const T2 &t2, const M2 &m2) -> m1 = t * m1 + t2 * (m2 * m2T)
   A_updated_blas = A_blas - ublas::prod(B_blas,ublas::trans(B_blas));
   // reformat to std::vector
   A_updated = A_updated_blas.data();
@@ -143,7 +140,6 @@ std::vector<CALC_TYPE> gemm(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
    C_blas.data() = C;
    ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > C_updated_blas(N, N);
    // GEMM
-   //boost::numeric::ublas::blas_3::gmm (M1 &m1, const T1 &t1, const T2 &t2, const M2 &m2, const M3 &m3)
    C_updated_blas = C_blas - ublas::prod(A_blas, ublas::trans(B_blas));
    // reformat to std::vector
    C_updated = C_updated_blas.data();
@@ -295,6 +291,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   }
   // Compute Cholesky decomposition
   //left_looking_cholesky(K_tiles,tile_size, n_tiles)
+  /*
   std::size_t N = 3;
   std::size_t T = 3;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> tiles;
@@ -326,7 +323,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
        std::cout << std::endl;
      }
    }
-  right_looking_cholesky_tiled(tiles,N, T);
+  top_looking_cholesky_tiled(tiles,N, T);
   std::cout << "after:" << std::endl;
   for (std::size_t i = 0; i < T; i++)
   {
@@ -348,7 +345,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
        std::cout << std::endl;
      }
   }
-
+  */
   double elapsed = t.elapsed();
   std::cout << "Elapsed " << elapsed << " s\n";
   return hpx::local::finalize();    // Handles HPX shutdown
@@ -381,7 +378,6 @@ int main(int argc, char* argv[])
     hyperparameters[0] = 1.0;   // lengthscale = variance of training_output
     hyperparameters[1] = 1.0;   // vertical_lengthscale = standard deviation of training_input
     hyperparameters[2] = 0.001; // noise_variance = small value
-
     // data holders for assembly
     CALC_TYPE  training_input[n_train];
     CALC_TYPE   training_output[n_train];
@@ -392,7 +388,6 @@ int main(int argc, char* argv[])
     FILE    *training_output_file;
     FILE    *test_input_file;
     FILE    *test_output_file;
-
     ////////////////////////////////////////////////////////////////////////////
     // Load data
     training_input_file = fopen("../src/data/training/training_input.txt", "r");
@@ -422,6 +417,7 @@ int main(int argc, char* argv[])
     fclose(test_input_file);
     fclose(test_output_file);
     ////////////////////////////////////////////////////////////////////////////
+    std::cout << argv[0] << '\n';
     // Run HPX
     init_args.desc_cmdline = desc_commandline;
     return hpx::local::init(hpx_main, argc, argv, init_args);
