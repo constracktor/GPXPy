@@ -1,5 +1,6 @@
 #define CALC_TYPE double
 #define TYPE "%lf"
+#include <math.h>
 
 #include <hpx/local/chrono.hpp>
 #include <hpx/local/future.hpp>
@@ -23,7 +24,97 @@
 
 namespace ublas = boost::numeric::ublas;
 // read access to a const matrix is faster!!!!!!!!!!!!!!
+////////////////////////////////////////////////////////////////////////////////
+// GP functions to assemble K
+void compute_regressor_vector(std::size_t row, std::size_t n_regressors, CALC_TYPE* input, CALC_TYPE* z_row)
+{
+  for (std::size_t i = 0; i < n_regressors; i++)
+  {
+   int index = row - n_regressors + 1 + i;
+   if (index < 0)
+   {
+      z_row[i] = 0.0;
+   }
+   else
+   {
+     z_row[i] = input[index];
+   }
+  }
+}
 
+CALC_TYPE compute_covariance_function(std::size_t n_regressors, CALC_TYPE* hyperparameters, CALC_TYPE* z_i, CALC_TYPE* z_j)
+{
+  // Compute the Squared Exponential Covariance Function
+  // C(z_i,z_j) = vertical_lengthscale * exp(-0.5*lengthscale*(z_i-z_j)^2)
+  CALC_TYPE distance = 0.0;
+  for (std::size_t i = 0; i < n_regressors; i++)
+  {
+    distance += pow(z_i[i] - z_j[i],2);
+  }
+  return hyperparameters[1] * exp(-0.5 * hyperparameters[0] * distance);
+}
+
+std::vector<CALC_TYPE> gen_tile(std::size_t row, std::size_t col, std::size_t N, std::size_t n_tiles, std::size_t n_regressors, CALC_TYPE *hyperparameters, CALC_TYPE *z_i_input, CALC_TYPE *z_j_input)
+{
+   std::size_t i_global,j_global;
+   CALC_TYPE covariance_function;
+   CALC_TYPE z_i[n_regressors], z_j[n_regressors];
+
+   // Initialize tile
+   std::vector<CALC_TYPE> tile;
+   tile.resize(N * N);
+   for(std::size_t i = 0; i < N; i++)
+   {
+      i_global = N * row + i;
+      compute_regressor_vector(i_global, n_regressors, z_i_input, z_i);
+
+      for(std::size_t j = 0; j < N; j++)
+      {
+         j_global = N * col + j;
+         //compute_regressor_vector(j_global, n_regressors, z_j_input, z_j);
+         // compute covariance function
+         covariance_function = compute_covariance_function(n_regressors, hyperparameters, z_i, z_j);
+         if (i_global==j_global)
+         {
+           covariance_function += hyperparameters[2];
+         }
+         tile[i * N + j] = covariance_function;
+      }
+   }
+   return tile;
+}
+
+std::vector<CALC_TYPE> gen_tile_test(std::size_t row, std::size_t col, std::size_t N, std::size_t n_tiles)
+{
+   std::size_t i_global,j_global;
+   // Initialize tile
+   std::vector<CALC_TYPE> tile;
+   tile.resize(N * N);
+   for(std::size_t i = 0; i < N; i++)
+   {
+      i_global = N * row + i;
+      for(std::size_t j = 0; j < N; j++)
+      {
+         j_global = N * col + j;
+
+         if(i_global == j_global)
+         {
+           tile[i * N + j] = 2.0;
+         }
+         else if( (i_global == N*n_tiles -1&& j_global == 0) || (i_global == 0 && j_global == N*n_tiles-1) || (i_global + j_global)== 3*n_tiles*N/4)
+         {
+           tile[i * N + j] = .5;
+         }
+         else
+         {
+           tile[i * N + j] = 1.0;
+         }
+      }
+   }
+   return tile;
+}
+////////////////////////////////////////////////////////////////////////////////
+// BLAS operations
 // set tile to zero (for inplace)
 std::vector<CALC_TYPE> zeros(std::size_t N)
 {
@@ -61,6 +152,7 @@ std::vector<CALC_TYPE> syrk(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
                             hpx::shared_future<std::vector<CALC_TYPE>> ft_B,
                             std::size_t N)
 {
+  //hpx::when_all()
   auto A = ft_A.get(); // improve
   auto B = ft_B.get();
   // solution vector
@@ -146,38 +238,8 @@ std::vector<CALC_TYPE> gemm(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
    return C_updated;
 }
 
-std::vector<CALC_TYPE> gen_tile(std::size_t row, std::size_t col, std::size_t N, std::size_t n_tiles)
-{
-   std::size_t i_global,j_global;
-   // Initialize tile
-   std::vector<CALC_TYPE> tile;
-   tile.resize(N * N);
-
-   for(std::size_t i = 0; i < N; i++)
-   {
-      i_global = N * row + i;
-      for(std::size_t j = 0; j < N; j++)
-      {
-         j_global = N * col + j;
-
-         if(i_global == j_global)
-         {
-           tile[i * N + j] = 2.0;
-         }
-         else if( (i_global == N*n_tiles -1&& j_global == 0) || (i_global == 0 && j_global == N*n_tiles-1) || (i_global + j_global)== 3*n_tiles*N/4)
-         {
-           tile[i * N + j] = .5;
-         }
-         else
-         {
-           tile[i * N + j] = 1.0;
-         }
-         //tile[i * N + j] = 1.0; //covariance_function(i_global,j_global);
-      }
-   }
-   return tile;
-}
-
+////////////////////////////////////////////////////////////////////////////////
+// Tiled Cholesky Algorithms
 void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles, std::size_t N, std::size_t n_tiles)
 {
   for (std::size_t k = 0; k < n_tiles; k++)
@@ -270,39 +332,87 @@ void top_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC_
 
 int hpx_main(hpx::program_options::variables_map& vm)
 {
+  // GP parameters
   std::size_t n_train = vm["n_train"].as<std::size_t>();  //max 100*1000
   std::size_t n_test = vm["n_test"].as<std::size_t>();     //max 5*1000
   std::size_t n_regressors = vm["n_regressors"].as<std::size_t>();
+  CALC_TYPE    hyperparameters[3];
+  // initalize hyperparameters to empirical moments of the data
+  hyperparameters[0] = 1.0;   // lengthscale = variance of training_output
+  hyperparameters[1] = 1.0;   // vertical_lengthscale = standard deviation of training_input
+  hyperparameters[2] = 0.001; // noise_variance = small value
+  // tiled parameters
   std::size_t n_tiles = vm["n_tiles"].as<std::size_t>();
-
   std::size_t tile_size = n_train / n_tiles;
-
-  hpx::chrono::high_resolution_timer t;
-
+  // HPX structures
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> K_tiles;
+  // data holders for assembly
+  CALC_TYPE   training_input[1000];
+  CALC_TYPE   training_output[n_train];
+  CALC_TYPE   test_input[n_test];
+  CALC_TYPE   test_output[n_test];
+  // data files
+  FILE    *training_input_file;
+  FILE    *training_output_file;
+  FILE    *test_input_file;
+  FILE    *test_output_file;
+  ////////////////////////////////////////////////////////////////////////////
+  // Load data
+  training_input_file = fopen("../src/data/training/training_input.txt", "r");
+  training_output_file = fopen("../src/data/training/training_output.txt", "r");
+  test_input_file = fopen("../src/data/test/test_input_3.txt", "r");
+  test_output_file = fopen("../src/data/test/test_output_3.txt", "r");
+  if (training_input_file == NULL || training_output_file == NULL || test_input_file == NULL || test_output_file == NULL)
+  {
+    printf("Files not found!\n");
+    return 1;
+  }
+  // load training data
+  for (int i = 0; i < n_train; i++)
+  {
+    fscanf(training_input_file,TYPE,&training_input[i]);
+    fscanf(training_output_file,TYPE,&training_output[i]);
+  }
+  // load test data
+  for (int i = 0; i < n_test; i++)
+  {
+    fscanf(test_input_file,TYPE,&test_input[i]);
+    fscanf(test_output_file,TYPE,&test_output[i]);
+  }
+  // close file streams
+  fclose(training_input_file);
+  fclose(training_output_file);
+  fclose(test_input_file);
+  fclose(test_output_file);
+  //////////////////////////////////////////////////////////////////////////////
+  // Start timer
+  hpx::chrono::high_resolution_timer t;
+  //////////////////////////////////////////////////////////////////////////////
+  // Assemble covariance matrix vector
   K_tiles.resize(n_tiles * n_tiles);
   // Assemble K
   for (std::size_t i = 0; i < n_tiles; i++)
   {
      for (std::size_t j = 0; j < n_tiles; ++j)
      {
-        K_tiles[i * n_tiles + j] = hpx::dataflow(&gen_tile, i, j, tile_size, n_tiles);
+        K_tiles[i * n_tiles + j] = hpx::dataflow(&gen_tile, i, j, tile_size, n_tiles, n_regressors, hyperparameters, training_input, training_input);
      }
   }
   // Compute Cholesky decomposition
   //left_looking_cholesky(K_tiles,tile_size, n_tiles)
-  /*
-  std::size_t N = 3;
-  std::size_t T = 3;
+
+  std::size_t N = 100;
+  std::size_t T = 100;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> tiles;
   tiles.resize(T * T);
   for (std::size_t i = 0; i < T; ++i)
   {
      for (std::size_t j = 0; j < T; ++j)
      {
-        tiles[i * T + j] = hpx::dataflow(&gen_tile, i, j, N, T);
+        tiles[i * T + j] = hpx::dataflow(&gen_tile_test, i, j, N, T);
      }
   }
+  /*
   std::cout << "before:"<< std::endl;
   for (std::size_t i = 0; i < T; i++)
   {
@@ -323,7 +433,9 @@ int hpx_main(hpx::program_options::variables_map& vm)
        std::cout << std::endl;
      }
    }
+   */
   top_looking_cholesky_tiled(tiles,N, T);
+/*
   std::cout << "after:" << std::endl;
   for (std::size_t i = 0; i < T; i++)
   {
@@ -345,7 +457,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
        std::cout << std::endl;
      }
   }
-  */
+*/
   double elapsed = t.elapsed();
   std::cout << "Elapsed " << elapsed << " s\n";
   return hpx::local::finalize();    // Handles HPX shutdown
@@ -370,54 +482,7 @@ int main(int argc, char* argv[])
     ;
     hpx::program_options::variables_map vm;
     hpx::program_options::store(hpx::program_options::parse_command_line(argc, argv, desc_commandline), vm);
-    // GP parameters
-    std::size_t       n_train = vm["n_train"].as<std::size_t>();  //max 100*1000
-    std::size_t       n_test = vm["n_test"].as<std::size_t>();     //max 5*1000
-    CALC_TYPE    hyperparameters[3];
-    // initalize hyperparameters to empirical moments of the data
-    hyperparameters[0] = 1.0;   // lengthscale = variance of training_output
-    hyperparameters[1] = 1.0;   // vertical_lengthscale = standard deviation of training_input
-    hyperparameters[2] = 0.001; // noise_variance = small value
-    // data holders for assembly
-    CALC_TYPE  training_input[n_train];
-    CALC_TYPE   training_output[n_train];
-    CALC_TYPE   test_input[n_test];
-    CALC_TYPE   test_output[n_test];
-    // data files
-    FILE    *training_input_file;
-    FILE    *training_output_file;
-    FILE    *test_input_file;
-    FILE    *test_output_file;
     ////////////////////////////////////////////////////////////////////////////
-    // Load data
-    training_input_file = fopen("../src/data/training/training_input.txt", "r");
-    training_output_file = fopen("../src/data/training/training_output.txt", "r");
-    test_input_file = fopen("../src/data/test/test_input_3.txt", "r");
-    test_output_file = fopen("../src/data/test/test_output_3.txt", "r");
-    if (training_input_file == NULL || training_output_file == NULL || test_input_file == NULL || test_output_file == NULL)
-    {
-      printf("return 1\n");
-      return 1;
-    }
-    // load training data
-    for (int i = 0; i < n_train; i++)
-    {
-      fscanf(training_input_file,TYPE,&training_input[i]);
-      fscanf(training_output_file,TYPE,&training_output[i]);
-    }
-    // load test data
-    for (int i = 0; i < n_test; i++)
-    {
-      fscanf(test_input_file,TYPE,&test_input[i]);
-      fscanf(test_output_file,TYPE,&test_output[i]);
-    }
-    // close file streams
-    fclose(training_input_file);
-    fclose(training_output_file);
-    fclose(test_input_file);
-    fclose(test_output_file);
-    ////////////////////////////////////////////////////////////////////////////
-    std::cout << argv[1] << '\n';
     // Run HPX
     init_args.desc_cmdline = desc_commandline;
     return hpx::local::init(hpx_main, argc, argv, init_args);
