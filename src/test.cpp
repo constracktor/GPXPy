@@ -417,7 +417,7 @@ int main(int argc, char* argv[])
     fclose(test_input_file);
     fclose(test_output_file);
     ////////////////////////////////////////////////////////////////////////////
-    std::cout << argv[0] << '\n';
+    std::cout << argv[1] << '\n';
     // Run HPX
     init_args.desc_cmdline = desc_commandline;
     return hpx::local::init(hpx_main, argc, argv, init_args);
