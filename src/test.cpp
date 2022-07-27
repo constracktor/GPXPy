@@ -26,7 +26,7 @@ namespace ublas = boost::numeric::ublas;
 // read access to a const matrix is faster!!!!!!!!!!!!!!
 ////////////////////////////////////////////////////////////////////////////////
 // GP functions to assemble K
-void compute_regressor_vector(std::size_t row, std::size_t n_regressors, CALC_TYPE* input, CALC_TYPE* z_row)
+void compute_regressor_vector(std::size_t row, std::size_t n_regressors, std::vector<CALC_TYPE> input, std::vector<CALC_TYPE> z_row)
 {
   for (std::size_t i = 0; i < n_regressors; i++)
   {
@@ -42,7 +42,7 @@ void compute_regressor_vector(std::size_t row, std::size_t n_regressors, CALC_TY
   }
 }
 
-CALC_TYPE compute_covariance_function(std::size_t n_regressors, CALC_TYPE* hyperparameters, CALC_TYPE* z_i, CALC_TYPE* z_j)
+CALC_TYPE compute_covariance_function(std::size_t n_regressors, CALC_TYPE* hyperparameters, std::vector<CALC_TYPE> z_i, std::vector<CALC_TYPE> z_j)
 {
   // Compute the Squared Exponential Covariance Function
   // C(z_i,z_j) = vertical_lengthscale * exp(-0.5*lengthscale*(z_i-z_j)^2)
@@ -54,11 +54,13 @@ CALC_TYPE compute_covariance_function(std::size_t n_regressors, CALC_TYPE* hyper
   return hyperparameters[1] * exp(-0.5 * hyperparameters[0] * distance);
 }
 
-std::vector<CALC_TYPE> gen_tile(std::size_t row, std::size_t col, std::size_t N, std::size_t n_tiles, std::size_t n_regressors, CALC_TYPE *hyperparameters, CALC_TYPE *z_i_input, CALC_TYPE *z_j_input)
+std::vector<CALC_TYPE> gen_tile(std::size_t row, std::size_t col, std::size_t N, std::size_t n_tiles, std::size_t n_regressors, CALC_TYPE *hyperparameters, std::vector<CALC_TYPE> z_i_input, std::vector<CALC_TYPE> z_j_input)
 {
    std::size_t i_global,j_global;
    CALC_TYPE covariance_function;
-   CALC_TYPE z_i[n_regressors], z_j[n_regressors];
+   std::vector<CALC_TYPE> z_i, z_j;
+   z_i.resize(n_regressors);
+   z_j.resize(n_regressors);
 
    // Initialize tile
    std::vector<CALC_TYPE> tile;
@@ -347,10 +349,10 @@ int hpx_main(hpx::program_options::variables_map& vm)
   // HPX structures
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> K_tiles;
   // data holders for assembly
-  CALC_TYPE   training_input[1000];
-  CALC_TYPE   training_output[n_train];
-  CALC_TYPE   test_input[n_test];
-  CALC_TYPE   test_output[n_test];
+  std::vector<CALC_TYPE>   training_input;
+  std::vector<CALC_TYPE>   training_output;
+  std::vector<CALC_TYPE>   test_input;
+  std::vector<CALC_TYPE>   test_output;
   // data files
   FILE    *training_input_file;
   FILE    *training_output_file;
@@ -358,6 +360,10 @@ int hpx_main(hpx::program_options::variables_map& vm)
   FILE    *test_output_file;
   ////////////////////////////////////////////////////////////////////////////
   // Load data
+  training_input.resize(n_train);
+  training_output.resize(n_train);
+  test_input.resize(n_test);
+  test_output.resize(n_test);
   training_input_file = fopen("../src/data/training/training_input.txt", "r");
   training_output_file = fopen("../src/data/training/training_output.txt", "r");
   test_input_file = fopen("../src/data/test/test_input_3.txt", "r");
@@ -399,65 +405,8 @@ int hpx_main(hpx::program_options::variables_map& vm)
      }
   }
   // Compute Cholesky decomposition
-  //left_looking_cholesky(K_tiles,tile_size, n_tiles)
+  left_looking_cholesky_tiled(K_tiles,tile_size, n_tiles);
 
-  std::size_t N = 100;
-  std::size_t T = 100;
-  std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> tiles;
-  tiles.resize(T * T);
-  for (std::size_t i = 0; i < T; ++i)
-  {
-     for (std::size_t j = 0; j < T; ++j)
-     {
-        tiles[i * T + j] = hpx::dataflow(&gen_tile_test, i, j, N, T);
-     }
-  }
-  /*
-  std::cout << "before:"<< std::endl;
-  for (std::size_t i = 0; i < T; i++)
-  {
-     for (std::size_t j = 0; j < T; ++j)
-     {
-       std::vector<CALC_TYPE> A = tiles[i*T+j].get();
-       std::cout << "tile: " << i*T+j << std::endl;
-       for(int k = 0; k < N; ++k)
-       {
-          for(int m = 0; m < N; ++m)
-          {
-             std::ostringstream os;
-             os << A[k * N + m] << " ";
-             std::cout << os.str();
-          }
-          std::cout << std::endl;
-       }
-       std::cout << std::endl;
-     }
-   }
-   */
-  top_looking_cholesky_tiled(tiles,N, T);
-/*
-  std::cout << "after:" << std::endl;
-  for (std::size_t i = 0; i < T; i++)
-  {
-     //std::vector<CALC_TYPE> x = tiles[i];
-     for (std::size_t j = 0; j < T; ++j)
-     {
-       std::vector<CALC_TYPE> A = tiles[i*T+j].get();
-       std::cout << "tile: " << i*T+j << std::endl;
-       for(int k = 0; k < N; ++k)
-       {
-          for(int m = 0; m < N; ++m)
-          {
-             std::ostringstream os;
-             os << A[k * N + m] << " ";
-             std::cout << os.str();
-          }
-          std::cout << std::endl;
-       }
-       std::cout << std::endl;
-     }
-  }
-*/
   double elapsed = t.elapsed();
   std::cout << "Elapsed " << elapsed << " s\n";
   return hpx::local::finalize();    // Handles HPX shutdown
