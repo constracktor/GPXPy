@@ -399,7 +399,6 @@ int hpx_main(hpx::program_options::variables_map& vm)
   hpx::chrono::high_resolution_timer t;
   //////////////////////////////////////////////////////////////////////////////
   // Assemble covariance matrix vector
-/*
   K_tiles.resize(n_tiles * n_tiles);
   std::cout << "assembly start " <<'\n';
   // Assemble K
@@ -420,18 +419,22 @@ int hpx_main(hpx::program_options::variables_map& vm)
 
   // Currently quick and dirty triangular solve
   // Assemble to big matrix
-  /*
   std::vector<CALC_TYPE> L;
   L.resize(n_train * n_train);
 
-  for (std::size_t i = 0; i < n_tiles; i++)
+  for (std::size_t k = 0; k < n_tiles; k++)
   {
-     for (std::size_t j = 0; j < n_tiles; ++j)
+     for (std::size_t l = 0; l < n_tiles; ++l)
      {
-        auto tile = K_tiles[i * n_tiles + j].get();
-        for(std::size_t k = 0; k < tile_size * tile_size; k++)
+        auto tile = K_tiles[k * n_tiles + l].get();
+        for(std::size_t i = 0; i < tile_size; i++)
         {
-          L[i * tile_size * tile_size * n_tiles + j * tile_size * tile_size + k] = tile[k];
+           std::size_t i_global = tile_size * k + i;
+           for(std::size_t j = 0; j < tile_size; j++)
+           {
+              std::size_t j_global = tile_size * l + j;
+              L[i_global * tile_size *n_tiles + j_global] = tile[i * tile_size + j];
+           }
         }
      }
   }
@@ -442,9 +445,9 @@ int hpx_main(hpx::program_options::variables_map& vm)
   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > cross_covariance_blas(n_train, n_test);
   cross_covariance_blas.data() = cross_covariance[0].get();
   // convert to boost vectors
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > alpha(n_train,1);
+  ublas::vector< CALC_TYPE, std::vector<CALC_TYPE> > alpha(n_train);
   alpha.data() = training_output;
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > y_test(n_test,1);
+  ublas::vector< CALC_TYPE, std::vector<CALC_TYPE> > y_test(n_test);
   y_test.data() = test_output;
   std::cout << "boost stuff done " <<'\n';
   // solve triangular systems
@@ -455,9 +458,10 @@ int hpx_main(hpx::program_options::variables_map& vm)
   std::cout << "second solving done " <<'\n';
   alpha = ublas::prod(ublas::trans(cross_covariance_blas), alpha);
   // compute error
-  CALC_TYPE error = 1.0;//ublas::norm_2(alpha - y_test);
+  CALC_TYPE error = ublas::norm_2(alpha - y_test);
   std::cout << "average_error: " << error / n_test << '\n';
-*/
+
+/*
 std::size_t N = 2;
 std::size_t T = 2;
 std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> tiles;
@@ -529,7 +533,6 @@ for (std::size_t k = 0; k < T; k++)
          for(std::size_t j = 0; j < N; j++)
          {
             std::size_t j_global = N * l + j;
-
             L[i_global * N*T + j_global] = tile[i * N + j];
          }
       }
@@ -562,7 +565,7 @@ std::cout << "boost stuff done " <<'\n';
 ublas::inplace_solve(L_blas, alpha, ublas::lower_tag() );
 std::cout << "first solving done " <<'\n';
 ublas::inplace_solve(ublas::trans(L_blas), alpha, ublas::upper_tag());
-
+*/
   double elapsed = t.elapsed();
   std::cout << "Elapsed " << elapsed << " s\n";
   return hpx::local::finalize();    // Handles HPX shutdown
