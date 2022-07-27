@@ -399,6 +399,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   hpx::chrono::high_resolution_timer t;
   //////////////////////////////////////////////////////////////////////////////
   // Assemble covariance matrix vector
+/*
   K_tiles.resize(n_tiles * n_tiles);
   std::cout << "assembly start " <<'\n';
   // Assemble K
@@ -415,12 +416,14 @@ int hpx_main(hpx::program_options::variables_map& vm)
   std::cout << "assembly done " <<'\n';
   std::cout << "Cholesky start " <<'\n';
   // Compute Cholesky decomposition
-  left_looking_cholesky_tiled(K_tiles,tile_size, n_tiles);
+  //left_looking_cholesky_tiled(K_tiles,tile_size, n_tiles);
 
   // Currently quick and dirty triangular solve
   // Assemble to big matrix
+  /*
   std::vector<CALC_TYPE> L;
   L.resize(n_train * n_train);
+
   for (std::size_t i = 0; i < n_tiles; i++)
   {
      for (std::size_t j = 0; j < n_tiles; ++j)
@@ -454,6 +457,111 @@ int hpx_main(hpx::program_options::variables_map& vm)
   // compute error
   CALC_TYPE error = 1.0;//ublas::norm_2(alpha - y_test);
   std::cout << "average_error: " << error / n_test << '\n';
+*/
+std::size_t N = 2;
+std::size_t T = 2;
+std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> tiles;
+tiles.resize(T * T);
+for (std::size_t i = 0; i < T; ++i)
+{
+   for (std::size_t j = 0; j < T; ++j)
+   {
+      tiles[i * T + j] = hpx::dataflow(&gen_tile_test, i, j, N, T);
+   }
+}
+
+std::cout << "before:"<< std::endl;
+for (std::size_t i = 0; i < T; i++)
+{
+   for (std::size_t j = 0; j < T; ++j)
+   {
+     std::vector<CALC_TYPE> A = tiles[i*T+j].get();
+     std::cout << "tile: " << i*T+j << std::endl;
+     for(int k = 0; k < N; ++k)
+     {
+        for(int m = 0; m < N; ++m)
+        {
+           std::ostringstream os;
+           os << A[k * N + m] << " ";
+           std::cout << os.str();
+        }
+        std::cout << std::endl;
+     }
+     std::cout << std::endl;
+   }
+ }
+
+top_looking_cholesky_tiled(tiles,N, T);
+
+std::cout << "after:" << std::endl;
+for (std::size_t i = 0; i < T; i++)
+{
+   //std::vector<CALC_TYPE> x = tiles[i];
+   for (std::size_t j = 0; j < T; ++j)
+   {
+     std::vector<CALC_TYPE> A = tiles[i*T+j].get();
+     std::cout << "tile: " << i*T+j << std::endl;
+     for(int k = 0; k < N; ++k)
+     {
+        for(int m = 0; m < N; ++m)
+        {
+           std::ostringstream os;
+           os << A[k * N + m] << " ";
+           std::cout << os.str();
+        }
+        std::cout << std::endl;
+     }
+     std::cout << std::endl;
+   }
+}
+
+std::vector<CALC_TYPE> L;
+L.resize(N * N * T * T);
+
+for (std::size_t k = 0; k < T; k++)
+{
+   for (std::size_t l = 0; l < T; ++l)
+   {
+      auto tile = tiles[k * T + l].get();
+      for(std::size_t i = 0; i < N; i++)
+      {
+         std::size_t i_global = N * k + i;
+         for(std::size_t j = 0; j < N; j++)
+         {
+            std::size_t j_global = N * l + j;
+
+            L[i_global * N*T + j_global] = tile[i * N + j];
+         }
+      }
+   }
+}
+for(std::size_t i = 0; i < N*T; i++)
+{
+  for(std::size_t j = 0; j < N*T; j++)
+  {
+   std::cout << L[i * N*T + j] <<" ";
+  }
+  std::cout << '\n';
+}
+
+std::cout << "Cholesky done " <<'\n';
+// convert to boost matrices
+ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > L_blas(N * T, N * T);
+L_blas.data() = L;
+// convert to boost vectors
+std::vector<CALC_TYPE> a;
+a.resize(N*T);
+a[0] = 1.0;
+a[1] = 1.0;
+a[2] = 1.0;
+a[3] = 1.0;
+ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > alpha(N*T,1);
+alpha.data() = a;
+std::cout << "boost stuff done " <<'\n';
+// solve triangular systems
+ublas::inplace_solve(L_blas, alpha, ublas::lower_tag() );
+std::cout << "first solving done " <<'\n';
+ublas::inplace_solve(ublas::trans(L_blas), alpha, ublas::upper_tag());
 
   double elapsed = t.elapsed();
   std::cout << "Elapsed " << elapsed << " s\n";
