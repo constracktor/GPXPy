@@ -26,8 +26,10 @@ namespace ublas = boost::numeric::ublas;
 // read access to a const matrix is faster!!!!!!!!!!!!!!
 ////////////////////////////////////////////////////////////////////////////////
 // GP functions to assemble K
-void compute_regressor_vector(std::size_t row, std::size_t n_regressors, std::vector<CALC_TYPE> input, std::vector<CALC_TYPE> z_row)
+std::vector<CALC_TYPE> compute_regressor_vector(std::size_t row, std::size_t n_regressors, std::vector<CALC_TYPE> input)
 {
+  std::vector<CALC_TYPE> z_row;
+  z_row.resize(n_regressors);
   for (std::size_t i = 0; i < n_regressors; i++)
   {
    int index = row - n_regressors + 1 + i;
@@ -40,6 +42,7 @@ void compute_regressor_vector(std::size_t row, std::size_t n_regressors, std::ve
      z_row[i] = input[index];
    }
   }
+  return z_row;
 }
 
 CALC_TYPE compute_covariance_function(std::size_t n_regressors, CALC_TYPE* hyperparameters, std::vector<CALC_TYPE> z_i, std::vector<CALC_TYPE> z_j)
@@ -54,33 +57,33 @@ CALC_TYPE compute_covariance_function(std::size_t n_regressors, CALC_TYPE* hyper
   return hyperparameters[1] * exp(-0.5 * hyperparameters[0] * distance);
 }
 
-std::vector<CALC_TYPE> gen_tile(std::size_t row, std::size_t col, std::size_t N, std::size_t n_tiles, std::size_t n_regressors, CALC_TYPE *hyperparameters, std::vector<CALC_TYPE> z_i_input, std::vector<CALC_TYPE> z_j_input)
+std::vector<CALC_TYPE> gen_tile(std::size_t row, std::size_t col, std::size_t N_row, std::size_t N_col, std::size_t n_tiles, std::size_t n_regressors, CALC_TYPE *hyperparameters, std::vector<CALC_TYPE> z_i_input, std::vector<CALC_TYPE> z_j_input)
 {
    std::size_t i_global,j_global;
    CALC_TYPE covariance_function;
-   std::vector<CALC_TYPE> z_i, z_j;
-   z_i.resize(n_regressors);
-   z_j.resize(n_regressors);
+   //std::vector<CALC_TYPE> z_i, z_j;
+   //z_i.resize(n_regressors);
+   //z_j.resize(n_regressors);
 
    // Initialize tile
    std::vector<CALC_TYPE> tile;
-   tile.resize(N * N);
-   for(std::size_t i = 0; i < N; i++)
+   tile.resize(N_row * N_col);
+   for(std::size_t i = 0; i < N_row; i++)
    {
-      i_global = N * row + i;
-      compute_regressor_vector(i_global, n_regressors, z_i_input, z_i);
+      i_global = N_row * row + i;
+      std::vector<CALC_TYPE> z_i = compute_regressor_vector(i_global, n_regressors, z_i_input);
 
-      for(std::size_t j = 0; j < N; j++)
+      for(std::size_t j = 0; j < N_col; j++)
       {
-         j_global = N * col + j;
-         //compute_regressor_vector(j_global, n_regressors, z_j_input, z_j);
+         j_global = N_col * col + j;
+         std::vector<CALC_TYPE> z_j= compute_regressor_vector(j_global, n_regressors, z_j_input);
          // compute covariance function
          covariance_function = compute_covariance_function(n_regressors, hyperparameters, z_i, z_j);
          if (i_global==j_global)
          {
            covariance_function += hyperparameters[2];
          }
-         tile[i * N + j] = covariance_function;
+         tile[i * N_row + j] = covariance_function;
       }
    }
    return tile;
@@ -342,12 +345,13 @@ int hpx_main(hpx::program_options::variables_map& vm)
   // initalize hyperparameters to empirical moments of the data
   hyperparameters[0] = 1.0;   // lengthscale = variance of training_output
   hyperparameters[1] = 1.0;   // vertical_lengthscale = standard deviation of training_input
-  hyperparameters[2] = 0.001; // noise_variance = small value
+  hyperparameters[2] = 0.1; // noise_variance = small value
   // tiled parameters
   std::size_t n_tiles = vm["n_tiles"].as<std::size_t>();
   std::size_t tile_size = n_train / n_tiles;
   // HPX structures
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> K_tiles;
+  std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> cross_covariance;
   // data holders for assembly
   std::vector<CALC_TYPE>   training_input;
   std::vector<CALC_TYPE>   training_output;
@@ -396,16 +400,60 @@ int hpx_main(hpx::program_options::variables_map& vm)
   //////////////////////////////////////////////////////////////////////////////
   // Assemble covariance matrix vector
   K_tiles.resize(n_tiles * n_tiles);
+  std::cout << "assembly start " <<'\n';
   // Assemble K
   for (std::size_t i = 0; i < n_tiles; i++)
   {
      for (std::size_t j = 0; j < n_tiles; ++j)
      {
-        K_tiles[i * n_tiles + j] = hpx::dataflow(&gen_tile, i, j, tile_size, n_tiles, n_regressors, hyperparameters, training_input, training_input);
+        K_tiles[i * n_tiles + j] = hpx::dataflow(&gen_tile, i, j, tile_size, tile_size, n_tiles, n_regressors, hyperparameters, training_input, training_input);
      }
   }
+  //Assemble cross-covariacne (currently not tiled)
+  cross_covariance.resize(1);
+  cross_covariance[0] = hpx::dataflow(&gen_tile, 0, 0,n_train, n_test, 1, n_regressors, hyperparameters, training_input,test_input);
+  std::cout << "assembly done " <<'\n';
+  std::cout << "Cholesky start " <<'\n';
   // Compute Cholesky decomposition
   left_looking_cholesky_tiled(K_tiles,tile_size, n_tiles);
+
+  // Currently quick and dirty triangular solve
+  // Assemble to big matrix
+  std::vector<CALC_TYPE> L;
+  L.resize(n_train * n_train);
+  for (std::size_t i = 0; i < n_tiles; i++)
+  {
+     for (std::size_t j = 0; j < n_tiles; ++j)
+     {
+        auto tile = K_tiles[i * n_tiles + j].get();
+        for(std::size_t k = 0; k < tile_size * tile_size; k++)
+        {
+          L[i * tile_size * tile_size * n_tiles + j * tile_size * tile_size + k] = tile[k];
+        }
+     }
+  }
+  std::cout << "Cholesky done " <<'\n';
+  // convert to boost matrices
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > L_blas(n_train, n_train);
+  L_blas.data() = L;
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > cross_covariance_blas(n_train, n_test);
+  cross_covariance_blas.data() = cross_covariance[0].get();
+  // convert to boost vectors
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > alpha(n_train,1);
+  alpha.data() = training_output;
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > y_test(n_test,1);
+  y_test.data() = test_output;
+  std::cout << "boost stuff done " <<'\n';
+  // solve triangular systems
+  ublas::inplace_solve(L_blas, alpha, ublas::lower_tag() );
+  std::cout << "first solving done " <<'\n';
+  ublas::inplace_solve(ublas::trans(L_blas), alpha, ublas::upper_tag());
+  // make predictions
+  std::cout << "second solving done " <<'\n';
+  alpha = ublas::prod(ublas::trans(cross_covariance_blas), alpha);
+  // compute error
+  CALC_TYPE error = 1.0;//ublas::norm_2(alpha - y_test);
+  std::cout << "average_error: " << error / n_test << '\n';
 
   double elapsed = t.elapsed();
   std::cout << "Elapsed " << elapsed << " s\n";
