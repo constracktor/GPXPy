@@ -108,35 +108,6 @@ std::vector<CALC_TYPE> gen_cross_covariance(std::size_t N_row, std::size_t N_col
    return tile;
 }
 
-std::vector<CALC_TYPE> gen_tile_test(std::size_t row, std::size_t col, std::size_t N, std::size_t n_tiles)
-{
-   std::size_t i_global,j_global;
-   // Initialize tile
-   std::vector<CALC_TYPE> tile;
-   tile.resize(N * N);
-   for(std::size_t i = 0; i < N; i++)
-   {
-      i_global = N * row + i;
-      for(std::size_t j = 0; j < N; j++)
-      {
-         j_global = N * col + j;
-
-         if(i_global == j_global)
-         {
-           tile[i * N + j] = 2.0;
-         }
-         else if( (i_global == N*n_tiles -1&& j_global == 0) || (i_global == 0 && j_global == N*n_tiles-1) || (i_global + j_global)== 3*n_tiles*N/4)
-         {
-           tile[i * N + j] = .5;
-         }
-         else
-         {
-           tile[i * N + j] = 1.0;
-         }
-      }
-   }
-   return tile;
-}
 ////////////////////////////////////////////////////////////////////////////////
 // BLAS operations
 // set tile to zero (for inplace)
@@ -356,6 +327,7 @@ void top_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC_
 
 int hpx_main(hpx::program_options::variables_map& vm)
 {
+  std::string cholesky = vm["cholesky"].as<std::string>();
   // GP parameters
   std::size_t n_train = vm["n_train"].as<std::size_t>();  //max 100*1000
   std::size_t n_test = vm["n_test"].as<std::size_t>();     //max 5*1000
@@ -431,8 +403,21 @@ int hpx_main(hpx::program_options::variables_map& vm)
   std::cout << "assembly done " <<'\n';
   std::cout << "Cholesky start " <<'\n';
   // Compute Cholesky decomposition
-  left_looking_cholesky_tiled(K_tiles,tile_size, n_tiles);
-
+  if (cholesky.compare("left") == 0)
+  {
+    std::cout << "left-looking tiled Cholesky decomposition\n";
+    left_looking_cholesky_tiled(K_tiles,tile_size, n_tiles);
+  }
+  else if (cholesky.compare("right") == 0)
+  {
+    std::cout << "right-looking tiled Cholesky decomposition\n";
+    right_looking_cholesky_tiled(K_tiles,tile_size, n_tiles);
+  }
+  else // out is set to "top" per default
+  {
+    std::cout << "top-looking tiled Cholesky decomposition\n";
+    top_looking_cholesky_tiled(K_tiles,tile_size, n_tiles);
+  }
   // Currently quick and dirty triangular solve
   // Assemble to big matrix
   std::vector<CALC_TYPE> L;
@@ -501,7 +486,9 @@ int main(int argc, char* argv[])
         ("n_regressors", hpx::program_options::value<std::size_t>()->default_value(100),
         "Number of delayed input regressors")
         ("n_tiles", hpx::program_options::value<std::size_t>()->default_value(10),
-        "Number of tiles per dimension -> n_tiles * n_tiles total")
+         "Number of tiles per dimension -> n_tiles * n_tiles total")
+        ("cholesky", hpx::program_options::value<std::string>()->default_value("top"),
+         "Choose between left- right- or top-looking tiled Cholesky decomposition")
     ;
     hpx::program_options::variables_map vm;
     hpx::program_options::store(hpx::program_options::parse_command_line(argc, argv, desc_commandline), vm);

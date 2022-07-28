@@ -7,7 +7,7 @@
 #
 # Compile Code: (to speed up ublas '-DNDEBUG -DBOOST_UBLAS_NDEBUG')
 # cd && cd hpx_project && rm -rf build && git pull --rebase && mkdir build && cd build && cmake .. && make all
-# ./test --n_train 1000 --n_test 1000 --n_regressors 100 --n_tiles 1
+# ./cholesky_hpx --n_train 1000 --n_test 1000 --n_regressors 100 --n_tiles 1 --cholesky left
 # ijkalgorithm   prod   axpy_prod  block_prod
 #   1.335       7.061    1.330       1.278
 # Run Code:
