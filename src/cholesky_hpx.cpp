@@ -385,13 +385,14 @@ int hpx_main(hpx::program_options::variables_map& vm)
   fclose(training_output_file);
   fclose(test_input_file);
   fclose(test_output_file);
+  // Start total timer
+  hpx::chrono::high_resolution_timer t_start_total;
   //////////////////////////////////////////////////////////////////////////////
+  // ASSEMBLE
   // Start timer
-  hpx::chrono::high_resolution_timer t;
-  //////////////////////////////////////////////////////////////////////////////
+  hpx::chrono::high_resolution_timer t_start_assemble;
   // Assemble covariance matrix vector
   K_tiles.resize(n_tiles * n_tiles);
-  std::cout << "assembly start " <<'\n';
   // Assemble K
   for (std::size_t i = 0; i < n_tiles; i++)
   {
@@ -400,25 +401,28 @@ int hpx_main(hpx::program_options::variables_map& vm)
         K_tiles[i * n_tiles + j] = hpx::dataflow(&gen_tile, i, j, tile_size, n_tiles, n_regressors, hyperparameters, training_input);
      }
   }
-  std::cout << "assembly done " <<'\n';
-  std::cout << "Cholesky start " <<'\n';
+  //Assemble cross-covariacne (currently not tiled)
+  hpx::future<std::vector<CALC_TYPE>> cross_covariance;
+  cross_covariance = hpx::dataflow(&gen_cross_covariance, n_train, n_test, n_regressors, hyperparameters, training_input,test_input);
+  // Stop timer - wrong since not blocking
+  CALC_TYPE t_elapsed_assemble = t_start_assemble.elapsed();
+  //////////////////////////////////////////////////////////////////////////////
+  // CHOLESKY
+  // Start timer
+  hpx::chrono::high_resolution_timer t_start_cholesky;
   // Compute Cholesky decomposition
   if (cholesky.compare("left") == 0)
   {
-    std::cout << "left-looking tiled Cholesky decomposition\n";
     left_looking_cholesky_tiled(K_tiles,tile_size, n_tiles);
   }
   else if (cholesky.compare("right") == 0)
   {
-    std::cout << "right-looking tiled Cholesky decomposition\n";
     right_looking_cholesky_tiled(K_tiles,tile_size, n_tiles);
   }
   else // out is set to "top" per default
   {
-    std::cout << "top-looking tiled Cholesky decomposition\n";
     top_looking_cholesky_tiled(K_tiles,tile_size, n_tiles);
   }
-  // Currently quick and dirty triangular solve
   // Assemble to big matrix
   std::vector<CALC_TYPE> L;
   L.resize(n_train * n_train);
@@ -438,12 +442,14 @@ int hpx_main(hpx::program_options::variables_map& vm)
            }
         }
      }
-
   }
-  std::cout << "Cholesky done " <<'\n';
-  //Assemble cross-covariacne (currently not tiled)
-  hpx::future<std::vector<CALC_TYPE>> cross_covariance;
-  cross_covariance = hpx::dataflow(&gen_cross_covariance, n_train, n_test, n_regressors, hyperparameters, training_input,test_input);
+  // Stop timer
+  CALC_TYPE t_elapsed_cholesky = t_start_cholesky.elapsed();
+  //////////////////////////////////////////////////////////////////////////////
+  // TRIANGULAR SOLVE
+  // Currently quick and dirty triangular solve
+  // Start timer
+  hpx::chrono::high_resolution_timer t_start_triangular;
   // convert to boost matrices
   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > L_blas(n_train, n_train);
   L_blas.data() = L;
@@ -454,20 +460,26 @@ int hpx_main(hpx::program_options::variables_map& vm)
   alpha.data() = training_output;
   ublas::vector< CALC_TYPE, std::vector<CALC_TYPE> > y_test(n_test);
   y_test.data() = test_output;
-  std::cout << "boost stuff done " <<'\n';
   // solve triangular systems
   ublas::inplace_solve(L_blas, alpha, ublas::lower_tag() );
-  std::cout << "first solving done " <<'\n';
   ublas::inplace_solve(ublas::trans(L_blas), alpha, ublas::upper_tag());
+  // Stop timer
+  CALC_TYPE t_elapsed_triangular = t_start_triangular.elapsed();
+  //////////////////////////////////////////////////////////////////////////////
+  // PREDICT
+  // Start timer
+  hpx::chrono::high_resolution_timer t_start_predict;
   // make predictions
-  std::cout << "second solving done " <<'\n';
   alpha = ublas::prod(ublas::trans(cross_covariance_blas), alpha);
   // compute error
   CALC_TYPE error = ublas::norm_2(alpha - y_test);
-  std::cout << "average_error: " << error / n_test << '\n';
-
-  double elapsed = t.elapsed();
-  std::cout << "Elapsed " << elapsed << " s\n";
+  // Stop timer
+  CALC_TYPE t_elapsed_predict = t_start_predict.elapsed();
+  //////////////////////////////////////////////////////////////////////////////
+  // Stop global timer
+  CALC_TYPE t_elapsed_total = t_start_total.elapsed();
+  // print output information
+  printf("%ld;%lf;%lf;%lf;%lf;%lf;%lf;%ld;%ld;%ld;%s;\n", n_tiles, t_elapsed_total, t_elapsed_assemble, t_elapsed_cholesky, t_elapsed_triangular, t_elapsed_predict, error / n_test, n_train, n_test, n_regressors, cholesky.c_str());
   return hpx::local::finalize();    // Handles HPX shutdown
 }
 
