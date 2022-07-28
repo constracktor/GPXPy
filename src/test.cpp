@@ -57,33 +57,52 @@ CALC_TYPE compute_covariance_function(std::size_t n_regressors, CALC_TYPE* hyper
   return hyperparameters[1] * exp(-0.5 * hyperparameters[0] * distance);
 }
 
-std::vector<CALC_TYPE> gen_tile(std::size_t row, std::size_t col, std::size_t N_row, std::size_t N_col, std::size_t n_tiles, std::size_t n_regressors, CALC_TYPE *hyperparameters, std::vector<CALC_TYPE> z_i_input, std::vector<CALC_TYPE> z_j_input)
+std::vector<CALC_TYPE> gen_tile(std::size_t row, std::size_t col, std::size_t N, std::size_t n_tiles, std::size_t n_regressors, CALC_TYPE *hyperparameters, std::vector<CALC_TYPE> input)
 {
    std::size_t i_global,j_global;
    CALC_TYPE covariance_function;
-   //std::vector<CALC_TYPE> z_i, z_j;
-   //z_i.resize(n_regressors);
-   //z_j.resize(n_regressors);
+
+   // Initialize tile
+   std::vector<CALC_TYPE> tile;
+   tile.resize(N * N);
+
+   for(std::size_t i = 0; i < N; i++)
+   {
+      i_global = N * row + i;
+      std::vector<CALC_TYPE> z_i = compute_regressor_vector(i_global, n_regressors, input);
+      for(std::size_t j = 0; j < N; j++)
+      {
+         j_global = N * col + j;
+         std::vector<CALC_TYPE> z_j= compute_regressor_vector(j_global, n_regressors, input);
+         // compute covariance function
+         covariance_function = compute_covariance_function(n_regressors, hyperparameters, z_i, z_j);
+         if (i_global==j_global && N == N)
+         {
+           covariance_function += hyperparameters[2];
+         }
+         tile[i * N + j] = covariance_function;
+      }
+   }
+   return tile;
+}
+
+std::vector<CALC_TYPE> gen_cross_covariance(std::size_t N_row, std::size_t N_col, std::size_t n_regressors, CALC_TYPE *hyperparameters, std::vector<CALC_TYPE> z_i_input, std::vector<CALC_TYPE> z_j_input)
+{
+   std::size_t i_global,j_global;
+   CALC_TYPE covariance_function;
 
    // Initialize tile
    std::vector<CALC_TYPE> tile;
    tile.resize(N_row * N_col);
    for(std::size_t i = 0; i < N_row; i++)
    {
-      i_global = N_row * row + i;
-      std::vector<CALC_TYPE> z_i = compute_regressor_vector(i_global, n_regressors, z_i_input);
-
+      std::vector<CALC_TYPE> z_i = compute_regressor_vector(i, n_regressors, z_i_input);
       for(std::size_t j = 0; j < N_col; j++)
       {
-         j_global = N_col * col + j;
-         std::vector<CALC_TYPE> z_j= compute_regressor_vector(j_global, n_regressors, z_j_input);
+         std::vector<CALC_TYPE> z_j= compute_regressor_vector(j, n_regressors, z_j_input);
          // compute covariance function
          covariance_function = compute_covariance_function(n_regressors, hyperparameters, z_i, z_j);
-         if (i_global==j_global)
-         {
-           covariance_function += hyperparameters[2];
-         }
-         tile[i * N_row + j] = covariance_function;
+         tile[i * N_col + j] = covariance_function;
       }
    }
    return tile;
@@ -351,7 +370,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   std::size_t tile_size = n_train / n_tiles;
   // HPX structures
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> K_tiles;
-  std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> cross_covariance;
+  //hpx::shared_future<std::vector<CALC_TYPE>> cross_covariance;
   // data holders for assembly
   std::vector<CALC_TYPE>   training_input;
   std::vector<CALC_TYPE>   training_output;
@@ -406,16 +425,13 @@ int hpx_main(hpx::program_options::variables_map& vm)
   {
      for (std::size_t j = 0; j < n_tiles; ++j)
      {
-        K_tiles[i * n_tiles + j] = hpx::dataflow(&gen_tile, i, j, tile_size, tile_size, n_tiles, n_regressors, hyperparameters, training_input, training_input);
+        K_tiles[i * n_tiles + j] = hpx::dataflow(&gen_tile, i, j, tile_size, n_tiles, n_regressors, hyperparameters, training_input);
      }
   }
-  //Assemble cross-covariacne (currently not tiled)
-  cross_covariance.resize(1);
-  cross_covariance[0] = hpx::dataflow(&gen_tile, 0, 0,n_train, n_test, 1, n_regressors, hyperparameters, training_input,test_input);
   std::cout << "assembly done " <<'\n';
   std::cout << "Cholesky start " <<'\n';
   // Compute Cholesky decomposition
-  //left_looking_cholesky_tiled(K_tiles,tile_size, n_tiles);
+  left_looking_cholesky_tiled(K_tiles,tile_size, n_tiles);
 
   // Currently quick and dirty triangular solve
   // Assemble to big matrix
@@ -437,13 +453,17 @@ int hpx_main(hpx::program_options::variables_map& vm)
            }
         }
      }
+
   }
   std::cout << "Cholesky done " <<'\n';
+  //Assemble cross-covariacne (currently not tiled)
+  hpx::future<std::vector<CALC_TYPE>> cross_covariance;
+  cross_covariance = hpx::dataflow(&gen_cross_covariance, n_train, n_test, n_regressors, hyperparameters, training_input,test_input);
   // convert to boost matrices
   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > L_blas(n_train, n_train);
   L_blas.data() = L;
   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > cross_covariance_blas(n_train, n_test);
-  cross_covariance_blas.data() = cross_covariance[0].get();
+  cross_covariance_blas.data() = cross_covariance.get();
   // convert to boost vectors
   ublas::vector< CALC_TYPE, std::vector<CALC_TYPE> > alpha(n_train);
   alpha.data() = training_output;
