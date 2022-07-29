@@ -5,13 +5,22 @@
 # Run container inside hpx_project folder:
 # sudo docker run -it --rm --user user --name hpx_container hpx_image
 #
+# Run benchmark Script:
+# cd && cd hpx_project && git pull --rebase && chmod +x run_benchmarks.sh && ./run_benchmarks.sh
+#
 # Compile Code: (to speed up ublas '-DNDEBUG -DBOOST_UBLAS_NDEBUG')
 # cd && cd hpx_project && rm -rf build && git pull --rebase && mkdir build && cd build && cmake .. && make all
 # ./cholesky_hpx --n_train 1000 --n_test 1000 --n_regressors 100 --n_tiles 1 --cholesky left
+#
 # ijkalgorithm   prod   axpy_prod  block_prod
 #   1.335       7.061    1.330       1.278
+#
 # Run Code:
 # ./hpx_program
+#
+# Run Script:
+# cd && cd hpx_project/scripts && chmod +x tiles_script.sh && ./tiles_script.sh 10 100 10 1000 1000 100 left | tee -a tiles_result.txt
+# cd && cd hpx_project/scripts && chmod +x data_script.sh && ./data_script.sh 1000 5000 1000 10 1000 100 left | tee -a data_result.txt
 #
 # Update Repository:
 # git add . && git commit -m "comment" && git push
