@@ -9,5 +9,5 @@ N_REG=$6
 N_CHOLESKY=$7
 for (( i=$START; i<= $END; i=i+$STEP ))
 do
-    cd ../build && ./cholesky_hpx --n_train $N_TRAIN --n_test $N_TEST --n_regressors $N_REG --n_tiles $i --cholesky $N_CHOLESKY
+    cd ../build && ./hpx_cholesky --n_train $N_TRAIN --n_test $N_TEST --n_regressors $N_REG --n_tiles $i --cholesky $N_CHOLESKY
 done
