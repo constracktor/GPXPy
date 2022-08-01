@@ -1,3 +1,8 @@
+// Disable ublas debug mode
+#ifndef NDEBUG
+  #define BOOST_UBLAS_NDEBUG
+#endif
+
 #define CALC_TYPE double
 #define TYPE "%lf"
 #include <math.h>

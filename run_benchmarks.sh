@@ -1,6 +1,6 @@
 #!/bin/bash
 # Compile Code
-cd && cd hpx_project && rm -rf build && mkdir build && cd build && cmake .. && make all
+cd && cd hpx_project && rm -rf build && mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release && make all
 # Run both scripts for for each tiled-decomposition
 
 # Run cores_script
