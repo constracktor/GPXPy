@@ -237,6 +237,31 @@ std::vector<CALC_TYPE> gemm(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
    return C_updated;
 }
 
+//C = C - A * B^T
+std::vector<CALC_TYPE> t_gemm(std::vector<CALC_TYPE> A,
+                              std::vector<CALC_TYPE> B,
+                              std::vector<CALC_TYPE> C,
+                              std::size_t N)
+{
+  // solution vector
+  std::vector<CALC_TYPE> C_updated;
+  C.resize(N * N);
+  // convert to boost matrices
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
+  A_blas.data() = A;
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > B_blas(N, N);
+  B_blas.data() = B;
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > C_blas(N, N);
+  C_blas.data() = C;
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > C_updated_blas(N, N);
+  // GEMM
+  //ublas::opb_prod(A_blas, ublas::trans(B_blas),C_updated_blas);
+  //C_updated_blas = C_blas - C_updated_blas;
+  C_updated_blas = C_blas - ublas::prod(A_blas, ublas::trans(B_blas));
+  // reformat to std::vector
+  C_updated = C_updated_blas.data();
+  return C_updated;
+}
 ////////////////////////////////////////////////////////////////////////////////
 // Tiled Cholesky Algorithms
 void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles, std::size_t N, std::size_t n_tiles)
@@ -280,7 +305,8 @@ void left_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC
       for (std::size_t m = k + 1; m < n_tiles; m++)
       {
         // GEMM
-        ft_tiles[m * n_tiles + k] = hpx::dataflow(&gemm, ft_tiles[m * n_tiles + n], ft_tiles[k * n_tiles + n], ft_tiles[m * n_tiles + k], N);
+        //ft_tiles[m * n_tiles + k] = hpx::dataflow(&gemm, ft_tiles[m * n_tiles + n], ft_tiles[k * n_tiles + n], ft_tiles[m * n_tiles + k], N);
+        ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::unwrapping(t_gemm), ft_tiles[m * n_tiles + n], ft_tiles[k * n_tiles + n], ft_tiles[m * n_tiles + k], N);
       }
     }
     // POTRF
@@ -346,7 +372,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   std::size_t tile_size = n_train / n_tiles;
   // HPX structures
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> K_tiles;
-  //hpx::shared_future<std::vector<CALC_TYPE>> cross_covariance;
+  hpx::shared_future<std::vector<CALC_TYPE>> cross_covariance;
   // data holders for assembly
   std::vector<CALC_TYPE>   training_input;
   std::vector<CALC_TYPE>   training_output;
@@ -406,7 +432,6 @@ int hpx_main(hpx::program_options::variables_map& vm)
      }
   }
   //Assemble cross-covariacne (currently not tiled)
-  hpx::future<std::vector<CALC_TYPE>> cross_covariance;
   cross_covariance = hpx::dataflow(&gen_cross_covariance, n_train, n_test, n_regressors, hyperparameters, training_input,test_input);
   // Stop timer - wrong since not blocking
   CALC_TYPE t_elapsed_assemble = t_start_assemble.elapsed();
