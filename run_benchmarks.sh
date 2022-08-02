@@ -19,7 +19,7 @@ cd && cd hpx_project/scripts && chmod +x tiles_script.sh && ./tiles_script.sh $S
 
 # Run data_script
 START=1000
-END=5000
+END=10000
 STEP=1000
 N_TILES=10
 N_TEST=1000
