@@ -229,8 +229,9 @@ std::vector<CALC_TYPE> gemm(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
    C_blas.data() = C;
    ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > C_updated_blas(N, N);
    // GEMM
-   //C_updated_blas = C_blas - ublas::axpy_prod(A_blas, ublas::trans(B_blas),A_blas);
-   C_updated_blas = C_blas - ublas::prod(A_blas, ublas::trans(B_blas));
+   ublas::axpy_prod(A_blas, ublas::trans(B_blas),A_blas,C_updated_blas);
+   C_updated_blas = C_blas - C_updated_blas;
+   //C_updated_blas = C_blas - ublas::prod(A_blas, ublas::trans(B_blas));
    // reformat to std::vector
    C_updated = C_updated_blas.data();
    return C_updated;
