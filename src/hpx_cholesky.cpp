@@ -320,13 +320,13 @@ int hpx_main(hpx::program_options::variables_map& vm)
     return 1;
   }
   // load training data
-  for (int i = n_regressors -1; i < n_train + n_regressors; i++)
+  for (int i = 0; i < n_train; i++)
   {
     fscanf(training_input_file,TYPE,&training_input[i]);
     fscanf(training_output_file,TYPE,&training_output[i]);
   }
   // load test data
-  for (int i = n_regressors-1; i < n_test + n_regressors; i++)
+  for (int i = 0; i < n_test; i++)
   {
     fscanf(test_input_file,TYPE,&test_input[i]);
     fscanf(test_output_file,TYPE,&test_output[i]);
