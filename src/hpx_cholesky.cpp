@@ -6,29 +6,26 @@
 #define CALC_TYPE double
 #define TYPE "%lf"
 #include <math.h>
+#include <cassert>
+#include <iostream>
 
 #include <hpx/local/chrono.hpp>
 #include <hpx/local/future.hpp>
 #include <hpx/local/init.hpp>
 #include <hpx/modules/format.hpp>
-
-#include <cassert>
+#include <hpx/iostream.hpp>
 
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
-
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
-
 #include <boost/numeric/ublas/vector_expression.hpp>
 #include <boost/numeric/ublas/matrix_expression.hpp>
-
 #include <boost/numeric/ublas/triangular.hpp>
-//https://eigen.tuxfamily.org/index.php?title=Benchmark
-#include <iostream>
+
+#include <boost/numeric/ublas/operation.hpp>
 
 namespace ublas = boost::numeric::ublas;
-// read access to a const matrix is faster!!!!!!!!!!!!!!
 ////////////////////////////////////////////////////////////////////////////////
 // GP functions to assemble K
 std::vector<CALC_TYPE> compute_regressor_vector(std::size_t row, std::size_t n_regressors, std::vector<CALC_TYPE> input)
@@ -165,7 +162,7 @@ std::vector<CALC_TYPE> syrk(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
   B_blas.data() = B;
   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_updated_blas(N, N);
   //SYRK
-  A_updated_blas = A_blas - ublas::prod(B_blas,ublas::trans(B_blas));
+  A_updated_blas = A_blas - ublas::axpy_prod(B_blas,ublas::trans(B_blas));
   // reformat to std::vector
   A_updated = A_updated_blas.data();
   return A_updated;
@@ -191,7 +188,7 @@ std::vector<CALC_TYPE> potrf(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
     // check if positive
     if (qL_kk <= 0)
     {
-      std::cout << qL_kk << '\n';
+      hpx::cout << qL_kk << '\n' << std::flush;
     }
     else
     {
@@ -202,7 +199,7 @@ std::vector<CALC_TYPE> potrf(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
       ublas::matrix_column<ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> >> cLk(L_blas, k);
       ublas::project( cLk, ublas::range(k+1, N) )
         = ( ublas::project( ublas::column(A_blas, k), ublas::range(k+1, N) )
-            - ublas::prod( ublas::project(L_blas, ublas::range(k+1, N), ublas::range(0, k)),
+            - ublas::axpy_prod( ublas::project(L_blas, ublas::range(k+1, N), ublas::range(0, k)),
                     ublas::project(ublas::row(L_blas, k), ublas::range(0, k) ) ) ) / L_kk;
     }
   }
@@ -232,7 +229,7 @@ std::vector<CALC_TYPE> gemm(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
    C_blas.data() = C;
    ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > C_updated_blas(N, N);
    // GEMM
-   C_updated_blas = C_blas - ublas::prod(A_blas, ublas::trans(B_blas));
+   C_updated_blas = C_blas - ublas::axpy_prod(A_blas, ublas::trans(B_blas));
    // reformat to std::vector
    C_updated = C_updated_blas.data();
    return C_updated;
@@ -475,7 +472,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   // Start timer
   hpx::chrono::high_resolution_timer t_start_predict;
   // make predictions
-  alpha = ublas::prod(ublas::trans(cross_covariance_blas), alpha);
+  alpha = ublas::axpy_prod(ublas::trans(cross_covariance_blas), alpha);
   // compute error
   CALC_TYPE error = ublas::norm_2(alpha - y_test);
   // Stop timer

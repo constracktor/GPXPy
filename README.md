@@ -2,6 +2,8 @@
 
 description tbd.
 
+read access to a const matrix is faster
+
 ijkalgorithm   prod   axpy_prod  block_prod
  1.335       7.061    1.330       1.278
 
@@ -31,11 +33,11 @@ Run Code:
 
 ### Debug Docker Container
 
-Build image inside petsc_project folder:
+Build image inside hpx_project folder:
 
 `sudo docker build . -f docker/debug/Dockerfile -t hpx_debug_image`
 
-Run container inside petsc_project folder:
+Run container inside hpx_project folder:
 
 `sudo docker run -it --rm --user user --name hpx_debug_container hpx_debug_image`
 
