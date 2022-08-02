@@ -120,7 +120,7 @@ std::vector<CALC_TYPE> zeros(std::size_t N)
   std::fill(zeros.begin(), zeros.end(), 0.0);
   return zeros;
 }
-
+/*
 // solve L * B^T = A^T and return B where L triangular
 std::vector<CALC_TYPE> trsm(hpx::shared_future<std::vector<CALC_TYPE>> ft_L,
                             hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
@@ -236,12 +236,93 @@ std::vector<CALC_TYPE> gemm(hpx::shared_future<std::vector<CALC_TYPE>> ft_A,
    C_updated = C_updated_blas.data();
    return C_updated;
 }
+*/
+// Cholesky decomposition of A -> return factorized matrix L
+std::vector<CALC_TYPE> potrf(std::vector<CALC_TYPE> A,
+                             std::size_t N)
+{
+  // solution vector
+  std::vector<CALC_TYPE> L;
+  L.resize(N * N);
+  // convert to boost matrices
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
+  A_blas.data() = A;
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > L_blas(N, N);
+  // POTRF (compute Cholesky)
+  for (size_t k=0 ; k < N; k++)
+  {
+    // compute squared diagonal entry
+    CALC_TYPE qL_kk = A_blas(k,k) - ublas::inner_prod( ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ), ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ) );
+    // check if positive
+    if (qL_kk <= 0)
+    {
+      hpx::cout << qL_kk << '\n' << std::flush;
+    }
+    else
+    {
+      // set diagonal entry
+      CALC_TYPE L_kk = std::sqrt( qL_kk );
+      L_blas(k,k) = L_kk;
+      // compute corresponding column
+      ublas::matrix_column<ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> >> cLk(L_blas, k);
+      ublas::project( cLk, ublas::range(k+1, N) )
+        = ( ublas::project( ublas::column(A_blas, k), ublas::range(k+1, N) )
+            - ublas::prod( ublas::project(L_blas, ublas::range(k+1, N), ublas::range(0, k)),
+                    ublas::project(ublas::row(L_blas, k), ublas::range(0, k) ) ) ) / L_kk;
+    }
+  }
+  // reformat to std::vector
+  L = L_blas.data();
+  return L;
+}
+
+// solve L * B^T = A^T and return B where L triangular
+std::vector<CALC_TYPE> trsm(std::vector<CALC_TYPE> L,
+                            std::vector<CALC_TYPE> A,
+                            std::size_t N)
+{
+  // solution vector
+  std::vector<CALC_TYPE> B;
+  B.resize(N * N);
+  // convert to boost matrices
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > L_blas(N, N);
+  L_blas.data() = L;
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
+  A_blas.data() = A;
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > B_blas(N, N);
+  // TRSM
+  B_blas = ublas::trans(ublas::solve(L_blas, ublas::trans(A_blas), ublas::lower_tag()));
+  // reformat to std::vector
+  B = B_blas.data();
+  return B;
+}
+
+//  A = A - B * B^T
+std::vector<CALC_TYPE> syrk(std::vector<CALC_TYPE> A,
+                            std::vector<CALC_TYPE> B,
+                            std::size_t N)
+{
+  // solution vector
+  std::vector<CALC_TYPE> A_updated;
+  A_updated.resize(N * N);
+  // convert to boost matrices
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
+  A_blas.data() = A;
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > B_blas(N, N);
+  B_blas.data() = B;
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_updated_blas(N, N);
+  //SYRK
+  A_updated_blas = A_blas - ublas::prod(B_blas,ublas::trans(B_blas));
+  // reformat to std::vector
+  A_updated = A_updated_blas.data();
+  return A_updated;
+}
 
 //C = C - A * B^T
-std::vector<CALC_TYPE> t_gemm(std::vector<CALC_TYPE> A,
-                              std::vector<CALC_TYPE> B,
-                              std::vector<CALC_TYPE> C,
-                              std::size_t N)
+std::vector<CALC_TYPE> gemm(std::vector<CALC_TYPE> A,
+                            std::vector<CALC_TYPE> B,
+                            std::vector<CALC_TYPE> C,
+                            std::size_t N)
 {
   // solution vector
   std::vector<CALC_TYPE> C_updated;
@@ -269,20 +350,20 @@ void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CAL
   for (std::size_t k = 0; k < n_tiles; k++)
   {
     // POTRF
-    ft_tiles[k * n_tiles + k] = hpx::dataflow(&potrf, ft_tiles[k * n_tiles + k], N);
+    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::unwrapping(potrf), ft_tiles[k * n_tiles + k], N);
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
       // TRSM
-      ft_tiles[m * n_tiles + k] = hpx::dataflow(&trsm, ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
+      ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::unwrapping(trsm), ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
     }
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
       // SYRK
-      ft_tiles[m * n_tiles + m] = hpx::dataflow(&syrk, ft_tiles[m * n_tiles + m], ft_tiles[m * n_tiles + k], N);
+      ft_tiles[m * n_tiles + m] = hpx::dataflow(hpx::unwrapping(syrk), ft_tiles[m * n_tiles + m], ft_tiles[m * n_tiles + k], N);
       for (std::size_t n = k + 1; n < m; n++)
       {
         // GEMM
-        ft_tiles[m * n_tiles + n] = hpx::dataflow(&gemm, ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
+        ft_tiles[m * n_tiles + n] = hpx::dataflow(hpx::unwrapping(gemm), ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
       }
     }
     // in theory not mandadory
@@ -301,20 +382,19 @@ void left_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC
     for (std::size_t n = 0; n < k; n++)
     {
       // SYRK
-      ft_tiles[k * n_tiles + k] = hpx::dataflow(&syrk, ft_tiles[k * n_tiles + k], ft_tiles[k * n_tiles + n], N);
+      ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::unwrapping(syrk), ft_tiles[k * n_tiles + k], ft_tiles[k * n_tiles + n], N);
       for (std::size_t m = k + 1; m < n_tiles; m++)
       {
         // GEMM
-        //ft_tiles[m * n_tiles + k] = hpx::dataflow(&gemm, ft_tiles[m * n_tiles + n], ft_tiles[k * n_tiles + n], ft_tiles[m * n_tiles + k], N);
-        ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::unwrapping(t_gemm), ft_tiles[m * n_tiles + n], ft_tiles[k * n_tiles + n], ft_tiles[m * n_tiles + k], N);
+        ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::unwrapping(gemm), ft_tiles[m * n_tiles + n], ft_tiles[k * n_tiles + n], ft_tiles[m * n_tiles + k], N);
       }
     }
     // POTRF
-    ft_tiles[k * n_tiles + k] = hpx::dataflow(&potrf, ft_tiles[k * n_tiles + k], N);
+    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::unwrapping(potrf), ft_tiles[k * n_tiles + k], N);
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
       // TRSM
-      ft_tiles[m * n_tiles + k] = hpx::dataflow(&trsm, ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
+      ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::unwrapping(trsm), ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
     }
     // in theory not mandadory
     for (std::size_t m = k + 1; m < n_tiles; m++)
@@ -334,18 +414,18 @@ void top_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC_
       for (std::size_t m = 0; m < n; m++)
       {
         // GEMM
-        ft_tiles[k * n_tiles + n] = hpx::dataflow(&gemm, ft_tiles[k * n_tiles + m], ft_tiles[n * n_tiles + m], ft_tiles[k * n_tiles + n], N);
+        ft_tiles[k * n_tiles + n] = hpx::dataflow(hpx::unwrapping(gemm), ft_tiles[k * n_tiles + m], ft_tiles[n * n_tiles + m], ft_tiles[k * n_tiles + n], N);
       }
       // TRSM
-      ft_tiles[k * n_tiles + n] = hpx::dataflow(&trsm, ft_tiles[n * n_tiles + n], ft_tiles[k * n_tiles + n], N);
+      ft_tiles[k * n_tiles + n] = hpx::dataflow(hpx::unwrapping(trsm), ft_tiles[n * n_tiles + n], ft_tiles[k * n_tiles + n], N);
     }
     for (std::size_t n = 0; n < k; n++)
     {
       // SYRK
-      ft_tiles[k * n_tiles + k] = hpx::dataflow(&syrk, ft_tiles[k * n_tiles + k], ft_tiles[k * n_tiles + n], N);
+      ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::unwrapping(syrk), ft_tiles[k * n_tiles + k], ft_tiles[k * n_tiles + n], N);
     }
     // POTRF
-    ft_tiles[k * n_tiles + k] = hpx::dataflow(&potrf, ft_tiles[k * n_tiles + k], N);
+    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::unwrapping(potrf), ft_tiles[k * n_tiles + k], N);
     // in theory not mandadory
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
