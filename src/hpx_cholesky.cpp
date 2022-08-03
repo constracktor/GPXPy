@@ -87,6 +87,20 @@ std::vector<CALC_TYPE> gen_tile_covariance(std::size_t row, std::size_t col, std
    return tile;
 }
 
+std::vector<CALC_TYPE> gen_tile_output(std::size_t row, std::size_t N, std::vector<CALC_TYPE> output)
+{
+   std::size_t i_global;
+   // Initialize tile
+   std::vector<CALC_TYPE> tile;
+   tile.resize(N);
+   for(std::size_t i = 0; i < N; i++)
+   {
+      i_global = N * row + i;
+      tile[i] = output[i_global];
+   }
+   return tile;
+}
+
 std::vector<CALC_TYPE> gen_cross_covariance(std::size_t N_row, std::size_t N_col, std::size_t n_regressors, CALC_TYPE *hyperparameters, std::vector<CALC_TYPE> z_i_input, std::vector<CALC_TYPE> z_j_input)
 {
    std::size_t i_global, j_global;
@@ -105,20 +119,6 @@ std::vector<CALC_TYPE> gen_cross_covariance(std::size_t N_row, std::size_t N_col
          covariance_function = compute_covariance_function(n_regressors, hyperparameters, z_i, z_j);
          tile[i * N_col + j] = covariance_function;
       }
-   }
-   return tile;
-}
-
-std::vector<CALC_TYPE> gen_tile_output(std::size_t row, std::size_t N, std::vector<CALC_TYPE> output)
-{
-   std::size_t i_global;
-   // Initialize tile
-   std::vector<CALC_TYPE> tile;
-   tile.resize(N);
-   for(std::size_t i = 0; i < N; i++)
-   {
-      i_global = N * row + i;
-      tile[i] = output[i_global];
    }
    return tile;
 }
@@ -295,20 +295,20 @@ void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CAL
   for (std::size_t k = 0; k < n_tiles; k++)
   {
     // POTRF
-    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::unwrapping(potrf), ft_tiles[k * n_tiles + k], N);
+    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&potrf), "cholesky_tiled"), ft_tiles[k * n_tiles + k], N);
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
       // TRSM
-      ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::unwrapping(trsm), ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
+      ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&trsm), "cholesky_tiled"), ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
     }
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
       // SYRK
-      ft_tiles[m * n_tiles + m] = hpx::dataflow(hpx::unwrapping(syrk), ft_tiles[m * n_tiles + m], ft_tiles[m * n_tiles + k], N);
+      ft_tiles[m * n_tiles + m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&syrk), "cholesky_tiled"), ft_tiles[m * n_tiles + m], ft_tiles[m * n_tiles + k], N);
       for (std::size_t n = k + 1; n < m; n++)
       {
         // GEMM
-        ft_tiles[m * n_tiles + n] = hpx::dataflow(hpx::unwrapping(gemm), ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
+        ft_tiles[m * n_tiles + n] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemm), "cholesky_tiled"), ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
       }
     }
   }
@@ -321,19 +321,19 @@ void left_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC
     for (std::size_t n = 0; n < k; n++)
     {
       // SYRK
-      ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::unwrapping(syrk), ft_tiles[k * n_tiles + k], ft_tiles[k * n_tiles + n], N);
+      ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&syrk), "cholesky_tiled"), ft_tiles[k * n_tiles + k], ft_tiles[k * n_tiles + n], N);
       for (std::size_t m = k + 1; m < n_tiles; m++)
       {
         // GEMM
-        ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::unwrapping(gemm), ft_tiles[m * n_tiles + n], ft_tiles[k * n_tiles + n], ft_tiles[m * n_tiles + k], N);
+        ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemm), "cholesky_tiled"), ft_tiles[m * n_tiles + n], ft_tiles[k * n_tiles + n], ft_tiles[m * n_tiles + k], N);
       }
     }
     // POTRF
-    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::unwrapping(potrf), ft_tiles[k * n_tiles + k], N);
+    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&potrf), "cholesky_tiled"), ft_tiles[k * n_tiles + k], N);
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
       // TRSM
-      ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::unwrapping(trsm), ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
+      ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&trsm), "cholesky_tiled"), ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
     }
   }
 }
@@ -347,21 +347,20 @@ void top_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC_
       for (std::size_t m = 0; m < n; m++)
       {
         // GEMM
-        ft_tiles[k * n_tiles + n] = hpx::dataflow(hpx::unwrapping(gemm), ft_tiles[k * n_tiles + m], ft_tiles[n * n_tiles + m], ft_tiles[k * n_tiles + n], N);
+        ft_tiles[k * n_tiles + n] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemm), "cholesky_tiled"), ft_tiles[k * n_tiles + m], ft_tiles[n * n_tiles + m], ft_tiles[k * n_tiles + n], N);
       }
       // TRSM
-      ft_tiles[k * n_tiles + n] = hpx::dataflow(hpx::unwrapping(trsm), ft_tiles[n * n_tiles + n], ft_tiles[k * n_tiles + n], N);
+      ft_tiles[k * n_tiles + n] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&trsm), "cholesky_tiled"), ft_tiles[n * n_tiles + n], ft_tiles[k * n_tiles + n], N);
     }
     for (std::size_t n = 0; n < k; n++)
     {
       // SYRK
-      ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::unwrapping(syrk), ft_tiles[k * n_tiles + k], ft_tiles[k * n_tiles + n], N);
+      ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&syrk), "cholesky_tiled"), ft_tiles[k * n_tiles + k], ft_tiles[k * n_tiles + n], N);
     }
     // POTRF
-    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::unwrapping(potrf), ft_tiles[k * n_tiles + k], N);
+    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&potrf), "cholesky_tiled"), ft_tiles[k * n_tiles + k], N);
   }
 }
-
 ////////////////////////////////////////////////////////////////////////////////
 // Tiled Triangular Solve Algorithms
 void forward_solve_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles, std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_rhs, std::size_t N, std::size_t n_tiles)
@@ -369,11 +368,11 @@ void forward_solve_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>>
   for (std::size_t k = 0; k < n_tiles; k++)
   {
     // TRSM
-    ft_rhs[k] = hpx::dataflow(hpx::unwrapping(trsm_l), ft_tiles[k * n_tiles + k], ft_rhs[k], N);
+    ft_rhs[k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&trsm_l), "triangular_solve_tiled"), ft_tiles[k * n_tiles + k], ft_rhs[k], N);
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
       // GEMV
-      ft_rhs[m] = hpx::dataflow(hpx::unwrapping(gemv_l), ft_tiles[m * n_tiles + k], ft_rhs[k], ft_rhs[m], N);
+      ft_rhs[m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemv_l), "triangular_solve_tiled"), ft_tiles[m * n_tiles + k], ft_rhs[k], ft_rhs[m], N);
     }
   }
 }
@@ -383,15 +382,14 @@ void backward_solve_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>
   for (int k = n_tiles - 1; k >= 0; k--) // int instead of std::size_t for last comparison
   {
     // TRSM
-    ft_rhs[k] = hpx::dataflow(hpx::unwrapping(trsm_u), ft_tiles[k * n_tiles + k], ft_rhs[k], N);
+    ft_rhs[k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&trsm_u), "triangular_solve_tiled"), ft_tiles[k * n_tiles + k], ft_rhs[k], N);
     for (int m = k - 1; m >= 0; m--) // int instead of std::size_t for last comparison
     {
       // GEMV
-      ft_rhs[m] = hpx::dataflow(hpx::unwrapping(gemv_u), ft_tiles[k * n_tiles + m], ft_rhs[k], ft_rhs[m], N);
+      ft_rhs[m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemv_u), "triangular_solve_tiled"), ft_tiles[k * n_tiles + m], ft_rhs[k], ft_rhs[m], N);
     }
   }
 }
-
 ////////////////////////////////////////////////////////////////////////////////
 // Main functions
 int hpx_main(hpx::program_options::variables_map& vm)
@@ -412,7 +410,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   // HPX structures
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> K_tiles;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> output_tiles;
-  hpx::shared_future<std::vector<CALC_TYPE>> cross_covariance;
+  std::vector<CALC_TYPE> cross_covariance;
   // data holders for assembly
   std::vector<CALC_TYPE>   training_input;
   std::vector<CALC_TYPE>   training_output;
@@ -455,63 +453,46 @@ int hpx_main(hpx::program_options::variables_map& vm)
   fclose(training_output_file);
   fclose(test_input_file);
   fclose(test_output_file);
-  // Start total timer
-  hpx::chrono::high_resolution_timer t_start_total;
   //////////////////////////////////////////////////////////////////////////////
   // ASSEMBLE
-  // Start timer
-  hpx::chrono::high_resolution_timer t_start_assemble;
+  //Assemble cross-covariacne (not tiled)
+  cross_covariance = hpx::dataflow(hpx::annotated_function(&gen_cross_covariance, "gen_cross_covariance"), n_train, n_test, n_regressors, hyperparameters, training_input,test_input).get();
   // Assemble covariance matrix vector
   K_tiles.resize(n_tiles * n_tiles);
-  // Assemble K
   for (std::size_t i = 0; i < n_tiles; i++)
   {
-     for (std::size_t j = 0; j < n_tiles; ++j)
+     for (std::size_t j = 0; j <= i; ++j)
      {
-        K_tiles[i * n_tiles + j] = hpx::dataflow(&gen_tile_covariance, i, j, tile_size, n_tiles, n_regressors, hyperparameters, training_input);
+        K_tiles[i * n_tiles + j] = hpx::dataflow(hpx::annotated_function(&gen_tile_covariance, "gen_tiles"), i, j, tile_size, n_tiles, n_regressors, hyperparameters, training_input);
      }
   }
   //Assemble output data
   output_tiles.resize(n_tiles);
   for (std::size_t i = 0; i < n_tiles; i++)
   {
-    output_tiles[i] = hpx::dataflow(&gen_tile_output, i, tile_size, training_output);
+    output_tiles[i] = hpx::dataflow(hpx::annotated_function(&gen_tile_output, "gen_tiles"), i, tile_size, training_output);
   }
-  //Assemble cross-covariacne (not tiled)
-  cross_covariance = hpx::dataflow(&gen_cross_covariance, n_train, n_test, n_regressors, hyperparameters, training_input,test_input);
-  // Stop timer - wrong since not blocking
-  CALC_TYPE t_elapsed_assemble = t_start_assemble.elapsed();
   //////////////////////////////////////////////////////////////////////////////
   // CHOLESKY
-  // Start timer
-  hpx::chrono::high_resolution_timer t_start_cholesky;
   // Compute Cholesky decomposition
   if (cholesky.compare("left") == 0)
   {
-    left_looking_cholesky_tiled(K_tiles,tile_size, n_tiles);
+    left_looking_cholesky_tiled(K_tiles, tile_size, n_tiles);
   }
   else if (cholesky.compare("right") == 0)
   {
-    right_looking_cholesky_tiled(K_tiles,tile_size, n_tiles);
+    right_looking_cholesky_tiled(K_tiles, tile_size, n_tiles);
   }
   else // out is set to "top" per default
   {
-    top_looking_cholesky_tiled(K_tiles,tile_size, n_tiles);
+    top_looking_cholesky_tiled(K_tiles, tile_size, n_tiles);
   }
-  // Stop timer
-  CALC_TYPE t_elapsed_cholesky = t_start_cholesky.elapsed();
   //////////////////////////////////////////////////////////////////////////////
   // TRIANGULAR SOLVE
-  // Start timer
-  hpx::chrono::high_resolution_timer t_start_triangular;
-  forward_solve_tiled(K_tiles,output_tiles,tile_size,n_tiles);
-  backward_solve_tiled(K_tiles,output_tiles,tile_size,n_tiles);
-  // Stop timer
-  CALC_TYPE t_elapsed_triangular = t_start_triangular.elapsed();
+  forward_solve_tiled(K_tiles, output_tiles, tile_size, n_tiles);
+  backward_solve_tiled(K_tiles, output_tiles, tile_size, n_tiles);
   //////////////////////////////////////////////////////////////////////////////
   // PREDICT
-  // Start timer
-  hpx::chrono::high_resolution_timer t_start_predict;
   // assemble alpha
   std::vector<CALC_TYPE> alpha;
   alpha.resize(n_train);
@@ -528,20 +509,16 @@ int hpx_main(hpx::program_options::variables_map& vm)
   ublas::vector< CALC_TYPE, std::vector<CALC_TYPE> > alpha_blas(n_train);
   alpha_blas.data() = alpha;
   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > cross_covariance_blas(n_train, n_test);
-  cross_covariance_blas.data() = cross_covariance.get();
+  cross_covariance_blas.data() = cross_covariance;
   ublas::vector< CALC_TYPE, std::vector<CALC_TYPE> > y_test(n_test);
   y_test.data() = test_output;
   // make predictions
   alpha_blas = ublas::prod(ublas::trans(cross_covariance_blas), alpha_blas);
   // compute error
   CALC_TYPE error = ublas::norm_2(alpha_blas - y_test);
-  // Stop timer
-  CALC_TYPE t_elapsed_predict = t_start_predict.elapsed();
   //////////////////////////////////////////////////////////////////////////////
-  // Stop global timer
-  CALC_TYPE t_elapsed_total = t_start_total.elapsed();
   // print output information
-  printf("%ld;%lf;%lf;%lf;%lf;%lf;%lf;%ld;%ld;%ld;%s;\n", n_tiles, t_elapsed_total, t_elapsed_assemble, t_elapsed_cholesky, t_elapsed_triangular, t_elapsed_predict, error / n_test, n_train, n_test, n_regressors, cholesky.c_str());
+  printf("%ld;%lf;%ld;%ld;%ld;%s;\n", n_tiles, error / n_test, n_train, n_test, n_regressors, cholesky.c_str());
   return hpx::local::finalize();    // Handles HPX shutdown
 }
 
