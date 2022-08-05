@@ -7,7 +7,9 @@ read access to a const matrix is faster
 ijkalgorithm   prod   axpy_prod  block_prod
  1.335       7.061    1.330       1.278
 
-try tcmalloc
+sudo docker build . -f docker/Dockerfile -t hpx_base_image
+
+sudo docker run -it --rm --user user --name hpx_base_container hpx_base_image
 
 ## Release
 
