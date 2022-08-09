@@ -16,3 +16,5 @@ RUN git clone https://github.com/constracktor/hpx_project.git
 
 # install dependencies
 RUN cd hpx_project/dependencies && ./build-all.sh Release
+
+#cd && cd hpx_project/dependencies && git pull --rebase && ./build-all.sh Release
