@@ -4,9 +4,6 @@ description tbd.
 
 read access to a const matrix is faster
 
-ijkalgorithm   prod   axpy_prod  block_prod
- 1.335       7.061    1.330       1.278
-
 sudo docker build . -f docker/Dockerfile -t hpx_base_image
 
 sudo docker run -it --rm --user user --name hpx_base_container hpx_base_image
@@ -68,7 +65,7 @@ cd && cd hpx_project/benchmark_scripts && ./data_script.sh 1000 5000 1000 10 100
 
 Benchmark Script:
 
-`cd && cd hpx_project && git pull --rebase && ./run_benchmarks.sh`
+`export APEX_SCREEN_OUTPUT=1 && cd && cd hpx_project && git pull --rebase && ./run_benchmarks.sh`
 
 
 ## Git Commands

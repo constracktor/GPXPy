@@ -15,6 +15,12 @@ echo ${ASSEMBLY_TIME}
 CHOLESKY_TIME=$(sed -n "$(sed -n '/"cholesky_tiled"/=' ${APEX_FILE}) p" ${APEX_FILE})
 CHOLESKY_TIME=$(echo ${CHOLESKY_TIME%?} | sed 's/.*,//')
 echo ${CHOLESKY_TIME}
+SOLVE_TIME=$(sed -n "$(sed -n '/"triangular_solve_tiled"/=' ${APEX_FILE}) p" ${APEX_FILE})
+SOLVE_TIME=$(echo ${SOLVE_TIME%?} | sed 's/.*,//')
+echo ${SOLVE_TIME}
+PREDICTION_TIME=$(sed -n "$(sed -n '/"prediction_tiled"/=' ${APEX_FILE}) p" ${APEX_FILE})
+PREDICTION_TIME=$(echo ${PREDICTION_TIME%?} | sed 's/.*,//')
+echo ${PREDICTION_TIME}
 
 
 cat ${APEX_FILE}
