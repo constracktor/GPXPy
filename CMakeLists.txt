@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 project(hpx_project CXX)
-list(APPEND CMAKE_PREFIX_PATH "/home/user/hpx/build/lib/lib/cmake/HPX/")
+#list(APPEND CMAKE_PREFIX_PATH "/home/user/hpx/build/lib/lib/cmake/HPX/")
+list(APPEND CMAKE_PREFIX_PATH "/home/user/hpx_project/dependencies/build/hpx/build/lib/cmake/HPX")
 find_package(HPX REQUIRED)
 add_executable(hpx_cholesky src/hpx_cholesky.cpp)
 target_link_libraries(hpx_cholesky HPX::hpx HPX::wrap_main HPX::iostreams_component)

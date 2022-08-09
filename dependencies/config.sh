@@ -27,6 +27,6 @@ export HWLOC_VERSION=1.11.12
 export HPX_VERSION=1.8.0
 
 # Max number of parallel jobs
-export PARALLEL_BUILD=12 #$(grep -c ^processor /proc/cpuinfo)
+export PARALLEL_BUILD=$(grep -c ^processor /proc/cpuinfo)
 
 export LIB_DIR_NAME=lib

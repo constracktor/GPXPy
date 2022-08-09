@@ -64,10 +64,11 @@ Tile Number Loop:
 Training Size Loop:
 
 `cd && cd hpx_project/scripts && chmod +x data_script.sh && ./data_script.sh 1000 5000 1000 10 1000 100 left | tee -a data_result.txt`
+cd && cd hpx_project/benchmark_scripts && ./data_script.sh 1000 5000 1000 10 1000 100 left | tee -a data_result.txt
 
 Benchmark Script:
 
-`cd && cd hpx_project && git pull --rebase && chmod +x run_benchmarks.sh && ./run_benchmarks.sh`
+`cd && cd hpx_project && git pull --rebase && ./run_benchmarks.sh`
 
 
 ## Git Commands

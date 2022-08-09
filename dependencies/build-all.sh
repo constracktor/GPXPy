@@ -53,7 +53,6 @@ mkdir -p ${SOURCE_ROOT} ${INSTALL_ROOT}
     echo "Building CMake"
     ./build-cmake.sh
     export CMAKE_COMMAND=${INSTALL_ROOT}/cmake/bin/cmake
-    #export CMAKE_COMMAND=cmake
 ################################################################################
 # Dependencies
 ################################################################################
