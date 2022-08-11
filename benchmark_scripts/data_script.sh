@@ -10,4 +10,5 @@ N_CHOLESKY=$7
 for (( i=$START; i<= $END; i=i+$STEP ))
 do
     cd ../build && ./hpx_cholesky --n_train $i --n_test $N_TEST --n_regressors $N_REG --n_tiles $N_TILES --cholesky $N_CHOLESKY
+    ./output_formater $N_TILES $i $N_TEST $N_REG $N_CHOLESKY
 done

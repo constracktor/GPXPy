@@ -1,10 +1,11 @@
 #!/bin/bash
-
-#txt_file="$1"
+N_TILES=$1
+N_TRAIN=$2
+N_TEST=$3
+N_REG=$4
+N_CHOLESKY=$5
 
 APEX_FILE="../build/apex.0.csv"
-
-N_CORES=$(grep -c ^processor /proc/cpuinfo)
 
 TOTAL_TIME=$(sed -n "$(sed -n '/"APEX MAIN"/=' ${APEX_FILE}) p" ${APEX_FILE})
 TOTAL_TIME=$(echo ${TOTAL_TIME%?} | sed 's/.*,//')
@@ -22,5 +23,5 @@ PREDICTION_TIME=$(sed -n "$(sed -n '/"prediction_tiled"/=' ${APEX_FILE}) p" ${AP
 PREDICTION_TIME=$(echo ${PREDICTION_TIME%?} | sed 's/.*,//')
 echo ${PREDICTION_TIME}
 
-
+echo $N_TILES";"$N_TRAIN
 cat ${APEX_FILE}
