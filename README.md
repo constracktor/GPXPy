@@ -65,7 +65,7 @@ cd && cd hpx_project/benchmark_scripts && ./data_script.sh 1000 5000 1000 10 100
 
 Benchmark Script:
 
-`export APEX_SCREEN_OUTPUT=1 && cd && cd hpx_project && git pull --rebase && ./run_benchmarks.sh`
+`export APEX_SCREEN_OUTPUT=1 APEX_CSV_OUTPUT=1 && cd && cd hpx_project && git pull --rebase && ./run_benchmarks.sh`
 
 
 ## Git Commands

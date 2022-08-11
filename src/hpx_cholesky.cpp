@@ -623,7 +623,8 @@ int hpx_main(hpx::program_options::variables_map& vm)
 
   //////////////////////////////////////////////////////////////////////////////
   // print output information
-  printf("%ld;%lf;%ld;%ld;%ld;%s;\n", n_tiles, error / n_test, n_train, n_test, n_regressors, cholesky.c_str());
+  printf("\"error\",%lf,", error / n_test);
+
   std::size_t K=3;
   std::size_t L=2;
   std::vector<CALC_TYPE> A;
@@ -654,7 +655,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   b = b_blas.data();
   //b.resize(L);
 
-  std::cout << b[0] <<" " << b[1]<<" "<<b[2]<<'\n';
+  //std::cout << b[0] <<" " << b[1]<<" "<<b[2]<<'\n';
 
 
 
