@@ -4,7 +4,9 @@ SHELL ["/bin/bash","-c"]
 
 # install essentials
 RUN apt-get update -y && apt-get install -y git wget xz-utils bzip2 libz-dev build-essential autoconf
+# install handy tools
 RUN apt-get install -y vim cmake
+
 # add user
 RUN useradd -ms /bin/bash user
 USER user
@@ -17,6 +19,5 @@ RUN git clone https://github.com/constracktor/hpx_project.git
 # install dependencies
 RUN cd hpx_project/dependencies && ./build-all.sh Release
 
-RUN export APEX_SCREENcd_OUTPUT=1 && export APEX_CSV_OUTPUT=1
-
-#cd && cd hpx_project/dependencies && git pull --rebase && ./build-all.sh Release
+# install dependencies manully with
+# cd && cd hpx_project/dependencies && git pull --rebase && ./build-all.sh Release

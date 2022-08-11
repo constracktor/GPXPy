@@ -1,6 +1,11 @@
 #!/bin/bash
+
+# Set variables
+export APEX_SCREEN_OUTPUT=1 APEX_CSV_OUTPUT=1
+export HPXSC_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd )/dependencies"
+export CMAKE_COMMAND=${HPXSC_ROOT}/build/cmake/bin/cmake
 # Compile Code
-cd && cd hpx_project && rm -rf build && mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release && make all
+cd && cd hpx_project && rm -rf build && mkdir build && cd build && $CMAKE_COMMAND .. -DCMAKE_BUILD_TYPE=Release && make all
 # Run both scripts for for each tiled-decomposition
 cd && cd hpx_project/benchmark_scripts && rm tiles_result.txt && rm data_result.txt
 LOOP=5
