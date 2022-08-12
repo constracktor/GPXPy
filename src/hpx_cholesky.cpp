@@ -463,6 +463,7 @@ void prediction_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &f
   for (std::size_t k = 0; k < n_tiles; k++)
   {
       ft_rhs[k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemv_p), "prediction_tiled"), ft_tiles[k], ft_vector, N_row, N_col);
+      std::cout << "predict tile " << k << '\n';
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -556,7 +557,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   cross_covariance_tiles.resize(n_tiles * n_tiles);
   for (std::size_t i = 0; i < n_tiles; i++)
   {
-     cross_covariance_tiles[i * n_tiles] = hpx::dataflow(hpx::annotated_function(&gen_tile_cross_covariance, "assemble_tiled"), i, 0, tile_size_prediction, n_train, n_tiles, n_regressors, hyperparameters, test_input, training_input);
+     cross_covariance_tiles[i] = hpx::dataflow(hpx::annotated_function(&gen_tile_cross_covariance, "assemble_tiled"), i, 0, tile_size_prediction, n_train, n_tiles, n_regressors, hyperparameters, test_input, training_input);
   }
   //Assemble zero prediction
   prediction_tiles.resize(n_tiles);
@@ -592,7 +593,6 @@ int hpx_main(hpx::program_options::variables_map& vm)
   //////////////////////////////////////////////////////////////////////////////
   // write error to file
   CALC_TYPE average_error = ft_error.get() / n_test;
-  printf("\"error\",%lf\n", average_error);
   error_file = fopen("error.csv", "w");
   fprintf(error_file, "\"error\",%lf\n", average_error);
   fclose(error_file);
