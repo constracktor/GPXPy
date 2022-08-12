@@ -463,7 +463,6 @@ void prediction_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &f
   for (std::size_t k = 0; k < n_tiles; k++)
   {
       ft_rhs[k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemv_p), "prediction_tiled"), ft_tiles[k], ft_vector, N_row, N_col);
-      std::cout << "predict tile " << k << '\n';
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
