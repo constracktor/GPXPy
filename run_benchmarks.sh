@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Set variables
 export APEX_SCREEN_OUTPUT=1 APEX_CSV_OUTPUT=1
 export HPXSC_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd )/dependencies"

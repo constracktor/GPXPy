@@ -14,7 +14,7 @@ touch $OUTPUT_FILE && echo 'Cores;Tiles;N_train;N_test;N_regressor;Algorithm;Tot
 
 for (( i=$START; i<=$END; i=i+$STEP ))
 do
-  for (( l=0; l<=$N_LOOP; l=l+1 ))
+  for (( l=0; l<$N_LOOP; l=l+1 ))
   do
     cd ../build && ./hpx_cholesky --n_train $N_TRAIN --n_test $N_TEST --n_regressors $N_REG --n_tiles $i --cholesky $N_CHOLESKY | tee -a $APEX_FILE
     cd ../benchmark_scripts && ./output_formater.sh $i $N_TRAIN $N_TEST $N_REG $N_CHOLESKY $APEX_FILE $OUTPUT_FILE

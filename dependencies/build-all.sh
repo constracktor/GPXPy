@@ -47,26 +47,26 @@ mkdir -p ${SOURCE_ROOT} ${INSTALL_ROOT}
 ################################################################################
 # Build tools
 ################################################################################
-    echo "Building GCC"
-    #./build-gcc.sh
+echo "Building GCC"
+#./build-gcc.sh
 
-    echo "Building CMake"
-    ./build-cmake.sh
-    export CMAKE_COMMAND=${INSTALL_ROOT}/cmake/bin/cmake
+echo "Building CMake"
+./build-cmake.sh
+export CMAKE_COMMAND=${INSTALL_ROOT}/cmake/bin/cmake
 ################################################################################
 # Dependencies
 ################################################################################
-    echo "Building Boost"
-    ./build-boost.sh
+echo "Building Boost"
+./build-boost.sh
 
-    echo "Building hwloc"
-    ./build-hwloc.sh
+echo "Building hwloc"
+./build-hwloc.sh
 
-    echo "Building jemalloc"
-    ./build-jemalloc.sh
+echo "Building jemalloc"
+./build-jemalloc.sh
 
-    echo "Building HPX"
-    ./build-hpx.sh
+echo "Building HPX"
+./build-hpx.sh
 
 ################################################################################
 # HPXSc - for latter

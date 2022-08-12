@@ -657,12 +657,6 @@ int hpx_main(hpx::program_options::variables_map& vm)
 
   //std::cout << b[0] <<" " << b[1]<<" "<<b[2]<<'\n';
 
-
-
-
-
-
-
   return hpx::local::finalize();    // Handles HPX shutdown
 }
 

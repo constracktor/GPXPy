@@ -2,37 +2,20 @@
 
 description tbd.
 
-read access to a const matrix is faster
+## Docker Containers
 
-sudo docker build . -f docker/Dockerfile -t hpx_base_image
+### Release (HPX installed in Release mode)
 
-sudo docker run -it --rm --user user --name hpx_base_container hpx_base_image
-
-## Release
-
-### Release Docker Container
-
-Build image inside petsc_project folder:
+Build image inside hpx_project folder:
 
 `sudo docker build . -f docker/release/Dockerfile -t hpx_release_image`
 
 Start container:
 
-`sudo docker run -it --rm --user user --name hpx_release_container hpx_release_image`
-
-### Inside Release Container
-Compile Code:
-
-`cd && cd hpx_project && rm -rf build && git pull --rebase && mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release && make all`
-
-Run Code:
-
-`cd && cd hpx_project/build && ./hpx_cholesky --n_train 1000 --n_test 1000 --n_regressors 100 --n_tiles 1 --cholesky left`
+`sudo docker run -it --rm --user user hpx_release_image`
 
 
-## Debug
-
-### Debug Docker Container
+### Debug (HPX installed in Debug mode)
 
 Build image inside hpx_project folder:
 
@@ -40,28 +23,54 @@ Build image inside hpx_project folder:
 
 Run container inside hpx_project folder:
 
-`sudo docker run -it --rm --user user --name hpx_debug_container hpx_debug_image`
+`sudo docker run -it --rm --user user  hpx_debug_image`
 
-### Inside Debug Container
+
+### Base (Install HPX manually)
+
+Build image inside hpx_project folder:
+
+`sudo docker build . -f docker/base/Dockerfile -t hpx_base_image`
+
+Run container inside hpx_project folder:
+
+`sudo docker run -it --rm --user user hpx_base_image`
+
+Install HPX manually:
+
+`cd && hpx_project/dependencies && git pull --rebase && ./build-all.sh Release`
+
+
+## Compile Code Manually
+
+### Release
+
+Compile Code:
+
+`cd && cd hpx_project && rm -rf build && git pull --rebase && mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release && make all`
+
+### Debug
 
 Compile Code:
 
 `cd && cd hpx_project && rm -rf build && git pull --rebase && mkdir build && cd build && cmake .. && make all`
 
+## Run Code Manually
+
 Run Code:
 
 `cd && cd hpx_project/build && ./hpx_cholesky --n_train 1000 --n_test 1000 --n_regressors 100 --n_tiles 1 --cholesky left`
+
 
 ## Scripts
 
 Tile Number Loop:
 
-`cd && cd hpx_project/scripts && chmod +x tiles_script.sh && ./tiles_script.sh 10 100 10 1000 1000 100 left | tee -a tiles_result.txt`
+`cd && cd hpx_project/benchmark_scripts && ./tiles_script.sh 10 100 10 1000 1000 100 left 5`
 
 Training Size Loop:
 
-`cd && cd hpx_project/scripts && chmod +x data_script.sh && ./data_script.sh 1000 5000 1000 10 1000 100 left | tee -a data_result.txt`
-cd && cd hpx_project/benchmark_scripts && ./data_script.sh 1000 5000 1000 10 1000 100 left | tee -a data_result.txt
+`cd && cd hpx_project/benchmark_scripts && ./data_script.sh 1000 5000 1000 10 1000 100 left 5`
 
 Benchmark Script:
 
