@@ -303,6 +303,7 @@ std::vector<CALC_TYPE> gemv_u(std::vector<CALC_TYPE> A,
 
 // BLAS operations for tiled prediction
 // b = b + A * a
+/*
 std::vector<CALC_TYPE> gemv_p(std::vector<CALC_TYPE> A,
                             std::vector<CALC_TYPE> a,
                             std::vector<CALC_TYPE> b,
@@ -318,6 +319,27 @@ std::vector<CALC_TYPE> gemv_p(std::vector<CALC_TYPE> A,
   b_blas.data() = b;
   // GEMM
   b_blas = b_blas + ublas::prod(A_blas, a_blas);
+  // reformat to std::vector
+  b = b_blas.data();
+  return b;
+}
+*/
+// b = A * a
+std::vector<CALC_TYPE> gemv_p(std::vector<CALC_TYPE> A,
+                            std::vector<CALC_TYPE> a,
+                            std::size_t N_row,
+                            std::size_t N_col)
+{
+  std::vector<CALC_TYPE> b;
+  b.resize(N_row);
+  // convert to boost matrix and vectors
+  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N_row, N_col);
+  A_blas.data() = A;
+  ublas::vector< CALC_TYPE, std::vector<CALC_TYPE> > a_blas(N_col);
+  a_blas.data() = a;
+  ublas::vector< CALC_TYPE, std::vector<CALC_TYPE> > b_blas(N_row);
+  // GEMM
+  b_blas = ublas::prod(A_blas, a_blas);
   // reformat to std::vector
   b = b_blas.data();
   return b;
@@ -444,13 +466,30 @@ void backward_solve_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>
 ////////////////////////////////////////////////////////////////////////////////
 // Tiled Prediction
 void prediction_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles, std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_vector, std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_rhs, std::size_t N_row, std::size_t N_col, std::size_t n_tiles)
-{
+{ /*
   for (std::size_t k = 0; k < n_tiles; k++)
   {
     for (std::size_t m = 0; m < n_tiles; m++)
     {
       ft_rhs[m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemv_p), "prediction_tiled"), ft_tiles[m * n_tiles + k], ft_vector[k], ft_rhs[m], N_row, N_col);
     }
+  }
+  */
+  std::vector<CALC_TYPE> vector;
+  vector.resize(N_col);
+  tile_size = N_col / n_tiles;
+  for (std::size_t k = 0; k < n_tiles; k++)
+  {
+    auto tile = ft_vector[k].get();
+    for(std::size_t i = 0; i < tile_size; i++)
+    {
+      std::size_t i_global = tile_size * k + i;
+      vector[i_global] = tile[i];
+    }
+  }
+  for (std::size_t k = 0; k < n_tiles; k++)
+  {
+      ft_rhs[k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemv_p), "prediction_tiled"), ft_tiles[k], vector, ft_rhs[k], N_row, N_col);
   }
 }
 
@@ -549,10 +588,13 @@ int hpx_main(hpx::program_options::variables_map& vm)
   cross_covariance_tiles.resize(n_tiles * n_tiles);
   for (std::size_t i = 0; i < n_tiles; i++)
   {
+     /*
      for (std::size_t j = 0; j < n_tiles; j++)
      {
        cross_covariance_tiles[i * n_tiles + j] = hpx::dataflow(hpx::annotated_function(&gen_tile_cross_covariance, "assemble_tiled"), i, j, tile_size_prediction, tile_size, n_tiles, n_regressors, hyperparameters, test_input, training_input);
      }
+     */
+     cross_covariance_tiles[i * n_tiles] = hpx::dataflow(hpx::annotated_function(&gen_tile_cross_covariance, "assemble_tiled"), i, 0, tile_size_prediction, n_train, n_tiles, n_regressors, hyperparameters, test_input, training_input);
   }
   //Assemble test output data
   test_output_tiles.resize(n_tiles);
@@ -587,7 +629,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   backward_solve_tiled(K_tiles, train_output_tiles, tile_size, n_tiles);
   //////////////////////////////////////////////////////////////////////////////
   // PREDICT
-  prediction_tiled(cross_covariance_tiles, train_output_tiles, prediction_tiles, tile_size_prediction, tile_size, n_tiles);
+  prediction_tiled(cross_covariance_tiles, train_output_tiles, prediction_tiles, tile_size_prediction, n_train, n_tiles);
 /*
   // compute error
   std::vector<hpx::shared_future<CALC_TYPE>> error_tiles;
@@ -625,7 +667,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   // print output information
   printf("\"error hpx\",%lf\n", error / n_test);
 
-
+/*
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> test_tiles;
   std::size_t T=2;
   std::size_t K=4;
@@ -682,7 +724,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
    }
    */
 
-   prediction_tiled(test_tiles, y_tiles, p_tiles, L, K, T);
+  // prediction_tiled(test_tiles, y_tiles, p_tiles, L, K, T);
 /*
    for (std::size_t i = 0; i < T; i++)
    {
