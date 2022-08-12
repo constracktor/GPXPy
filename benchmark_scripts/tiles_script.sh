@@ -5,7 +5,7 @@ STEP=$3
 N_TRAIN=$4
 N_TEST=$5
 N_REG=$6
-N_CHOLESKY=$7
+CHOLESKY=$7
 N_LOOP=$8
 APEX_FILE="../build/apex.0.csv"
 OUTPUT_FILE="tiles_result.txt"
@@ -16,7 +16,7 @@ for (( i=$START; i<=$END; i=i+$STEP ))
 do
   for (( l=0; l<$N_LOOP; l=l+1 ))
   do
-    cd ../build && ./hpx_cholesky --n_train $N_TRAIN --n_test $N_TEST --n_regressors $N_REG --n_tiles $i --cholesky $N_CHOLESKY | tee -a $APEX_FILE
-    cd ../benchmark_scripts && ./output_formater.sh $i $N_TRAIN $N_TEST $N_REG $N_CHOLESKY $APEX_FILE $OUTPUT_FILE
+    cd ../build && ./hpx_cholesky --n_train $N_TRAIN --n_test $N_TEST --n_regressors $N_REG --n_tiles $i --cholesky $CHOLESKY | tee -a $APEX_FILE
+    cd ../benchmark_scripts && ./output_formater.sh $i $N_TRAIN $N_TEST $N_REG $CHOLESKY $APEX_FILE $OUTPUT_FILE
   done
 done

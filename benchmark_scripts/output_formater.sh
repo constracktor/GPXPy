@@ -25,7 +25,8 @@ SOLVE_TIME=$(echo ${SOLVE_TIME%?} | sed 's/.*,//')
 PREDICTION_TIME=$(sed -n "$(sed -n '/"prediction_tiled"/=' ${APEX_FILE}) p" ${APEX_FILE})
 PREDICTION_TIME=$(echo ${PREDICTION_TIME%?} | sed 's/.*,//')
 
-ERROR=$(sed -n "$(sed -n '/"error"/=' ${APEX_FILE}) p" ${APEX_FILE})
-ERROR=$(echo ${ERROR%?} | sed 's/.*,//')
+ERROR=$(sed -n "$(sed -n '/"error hpx"/=' ${APEX_FILE}) p" ${APEX_FILE})
+echo ${ERROR}
+ERROR=$(echo ${ERROR} | sed 's/.*,//')
 
 echo "$N_CORES;$N_TILES;$N_TRAIN;$N_TEST;$N_REG;$N_CHOLESKY;$TOTAL_TIME;$ASSEMBLY_TIME;$CHOLESKY_TIME;$SOLVE_TIME;$PREDICTION_TIME;$ERROR" >> $OUTPUT_FILE
