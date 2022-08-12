@@ -477,7 +477,7 @@ void prediction_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &f
   */
   std::vector<CALC_TYPE> vector;
   vector.resize(N_col);
-  tile_size = N_col / n_tiles;
+  std::size_t tile_size = N_col / n_tiles;
   for (std::size_t k = 0; k < n_tiles; k++)
   {
     auto tile = ft_vector[k].get();
