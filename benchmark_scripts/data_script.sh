@@ -7,11 +7,12 @@ N_TEST=$5
 N_REG=$6
 CHOLESKY=$7
 N_LOOP=$8
+OUTPUT_FILE=$9
 APEX_FILE="../build/apex.0.csv"
 ERROR_FILE="../build/error.csv"
-OUTPUT_FILE="data_result.txt"
 
-touch $OUTPUT_FILE && echo 'Cores;Tiles;N_train;N_test;N_regressor;Algorithm;Total_time;Assemble_time;Cholesky_time;Triangular_time;Predict_time;Error' >> $OUTPUT_FILE
+touch $ERROR_FILE
+touch $OUTPUT_FILE && echo "Algorithm;Cores;Tiles;N_train;N_test;N_regressor;Total_time;Assemble_time;Cholesky_time;Triangular_time;Predict_time;Error;${N_LOOP}" >> $OUTPUT_FILE
 
 for (( i=$START; i<=$END; i=i+$STEP ))
 do
