@@ -14,7 +14,7 @@ ERROR_FILE="../build/error.csv"
 touch $ERROR_FILE
 touch $OUTPUT_FILE && echo "Algorithm;Cores;Tiles;N_train;N_test;N_regressor;Total_time;Assemble_time;Cholesky_time;Triangular_time;Predict_time;Error;${N_LOOP}" >> $OUTPUT_FILE
 
-for (( i=$START; i<=$END; i=i+$STEP ))
+for (( i=$START; i<=$END; i=i*$STEP ))
 do
   for (( l=0; l<$N_LOOP; l=l+1 ))
   do

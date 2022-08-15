@@ -30,21 +30,22 @@ namespace ublas = boost::numeric::ublas;
 // GP functions to assemble K
 std::vector<CALC_TYPE> compute_regressor_vector(std::size_t row, std::size_t n_regressors, std::vector<CALC_TYPE> input)
 {
-  std::vector<CALC_TYPE> z_row;
-  z_row.resize(n_regressors);
+  std::vector<CALC_TYPE> regressor_vector;
+  regressor_vector.resize(n_regressors);
+
   for (std::size_t i = 0; i < n_regressors; i++)
   {
    int index = row - n_regressors + 1 + i;
    if (index < 0)
    {
-      z_row[i] = 0.0;
+     regressor_vector[i] = 0.0;
    }
    else
    {
-     z_row[i] = input[index];
+     regressor_vector[i] = input[index];
    }
   }
-  return z_row;
+  return regressor_vector;
 }
 
 CALC_TYPE compute_covariance_function(std::size_t n_regressors, CALC_TYPE* hyperparameters, std::vector<CALC_TYPE> z_i, std::vector<CALC_TYPE> z_j)
@@ -63,7 +64,15 @@ std::vector<CALC_TYPE> gen_tile_covariance(std::size_t row, std::size_t col, std
 {
    std::size_t i_global,j_global;
    CALC_TYPE covariance_function;
-   std::vector<CALC_TYPE> z_i, z_j;
+   std::vector<CALC_TYPE> z_i,z_j;
+   std::vector<std::vector<CALC_TYPE>> z_col;
+   z_col.resize(N);
+   // compute column regressor vectors beforehand
+   for(std::size_t j = 0; j < N; j++)
+   {
+     j_global = N * col + j;
+     z_col[j] = compute_regressor_vector(j_global, n_regressors, input);
+   }
    // Initialize tile
    std::vector<CALC_TYPE> tile;
    tile.resize(N * N);
@@ -73,15 +82,14 @@ std::vector<CALC_TYPE> gen_tile_covariance(std::size_t row, std::size_t col, std
       z_i = compute_regressor_vector(i_global, n_regressors, input);
       for(std::size_t j = 0; j < N; j++)
       {
-         j_global = N * col + j;
-         z_j= compute_regressor_vector(j_global, n_regressors, input);
-         // compute covariance function
-         covariance_function = compute_covariance_function(n_regressors, hyperparameters, z_i, z_j);
-         if (i_global==j_global)
-         {
-           covariance_function += hyperparameters[2];
-         }
-         tile[i * N + j] = covariance_function;
+        j_global = N * col + j;
+        // compute covariance function
+        covariance_function = compute_covariance_function(n_regressors, hyperparameters, z_i, z_col[j]);
+        if (i_global==j_global)
+        {
+          covariance_function += hyperparameters[2];
+        }
+        tile[i * N + j] = covariance_function;
       }
    }
    return tile;
@@ -105,20 +113,27 @@ std::vector<CALC_TYPE> gen_tile_cross_covariance(std::size_t row, std::size_t co
 {
    std::size_t i_global,j_global;
    CALC_TYPE covariance_function;
-   std::vector<CALC_TYPE> z_i, z_j;
+   std::vector<CALC_TYPE> z_i;
+   std::vector<std::vector<CALC_TYPE>> z_col;
+   z_col.resize(N_col);
+   // compute column regressor vectors beforehand
+   for(std::size_t j = 0; j < N_col; j++)
+   {
+     j_global = N_col * col + j;
+     z_col[j] = compute_regressor_vector(j_global, n_regressors, col_input);
+   }
    // Initialize tile
    std::vector<CALC_TYPE> tile;
    tile.resize(N_row * N_col);
    for(std::size_t i = 0; i < N_row; i++)
    {
       i_global = N_row * row + i;
+      //compute_regressor_vector(i_global, n_regressors, row_input, z_i);
       z_i = compute_regressor_vector(i_global, n_regressors, row_input);
       for(std::size_t j = 0; j < N_col; j++)
       {
-         j_global = N_col * col + j;
-         z_j= compute_regressor_vector(j_global, n_regressors, col_input);
          // compute covariance function
-         covariance_function = compute_covariance_function(n_regressors, hyperparameters, z_i, z_j);
+         covariance_function = compute_covariance_function(n_regressors, hyperparameters, z_i, z_col[j]);
          tile[i * N_col + j] = covariance_function;
       }
    }
