@@ -7,8 +7,8 @@ export CMAKE_COMMAND=${HPXSC_ROOT}/build/cmake/bin/cmake
 rm -rf build && mkdir build && cd build && $CMAKE_COMMAND .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${HPXSC_ROOT}/build/hpx/build/lib/cmake/HPX" && make all
 # Run both scripts for for each tiled-decomposition
 cd ../benchmark_scripts
-CHOLESKY_VARIANTS="left right top"
-#CHOLESKY_VARIANTS="left"
+#CHOLESKY_VARIANTS="left right top"
+CHOLESKY_VARIANTS="top"
 LOOP=5
 for CHOLESKY in $CHOLESKY_VARIANTS; do
   OUTPUT_FILE_TILES="tiles_hpx_${CHOLESKY}.txt"
