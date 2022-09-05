@@ -11,6 +11,9 @@ OUTPUT_FILE=$9
 APEX_FILE="../build/apex.0.csv"
 ERROR_FILE="../build/error.csv"
 
+N_CORES=$(grep -c ^processor /proc/cpuinfo)
+N_CORES=$(($N_CORES/2))
+
 touch $ERROR_FILE
 touch $OUTPUT_FILE && echo "Algorithm;Cores;Tiles;N_train;N_test;N_regressor;Total_time;Assemble_time;Cholesky_time;Triangular_time;Predict_time;Error;${N_LOOP}" >> $OUTPUT_FILE
 
@@ -20,7 +23,7 @@ do
   do
     cd ../build && touch $ERROR_FILE
     ./hpx_cholesky --n_train $N_TRAIN --n_test $N_TEST --n_regressors $N_REG --n_tiles $i --cholesky $CHOLESKY
-    cd ../benchmark_scripts && ./output_formater.sh $i $N_TRAIN $N_TEST $N_REG $CHOLESKY $APEX_FILE $OUTPUT_FILE $ERROR_FILE
+    cd ../benchmark_scripts && ./output_formater.sh $i $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $APEX_FILE $OUTPUT_FILE $ERROR_FILE
     cd ../build && rm $ERROR_FILE
   done
 done

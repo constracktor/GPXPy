@@ -3,13 +3,11 @@ N_TILES=$1
 N_TRAIN=$2
 N_TEST=$3
 N_REG=$4
-CHOLESKY=$5
-APEX_FILE=$6
-OUTPUT_FILE=$7
-ERROR_FILE=$8
-
-N_CORES=$(grep -c ^processor /proc/cpuinfo)
-N_CORES=$(($N_CORES/2))
+N_CORES=$5
+CHOLESKY=$6
+APEX_FILE=$7
+OUTPUT_FILE=$8
+ERROR_FILE=$9
 
 TOTAL_TIME=$(sed -n "$(sed -n '/"APEX MAIN"/=' ${APEX_FILE}) p" ${APEX_FILE})
 TOTAL_TIME=$(echo ${TOTAL_TIME%?} | sed 's/.*,//')
