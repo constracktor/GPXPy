@@ -20,7 +20,8 @@ do
   for (( l=0; l<$N_LOOP; l=l+1 ))
   do
     cd ../build && touch $ERROR_FILE
-    ./hpx_cholesky --hpx:threads=$i --n_train $N_TRAIN --n_test $N_TEST --n_regressors $N_REG --n_tiles $N_TILES --cholesky $CHOLESKY
+    #./hpx_cholesky --hpx:threads=$i --n_train $N_TRAIN --n_test $N_TEST --n_regressors $N_REG --n_tiles $N_TILES --cholesky $CHOLESKY
+    ./hpx_cholesky -t$i --n_train $N_TRAIN --n_test $N_TEST --n_regressors $N_REG --n_tiles $N_TILES --cholesky $CHOLESKY
     cd ../benchmark_scripts && ./output_formater.sh $N_TILES $N_TRAIN $N_TEST $N_REG $i $CHOLESKY $APEX_FILE $OUTPUT_FILE $ERROR_FILE
     cd ../build && rm $ERROR_FILE
   done
