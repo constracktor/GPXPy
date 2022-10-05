@@ -630,11 +630,9 @@ int main(int argc, char* argv[])
         "Number of delayed input regressors")
         ("n_tiles", hpx::program_options::value<std::size_t>()->default_value(10),
          "Number of tiles per dimension -> n_tiles * n_tiles total")
-        ("cholesky", hpx::program_options::value<std::string>()->default_value("top"),
+        ("cholesky", hpx::program_options::value<std::string>()->default_value("right"),
          "Choose between left- right- or top-looking tiled Cholesky decomposition")
     ;
-    hpx::program_options::variables_map vm;
-    hpx::program_options::store(hpx::program_options::parse_command_line(argc, argv, desc_commandline), vm);
     ////////////////////////////////////////////////////////////////////////////
     // Run HPX
     init_args.desc_cmdline = desc_commandline;
