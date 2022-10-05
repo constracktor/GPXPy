@@ -8,7 +8,7 @@ N_TEST=$6
 N_REG=$7
 CHOLESKY=$8
 N_LOOP=$9
-OUTPUT_FILE=$10
+OUTPUT_FILE=${10}
 APEX_FILE="../build/apex.0.csv"
 ERROR_FILE="../build/error.csv"
 
@@ -20,7 +20,6 @@ do
   for (( l=0; l<$N_LOOP; l=l+1 ))
   do
     cd ../build && touch $ERROR_FILE
-    #./hpx_cholesky --hpx:threads=$i --n_train $N_TRAIN --n_test $N_TEST --n_regressors $N_REG --n_tiles $N_TILES --cholesky $CHOLESKY
     ./hpx_cholesky -t$i --n_train $N_TRAIN --n_test $N_TEST --n_regressors $N_REG --n_tiles $N_TILES --cholesky $CHOLESKY
     cd ../benchmark_scripts && ./output_formater.sh $N_TILES $N_TRAIN $N_TEST $N_REG $i $CHOLESKY $APEX_FILE $OUTPUT_FILE $ERROR_FILE
     cd ../build && rm $ERROR_FILE
