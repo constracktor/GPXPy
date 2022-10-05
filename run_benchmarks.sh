@@ -5,8 +5,13 @@ export HPXSC_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd 
 export CMAKE_COMMAND=${HPXSC_ROOT}/build/cmake/bin/cmake
 # Compile Code
 rm -rf build && mkdir build && cd build && $CMAKE_COMMAND .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${HPXSC_ROOT}/build/hpx/build/lib/cmake/HPX" && make all
-# Run both scripts for for each tiled-decomposition
 cd ../benchmark_scripts
+# Run BLAS benchmark
+OUTPUT_FILE_BLAS="blas_hpx.txt"
+rm $OUTPUT_FILE_BLAS
+touch $OUTPUT_FILE_BLAS
+../build/hpx_blas | tee $OUTPUT_FILE_BLAS
+# Run scripts for different tiled-decomposition
 #CHOLESKY_VARIANTS="left right top"
 CHOLESKY_VARIANTS="left"
 LOOP=5
@@ -25,7 +30,7 @@ for CHOLESKY in $CHOLESKY_VARIANTS; do
   N_TEST=5000
   N_REG=100
   N_TILES=10
-  ./cores_script.sh $START $END $STEP $N_TILES $N_TRAIN $N_TEST $N_REG $CHOLESKY $LOOP $OUTPUT_FILE_CORES
+  #./cores_script.sh $START $END $STEP $N_TILES $N_TRAIN $N_TEST $N_REG $CHOLESKY $LOOP $OUTPUT_FILE_CORES
   START=16
   END=128
   STEP=2
@@ -33,7 +38,7 @@ for CHOLESKY in $CHOLESKY_VARIANTS; do
   N_TEST=5000
   N_REG=100
   N_TILES=200
-  ./cores_script.sh $START $END $STEP $N_TILES $N_TRAIN $N_TEST $N_REG $CHOLESKY $LOOP $OUTPUT_FILE_CORES
+  #./cores_script.sh $START $END $STEP $N_TILES $N_TRAIN $N_TEST $N_REG $CHOLESKY $LOOP $OUTPUT_FILE_CORES
   # Run tiles_script
   START=10
   END=10

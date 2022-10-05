@@ -3,3 +3,6 @@ project(hpx_project CXX)
 find_package(HPX REQUIRED)
 add_executable(hpx_cholesky src/hpx_cholesky.cpp)
 target_link_libraries(hpx_cholesky HPX::hpx HPX::wrap_main HPX::iostreams_component)
+
+add_executable(hpx_blas src/hpx_blas.cpp)
+target_link_libraries(hpx_blas HPX::hpx HPX::wrap_main HPX::iostreams_component)
