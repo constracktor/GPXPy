@@ -92,27 +92,6 @@ std::vector<CALC_TYPE> syrk(std::vector<CALC_TYPE> A,
   return A;
 }
 
-//C = C - A * B^T
-std::vector<CALC_TYPE> gemm(std::vector<CALC_TYPE> A,
-                            std::vector<CALC_TYPE> B,
-                            std::vector<CALC_TYPE> C,
-                            std::size_t N)
-{
-  // convert to boost matrices
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
-  A_blas.data() = A;
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > B_blas(N, N);
-  B_blas.data() = B;
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > C_blas(N, N);
-  C_blas.data() = C;
-  // GEMM
-  C_blas = C_blas - ublas::prod(A_blas, ublas::trans(B_blas));
-  // reformat to std::vector
-  C = C_blas.data();
-  return C;
-}
-
-
 int main(int argc, char* argv[])
 { // loop size for averaging
   std::size_t n_loop = 5;
@@ -124,7 +103,6 @@ int main(int argc, char* argv[])
   // runtime data holder
   std::size_t total_potrf;
   std::size_t total_trsm;
-  std::size_t total_syrk;
   std::size_t total_gemm;
   // create logscale n vector
   std::vector<std::size_t> n_vector;
@@ -138,7 +116,7 @@ int main(int argc, char* argv[])
   }
   n_vector[9 * (exp_end - exp_start)] = pow(10, exp_end);
   // genereate header
-  std::cout << "N;POTRF;TRSM;SYRK;GEMM;loop;" << n_loop << "\n";
+  std::cout << "N;POTRF;TRSM;GEMM;loop;" << n_loop << "\n";
   // loop
   for (size_t k = 0; k < n_vector.size(); k++)
   {
@@ -149,9 +127,9 @@ int main(int argc, char* argv[])
     {
       break;
     }
+    // reset data holders
     total_potrf = 0;
     total_trsm = 0;
-    total_syrk = 0;
     total_gemm = 0;
     for (size_t loop = 0; loop < n_loop; loop++)
     {
@@ -163,13 +141,11 @@ int main(int argc, char* argv[])
       std::uniform_real_distribution< CALC_TYPE > distribute( 0, 1 );
       // create two positive definite matrices
       // first create two random matrices
-      std::vector<CALC_TYPE> M1, M2;
+      std::vector<CALC_TYPE> M1;
       M1.resize(m_size);
-      M2.resize(m_size);
       for (size_t i = 0; i < m_size; i++)
       {
         M1[i] = distribute( generator );
-        M2[i] = distribute( generator );
       }
       // then create symmetric matrices
       for (size_t i = 0; i < n_dim; i++)
@@ -178,16 +154,12 @@ int main(int argc, char* argv[])
         {
           M1[i * n_dim + j] = 0.5 * (M1[i * n_dim + j] + M1[j * n_dim + i]) / n_dim;
           M1[j * n_dim + i] = M1[i * n_dim + j];
-
-          M2[i * n_dim + j] = 0.5 * (M2[i * n_dim + j] + M2[j * n_dim + i]) / n_dim;
-          M2[j * n_dim + i] = M2[i * n_dim + j];
         }
       }
       // add 1 on diagonal
       for (size_t i = 0; i < n_dim; i++)
       {
         M1[i * n_dim + i] = M1[i * n_dim + i] + 1.0;
-        M2[i * n_dim + i] = M2[i * n_dim + i] + 1.0;
       }
       ////////////////////////////////////////////////////////////////////////////
       // benchmark
@@ -195,31 +167,23 @@ int main(int argc, char* argv[])
       auto start_potrf = std::chrono::steady_clock::now();
       std::vector<CALC_TYPE> L1 = potrf(M1, n_dim);
       auto end_potrf = std::chrono::steady_clock::now();
-      std::vector<CALC_TYPE> L2 = potrf(M2, n_dim);
       // time triangular solve
       auto start_trsm = std::chrono::steady_clock::now();
-      //std::vector<CALC_TYPE> M_solved_2 = trsm(M2, L1, n_dim);
+      std::vector<CALC_TYPE> M_solved_1 = trsm(M1, L1, n_dim);
       auto end_trsm = std::chrono::steady_clock::now();
-      //std::vector<CALC_TYPE> M_solved_1 = trsm(M1, L2, n_dim);
-      // time symmetric rank update
-      auto start_syrk = std::chrono::steady_clock::now();
-      //std::vector<CALC_TYPE> M_syrk_updated = syrk(M1, M_solved_2, n_dim);
-      auto end_syrk = std::chrono::steady_clock::now();
       // time matrix multiplication
       auto start_gemm = std::chrono::steady_clock::now();
-      //std::vector<CALC_TYPE> M_gemm_updated = gemm(M_solved_2, M_solved_1, M1, n_dim);
+      std::vector<CALC_TYPE> M_gemm = syrk(M1, M_solved_1, n_dim);
       auto end_gemm = std::chrono::steady_clock::now();
       ////////////////////////////////////////////////////////////////////////////
       // add time difference to total time
       total_potrf += std::chrono::duration_cast<std::chrono::microseconds>(end_potrf - start_potrf).count();
       total_trsm += std::chrono::duration_cast<std::chrono::microseconds>(end_trsm - start_trsm).count();
-      total_syrk += std::chrono::duration_cast<std::chrono::microseconds>(end_syrk - start_syrk).count();
       total_gemm += std::chrono::duration_cast<std::chrono::microseconds>(end_gemm - start_gemm).count();
     }
     std::cout <<  n_dim << ";"
               <<  total_potrf / 1000000.0 / n_loop << ";"
               <<  total_trsm / 1000000.0 / n_loop << ";"
-              <<  total_syrk / 1000000.0 / n_loop << ";"
               <<  total_gemm / 1000000.0 / n_loop << ";\n";
   }
 }
