@@ -122,10 +122,10 @@ int main(int argc, char* argv[])
   // define early stop;
   std::size_t early_stop = 5 * pow(10, exp_end - 1);
   // runtime data holder
-  std::size_t total_potrf = 0;
-  std::size_t total_trsm = 0;
-  std::size_t total_syrk = 0;
-  std::size_t total_gemm = 0;
+  std::size_t total_potrf;
+  std::size_t total_trsm;
+  std::size_t total_syrk;
+  std::size_t total_gemm;
   // create logscale n vector
   std::vector<std::size_t> n_vector;
   n_vector.resize(9 * (exp_end - exp_start) + 1);
@@ -149,6 +149,10 @@ int main(int argc, char* argv[])
     {
       break;
     }
+    total_potrf = 0;
+    total_trsm = 0;
+    total_syrk = 0;
+    total_gemm = 0;
     for (size_t loop = 0; loop < n_loop; loop++)
     {
       //////////////////////////////////////////////////////////////////////////
@@ -194,16 +198,16 @@ int main(int argc, char* argv[])
       std::vector<CALC_TYPE> L2 = potrf(M2, n_dim);
       // time triangular solve
       auto start_trsm = std::chrono::steady_clock::now();
-      std::vector<CALC_TYPE> M_solved_2 = trsm(M2, L1, n_dim);
+      //std::vector<CALC_TYPE> M_solved_2 = trsm(M2, L1, n_dim);
       auto end_trsm = std::chrono::steady_clock::now();
-      std::vector<CALC_TYPE> M_solved_1 = trsm(M1, L2, n_dim);
+      //std::vector<CALC_TYPE> M_solved_1 = trsm(M1, L2, n_dim);
       // time symmetric rank update
       auto start_syrk = std::chrono::steady_clock::now();
-      std::vector<CALC_TYPE> M_syrk_updated = syrk(M1, M_solved_2, n_dim);
+      //std::vector<CALC_TYPE> M_syrk_updated = syrk(M1, M_solved_2, n_dim);
       auto end_syrk = std::chrono::steady_clock::now();
-      //time matrix multiplication
+      // time matrix multiplication
       auto start_gemm = std::chrono::steady_clock::now();
-      std::vector<CALC_TYPE> M_gemm_updated = gemm(M_solved_2, M_solved_1, M1, n_dim);
+      //std::vector<CALC_TYPE> M_gemm_updated = gemm(M_solved_2, M_solved_1, M1, n_dim);
       auto end_gemm = std::chrono::steady_clock::now();
       ////////////////////////////////////////////////////////////////////////////
       // add time difference to total time
