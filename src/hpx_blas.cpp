@@ -94,12 +94,12 @@ std::vector<CALC_TYPE> syrk(std::vector<CALC_TYPE> A,
 
 int main(int argc, char* argv[])
 { // loop size for averaging
-  std::size_t n_loop = 5;
+  std::size_t n_loop = 500;
   // define exponents of 10
   std::size_t exp_start = 1;
-  std::size_t exp_end = 4;
+  std::size_t exp_end = 3;
   // define early stop;
-  std::size_t early_stop = 5 * pow(10, exp_end - 1);
+  std::size_t early_stop = 15 * pow(10, exp_end - 1);
   // runtime data holder
   std::size_t total_potrf;
   std::size_t total_trsm;
@@ -117,6 +117,12 @@ int main(int argc, char* argv[])
   n_vector[9 * (exp_end - exp_start)] = pow(10, exp_end);
   // genereate header
   std::cout << "N;POTRF;TRSM;GEMM;loop;" << n_loop << "\n";
+  // warm up
+  std::size_t warmup = 0;
+  for (size_t k = 0; k < 100000; k++)
+  {
+    warmup = warmup + 1;
+  }
   // loop
   for (size_t k = 0; k < n_vector.size(); k++)
   {
