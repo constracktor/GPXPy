@@ -1,6 +1,9 @@
 # HPX Project
 
-description tbd.
+Repository that contains the HPX implementation of the non-linear system
+identification with Gaussian processes minimum working example used for
+the research project:
+"A comparison of PETSc and HPX for a Scientific Computation Problem"
 
 ## Docker Containers
 
@@ -45,13 +48,13 @@ Install HPX manually:
 
 ### Release
 
-Compile Code:
+Compile Code (requires cmake):
 
 `cd && cd hpx_project && rm -rf build && git pull --rebase && mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release && make all`
 
 ### Debug
 
-Compile Code:
+Compile Code (requires cmake):
 
 `cd && cd hpx_project && rm -rf build && git pull --rebase && mkdir build && cd build && cmake .. && make all`
 
@@ -77,7 +80,7 @@ Benchmark Script:
 `cd && cd hpx_project && git pull --rebase && ./run_benchmarks.sh`
 
 
-## Git Commands
+## Git Commands for Developing
 
 `git add . && git commit -m "comment" && git push`
 
