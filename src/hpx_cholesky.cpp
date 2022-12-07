@@ -60,18 +60,32 @@ CALC_TYPE compute_covariance_function(std::size_t n_regressors, CALC_TYPE* hyper
   return hyperparameters[1] * exp(-0.5 * hyperparameters[0] * distance);
 }
 
-std::vector<CALC_TYPE> gen_tile_covariance(std::size_t row, std::size_t col, std::size_t N, std::size_t n_tiles, std::size_t n_regressors, CALC_TYPE *hyperparameters, std::vector<CALC_TYPE> input)
+std::vector<CALC_TYPE> gen_tile_covariance(std::size_t row, std::size_t col, std::size_t N, std::size_t n_regressors, CALC_TYPE *hyperparameters, std::vector<CALC_TYPE> input)
 {
    std::size_t i_global,j_global;
    CALC_TYPE covariance_function;
-   std::vector<CALC_TYPE> z_i,z_j;
-   std::vector<std::vector<CALC_TYPE>> z_col;
+   std::vector<std::vector<CALC_TYPE>> z_row, z_col;
+   z_row.resize(N);
    z_col.resize(N);
-   // compute column regressor vectors beforehand
-   for(std::size_t j = 0; j < N; j++)
+   // compute row regressor vectors beforehand
+   for(std::size_t i = 0; i < N; i++)
    {
-     j_global = N * col + j;
-     z_col[j] = compute_regressor_vector(j_global, n_regressors, input);
+     i_global = N * row + i;
+     z_row[i] = compute_regressor_vector(i_global, n_regressors, input);
+   }
+   // compute column regressor vectors beforehand
+   if (row == col)
+   {
+     // symmetric diagonal tile
+     z_col = z_row;
+   }
+   else
+   {
+     for(std::size_t j = 0; j < N; j++)
+     {
+       j_global = N * col + j;
+       z_col[j] = compute_regressor_vector(j_global, n_regressors, input);
+     }
    }
    // Initialize tile
    std::vector<CALC_TYPE> tile;
@@ -79,12 +93,11 @@ std::vector<CALC_TYPE> gen_tile_covariance(std::size_t row, std::size_t col, std
    for(std::size_t i = 0; i < N; i++)
    {
       i_global = N * row + i;
-      z_i = compute_regressor_vector(i_global, n_regressors, input);
       for(std::size_t j = 0; j < N; j++)
       {
         j_global = N * col + j;
         // compute covariance function
-        covariance_function = compute_covariance_function(n_regressors, hyperparameters, z_i, z_col[j]);
+        covariance_function = compute_covariance_function(n_regressors, hyperparameters, z_row[i], z_col[j]);
         if (i_global==j_global)
         {
           covariance_function += hyperparameters[2];
@@ -109,13 +122,19 @@ std::vector<CALC_TYPE> gen_tile_output(std::size_t row, std::size_t N, std::vect
    return tile;
 }
 
-std::vector<CALC_TYPE> gen_tile_cross_covariance(std::size_t row, std::size_t col, std::size_t N_row, std::size_t N_col, std::size_t n_tiles, std::size_t n_regressors, CALC_TYPE *hyperparameters, std::vector<CALC_TYPE> row_input, std::vector<CALC_TYPE> col_input)
+std::vector<CALC_TYPE> gen_tile_cross_covariance(std::size_t row, std::size_t col, std::size_t N_row, std::size_t N_col, std::size_t n_regressors, CALC_TYPE *hyperparameters, std::vector<CALC_TYPE> row_input, std::vector<CALC_TYPE> col_input)
 {
    std::size_t i_global,j_global;
    CALC_TYPE covariance_function;
-   std::vector<CALC_TYPE> z_i;
-   std::vector<std::vector<CALC_TYPE>> z_col;
+   std::vector<std::vector<CALC_TYPE>> z_row, z_col;
+   z_row.resize(N_row);
    z_col.resize(N_col);
+   // compute row regressor vectors beforehand
+   for(std::size_t i = 0; i < N_row; i++)
+   {
+     i_global = N_row * row + i;
+     z_row[i] = compute_regressor_vector(i_global, n_regressors, row_input);
+   }
    // compute column regressor vectors beforehand
    for(std::size_t j = 0; j < N_col; j++)
    {
@@ -127,13 +146,10 @@ std::vector<CALC_TYPE> gen_tile_cross_covariance(std::size_t row, std::size_t co
    tile.resize(N_row * N_col);
    for(std::size_t i = 0; i < N_row; i++)
    {
-      i_global = N_row * row + i;
-      //compute_regressor_vector(i_global, n_regressors, row_input, z_i);
-      z_i = compute_regressor_vector(i_global, n_regressors, row_input);
       for(std::size_t j = 0; j < N_col; j++)
       {
          // compute covariance function
-         covariance_function = compute_covariance_function(n_regressors, hyperparameters, z_i, z_col[j]);
+         covariance_function = compute_covariance_function(n_regressors, hyperparameters, z_row[i], z_col[j]);
          tile[i * N_col + j] = covariance_function;
       }
    }
@@ -337,19 +353,19 @@ std::vector<CALC_TYPE> gemv_u(std::vector<CALC_TYPE> A,
 // b = A * a where A(N_row, N_col), a(N_col) and b(N_row)
 std::vector<CALC_TYPE> gemv_p(std::vector<CALC_TYPE> A,
                             std::vector<CALC_TYPE> a,
+                            std::vector<CALC_TYPE> b,
                             std::size_t N_row,
                             std::size_t N_col)
 {
-  std::vector<CALC_TYPE> b;
-  b.resize(N_row);
   // convert to boost matrix and vectors
   ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N_row, N_col);
   A_blas.data() = A;
   ublas::vector< CALC_TYPE, std::vector<CALC_TYPE> > a_blas(N_col);
   a_blas.data() = a;
   ublas::vector< CALC_TYPE, std::vector<CALC_TYPE> > b_blas(N_row);
+  b_blas.data() = b;
   // GEMM
-  b_blas = ublas::prod(A_blas, a_blas);
+  b_blas = b_blas  + ublas::prod(A_blas, a_blas);
   // reformat to std::vector
   b = b_blas.data();
   return b;
@@ -473,11 +489,14 @@ void backward_solve_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>
 }
 ////////////////////////////////////////////////////////////////////////////////
 // Tiled Prediction
-void prediction_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles, hpx::shared_future<std::vector<CALC_TYPE>> &ft_vector, std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_rhs, std::size_t N_row, std::size_t N_col, std::size_t n_tiles)
+void prediction_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles, std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_vector, std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_rhs, std::size_t N_row, std::size_t N_col, std::size_t n_tiles)
 {
   for (std::size_t k = 0; k < n_tiles; k++)
   {
-      ft_rhs[k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemv_p), "prediction_tiled"), ft_tiles[k], ft_vector, N_row, N_col);
+    for (std::size_t m = 0; m < n_tiles; m++)
+    {
+      ft_rhs[k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemv_p), "prediction_tiled"), ft_tiles[k * n_tiles + m], ft_vector[m], ft_rhs[k], N_row, N_col);
+    }
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -500,10 +519,11 @@ int hpx_main(hpx::program_options::variables_map& vm)
   std::size_t tile_size_prediction = n_test / n_tiles;
   // HPX structures
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> K_tiles;
-  std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> train_output_tiles;
+  //std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> train_output_tiles;
+  std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> alpha_tiles;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> cross_covariance_tiles;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> prediction_tiles;
-  hpx::shared_future<std::vector<CALC_TYPE>> ft_alpha;
+  //hpx::shared_future<std::vector<CALC_TYPE>> ft_alpha;
   hpx::shared_future<std::vector<CALC_TYPE>> ft_prediction;
   hpx::shared_future<CALC_TYPE> ft_error;
   //std::vector<CALC_TYPE> cross_covariance;
@@ -558,20 +578,34 @@ int hpx_main(hpx::program_options::variables_map& vm)
   {
      for (std::size_t j = 0; j <= i; j++)
      {
-        K_tiles[i * n_tiles + j] = hpx::dataflow(hpx::annotated_function(&gen_tile_covariance, "assemble_tiled"), i, j, tile_size, n_tiles, n_regressors, hyperparameters, training_input);
+        K_tiles[i * n_tiles + j] = hpx::dataflow(hpx::annotated_function(&gen_tile_covariance, "assemble_tiled"), i, j, tile_size, n_regressors, hyperparameters, training_input);
      }
   }
   //Assemble train output data
-  train_output_tiles.resize(n_tiles);
+  // train_output_tiles.resize(n_tiles);
+  // for (std::size_t i = 0; i < n_tiles; i++)
+  // {
+  //   train_output_tiles[i] = hpx::dataflow(hpx::annotated_function(&gen_tile_output, "assemble_tiled"), i, tile_size, training_output);
+  // }
+  alpha_tiles.resize(n_tiles);
   for (std::size_t i = 0; i < n_tiles; i++)
   {
-    train_output_tiles[i] = hpx::dataflow(hpx::annotated_function(&gen_tile_output, "assemble_tiled"), i, tile_size, training_output);
+    alpha_tiles[i] = hpx::dataflow(hpx::annotated_function(&gen_tile_output, "assemble_tiled"), i, tile_size, training_output);
   }
+
   // Assemble transposed covariance matrix vector
   cross_covariance_tiles.resize(n_tiles * n_tiles);
+  // for (std::size_t i = 0; i < n_tiles; i++)
+  // {
+  //    cross_covariance_tiles[i] = hpx::dataflow(hpx::annotated_function(&gen_tile_cross_covariance, "assemble_tiled"), i, 0, tile_size_prediction, n_train, n_tiles, n_regressors, hyperparameters, test_input, training_input);
+  // }
   for (std::size_t i = 0; i < n_tiles; i++)
   {
-     cross_covariance_tiles[i] = hpx::dataflow(hpx::annotated_function(&gen_tile_cross_covariance, "assemble_tiled"), i, 0, tile_size_prediction, n_train, n_tiles, n_regressors, hyperparameters, test_input, training_input);
+     for (std::size_t j = 0; j < n_tiles; j++)
+     {
+       //(std::size_t row, std::size_t col, std::size_t N_row, std::size_t N_col, n_tiles, n_regressors, hyperparameters, row_input, col_input)
+        cross_covariance_tiles[i * n_tiles + j] = hpx::dataflow(hpx::annotated_function(&gen_tile_cross_covariance, "assemble_tiled"), i, j, tile_size_prediction, tile_size, n_regressors, hyperparameters, test_input, training_input);
+     }
   }
   //Assemble zero prediction
   prediction_tiles.resize(n_tiles);
@@ -596,12 +630,12 @@ int hpx_main(hpx::program_options::variables_map& vm)
   }
   //////////////////////////////////////////////////////////////////////////////
   // TRIANGULAR SOLVE
-  forward_solve_tiled(K_tiles, train_output_tiles, tile_size, n_tiles);
-  backward_solve_tiled(K_tiles, train_output_tiles, tile_size, n_tiles);
+  forward_solve_tiled(K_tiles, alpha_tiles, tile_size, n_tiles);
+  backward_solve_tiled(K_tiles, alpha_tiles, tile_size, n_tiles);
   //////////////////////////////////////////////////////////////////////////////
   // PREDICT
-  ft_alpha = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&assemble), "prediction_tiled"), train_output_tiles, n_tiles, tile_size);
-  prediction_tiled(cross_covariance_tiles, ft_alpha, prediction_tiles, tile_size_prediction, n_train, n_tiles);
+  prediction_tiled(cross_covariance_tiles, alpha_tiles, prediction_tiles, tile_size, tile_size_prediction, n_tiles);
+  // assemble and compute error
   ft_prediction = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&assemble), "prediction_tiled"), prediction_tiles, n_tiles, tile_size_prediction);
   ft_error = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&norm_2), "prediction_tiled"), ft_prediction, test_output, n_test);
   //////////////////////////////////////////////////////////////////////////////
