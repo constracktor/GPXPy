@@ -28,7 +28,9 @@
 namespace ublas = boost::numeric::ublas;
 ////////////////////////////////////////////////////////////////////////////////
 // GP functions to assemble K
-std::vector<CALC_TYPE> compute_regressor_vector(std::size_t row, std::size_t n_regressors, std::vector<CALC_TYPE> input)
+std::vector<CALC_TYPE> compute_regressor_vector(std::size_t row,
+                                                std::size_t n_regressors,
+                                                std::vector<CALC_TYPE> input)
 {
   std::vector<CALC_TYPE> regressor_vector;
   regressor_vector.resize(n_regressors);
@@ -48,7 +50,10 @@ std::vector<CALC_TYPE> compute_regressor_vector(std::size_t row, std::size_t n_r
   return regressor_vector;
 }
 
-CALC_TYPE compute_covariance_function(std::size_t n_regressors, CALC_TYPE* hyperparameters, std::vector<CALC_TYPE> z_i, std::vector<CALC_TYPE> z_j)
+CALC_TYPE compute_covariance_function(std::size_t n_regressors,
+                                      CALC_TYPE* hyperparameters,
+                                      std::vector<CALC_TYPE> z_i,
+                                      std::vector<CALC_TYPE> z_j)
 {
   // Compute the Squared Exponential Covariance Function
   // C(z_i,z_j) = vertical_lengthscale * exp(-0.5*lengthscale*(z_i-z_j)^2)
@@ -60,7 +65,12 @@ CALC_TYPE compute_covariance_function(std::size_t n_regressors, CALC_TYPE* hyper
   return hyperparameters[1] * exp(-0.5 * hyperparameters[0] * distance);
 }
 
-std::vector<CALC_TYPE> gen_tile_covariance(std::size_t row, std::size_t col, std::size_t N, std::size_t n_regressors, CALC_TYPE *hyperparameters, std::vector<CALC_TYPE> input)
+std::vector<CALC_TYPE> gen_tile_covariance(std::size_t row,
+                                           std::size_t col,
+                                           std::size_t N,
+                                           std::size_t n_regressors,
+                                           CALC_TYPE *hyperparameters,
+                                           std::vector<CALC_TYPE> input)
 {
    std::size_t i_global,j_global;
    CALC_TYPE covariance_function;
@@ -108,7 +118,9 @@ std::vector<CALC_TYPE> gen_tile_covariance(std::size_t row, std::size_t col, std
    return tile;
 }
 
-std::vector<CALC_TYPE> gen_tile_output(std::size_t row, std::size_t N, std::vector<CALC_TYPE> output)
+std::vector<CALC_TYPE> gen_tile_output(std::size_t row,
+                                       std::size_t N,
+                                       std::vector<CALC_TYPE> output)
 {
    std::size_t i_global;
    // Initialize tile
@@ -122,7 +134,14 @@ std::vector<CALC_TYPE> gen_tile_output(std::size_t row, std::size_t N, std::vect
    return tile;
 }
 
-std::vector<CALC_TYPE> gen_tile_cross_covariance(std::size_t row, std::size_t col, std::size_t N_row, std::size_t N_col, std::size_t n_regressors, CALC_TYPE *hyperparameters, std::vector<CALC_TYPE> row_input, std::vector<CALC_TYPE> col_input)
+std::vector<CALC_TYPE> gen_tile_cross_covariance(std::size_t row,
+                                                 std::size_t col,
+                                                 std::size_t N_row,
+                                                 std::size_t N_col,
+                                                 std::size_t n_regressors,
+                                                 CALC_TYPE *hyperparameters,
+                                                 std::vector<CALC_TYPE> row_input,
+                                                 std::vector<CALC_TYPE> col_input)
 {
    std::size_t i_global,j_global;
    CALC_TYPE covariance_function;
@@ -350,7 +369,7 @@ std::vector<CALC_TYPE> gemv_u(std::vector<CALC_TYPE> A,
 }
 
 // BLAS operations for tiled prediction
-// b = A * a where A(N_row, N_col), a(N_col) and b(N_row)
+// b = b + A * a where A(N_row, N_col), a(N_col) and b(N_row)
 std::vector<CALC_TYPE> gemv_p(std::vector<CALC_TYPE> A,
                             std::vector<CALC_TYPE> a,
                             std::vector<CALC_TYPE> b,
@@ -387,7 +406,9 @@ CALC_TYPE norm_2(std::vector<CALC_TYPE> a,
 }
 ////////////////////////////////////////////////////////////////////////////////
 // Tiled Cholesky Algorithms
-void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles, std::size_t N, std::size_t n_tiles)
+void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles,
+                                  std::size_t N,
+                                  std::size_t n_tiles)
 {
   for (std::size_t k = 0; k < n_tiles; k++)
   {
@@ -411,7 +432,9 @@ void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CAL
   }
 }
 
-void left_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles, std::size_t N, std::size_t n_tiles)
+void left_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles,
+                                 std::size_t N,
+                                 std::size_t n_tiles)
 {
   for (std::size_t k = 0; k < n_tiles; k++)
   {
@@ -435,7 +458,9 @@ void left_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC
   }
 }
 
-void top_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles, std::size_t N, std::size_t n_tiles)
+void top_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles,
+                                std::size_t N,
+                                std::size_t n_tiles)
 {
   for (std::size_t k = 0; k < n_tiles; k++)
   {
@@ -460,7 +485,10 @@ void top_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC_
 }
 ////////////////////////////////////////////////////////////////////////////////
 // Tiled Triangular Solve Algorithms
-void forward_solve_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles, std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_rhs, std::size_t N, std::size_t n_tiles)
+void forward_solve_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles,
+                         std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_rhs,
+                         std::size_t N,
+                         std::size_t n_tiles)
 {
   for (std::size_t k = 0; k < n_tiles; k++)
   {
@@ -474,7 +502,10 @@ void forward_solve_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>>
   }
 }
 
-void backward_solve_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles, std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_rhs, std::size_t N, std::size_t n_tiles)
+void backward_solve_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles,
+                          std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_rhs,
+                          std::size_t N,
+                          std::size_t n_tiles)
 {
   for (int k = n_tiles - 1; k >= 0; k--) // int instead of std::size_t for last comparison
   {
@@ -489,7 +520,12 @@ void backward_solve_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>
 }
 ////////////////////////////////////////////////////////////////////////////////
 // Tiled Prediction
-void prediction_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles, std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_vector, std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_rhs, std::size_t N_row, std::size_t N_col, std::size_t n_tiles)
+void prediction_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles,
+                      std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_vector,
+                      std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_rhs,
+                      std::size_t N_row,
+                      std::size_t N_col,
+                      std::size_t n_tiles)
 {
   for (std::size_t k = 0; k < n_tiles; k++)
   {
@@ -554,16 +590,28 @@ int hpx_main(hpx::program_options::variables_map& vm)
     return 1;
   }
   // load training data
+  std::size_t scanned_elements = 0;
   for (int i = 0; i < n_train; i++)
   {
-    fscanf(training_input_file,TYPE,&training_input[i]);
-    fscanf(training_output_file,TYPE,&training_output[i]);
+    scanned_elements += fscanf(training_input_file,TYPE,&training_input[i]);
+    scanned_elements += fscanf(training_output_file,TYPE,&training_output[i]);
+  }
+  if (scanned_elements != 2 * n_train)
+  {
+    printf("Error in reading training data!\n");
+    return 1;
   }
   // load test data
+  scanned_elements = 0;
   for (int i = 0; i < n_test; i++)
   {
-    fscanf(test_input_file,TYPE,&test_input[i]);
-    fscanf(test_output_file,TYPE,&test_output[i]);
+    scanned_elements += fscanf(test_input_file,TYPE,&test_input[i]);
+    scanned_elements += fscanf(test_output_file,TYPE,&test_output[i]);
+  }
+  if (scanned_elements != 2 * n_test)
+  {
+    printf("Error in reading test data!\n");
+    return 1;
   }
   // close file streams
   fclose(training_input_file);
@@ -581,33 +629,22 @@ int hpx_main(hpx::program_options::variables_map& vm)
         K_tiles[i * n_tiles + j] = hpx::dataflow(hpx::annotated_function(&gen_tile_covariance, "assemble_tiled"), i, j, tile_size, n_regressors, hyperparameters, training_input);
      }
   }
-  //Assemble train output data
-  // train_output_tiles.resize(n_tiles);
-  // for (std::size_t i = 0; i < n_tiles; i++)
-  // {
-  //   train_output_tiles[i] = hpx::dataflow(hpx::annotated_function(&gen_tile_output, "assemble_tiled"), i, tile_size, training_output);
-  // }
+  // Assemble alpha
   alpha_tiles.resize(n_tiles);
   for (std::size_t i = 0; i < n_tiles; i++)
   {
     alpha_tiles[i] = hpx::dataflow(hpx::annotated_function(&gen_tile_output, "assemble_tiled"), i, tile_size, training_output);
   }
-
   // Assemble transposed covariance matrix vector
   cross_covariance_tiles.resize(n_tiles * n_tiles);
-  // for (std::size_t i = 0; i < n_tiles; i++)
-  // {
-  //    cross_covariance_tiles[i] = hpx::dataflow(hpx::annotated_function(&gen_tile_cross_covariance, "assemble_tiled"), i, 0, tile_size_prediction, n_train, n_tiles, n_regressors, hyperparameters, test_input, training_input);
-  // }
   for (std::size_t i = 0; i < n_tiles; i++)
   {
      for (std::size_t j = 0; j < n_tiles; j++)
      {
-       //(std::size_t row, std::size_t col, std::size_t N_row, std::size_t N_col, n_tiles, n_regressors, hyperparameters, row_input, col_input)
         cross_covariance_tiles[i * n_tiles + j] = hpx::dataflow(hpx::annotated_function(&gen_tile_cross_covariance, "assemble_tiled"), i, j, tile_size_prediction, tile_size, n_regressors, hyperparameters, test_input, training_input);
      }
   }
-  //Assemble zero prediction
+  // Assemble zero prediction
   prediction_tiles.resize(n_tiles);
   for (std::size_t i = 0; i < n_tiles; i++)
   {
@@ -624,7 +661,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   {
     right_looking_cholesky_tiled(K_tiles, tile_size, n_tiles);
   }
-  else // out is set to "top" per default
+  else // set to "top" per default
   {
     top_looking_cholesky_tiled(K_tiles, tile_size, n_tiles);
   }
