@@ -99,7 +99,7 @@ int main(int argc, char* argv[])
   std::size_t exp_start = 1;
   std::size_t exp_end = 3;
   // define early stop;
-  std::size_t early_stop = 15 * pow(10, exp_end - 1);
+  std::size_t early_stop = 10 * pow(10, exp_end - 1);
   // runtime data holder
   std::size_t total_potrf;
   std::size_t total_trsm;

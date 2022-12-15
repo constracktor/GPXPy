@@ -13,7 +13,8 @@ touch $OUTPUT_FILE_BLAS
 #../build/hpx_blas | tee $OUTPUT_FILE_BLAS
 # Run scripts for different tiled-decomposition
 #CHOLESKY_VARIANTS="left right top"
-CHOLESKY_VARIANTS="left"
+CHOLESKY_VARIANTS="right"
+#LOOP=5
 LOOP=1
 for CHOLESKY in $CHOLESKY_VARIANTS; do
   OUTPUT_FILE_CORES="cores_hpx_${CHOLESKY}.txt"
@@ -22,72 +23,58 @@ for CHOLESKY in $CHOLESKY_VARIANTS; do
   rm $OUTPUT_FILE_CORES
   rm $OUTPUT_FILE_TILES
   rm $OUTPUT_FILE_DATA
+  ##############################################################################
   # Run cores_script
+  START=1
+  END=256
+  STEP=2
+  N_TRAIN=20000
+  N_TEST=5000
+  N_REG=100
+  N_TILES=200
+  #./cores_script.sh $START $END $STEP $N_TILES $N_TRAIN $N_TEST $N_REG $CHOLESKY $LOOP $OUTPUT_FILE_CORES
+  ##############################################################################
+  # Run tiles_script for cores 16,23,64,128
+  N_CORES=128
+  N_TRAIN=20000
+  N_TEST=5000
+  N_REG=100
+  # from 1 to 8 tiles per dimension
   START=1
   END=8
   STEP=2
-  N_TRAIN=20000
-  N_TEST=5000
-  N_REG=100
-  N_TILES=200
-  #./cores_script.sh $START $END $STEP $N_TILES $N_TRAIN $N_TEST $N_REG $CHOLESKY $LOOP $OUTPUT_FILE_CORES
-  START=16
-  END=128
-  STEP=2
-  N_TRAIN=20000
-  N_TEST=5000
-  N_REG=100
-  N_TILES=200
-  #./cores_script.sh $START $END $STEP $N_TILES $N_TRAIN $N_TEST $N_REG $CHOLESKY $LOOP $OUTPUT_FILE_CORES
-  # Run tiles_script
-  START=10
-  END=10
-  STEP=10
-  N_TRAIN=10000
-  N_TEST=5000
-  N_REG=100
-  #./tiles_script.sh $START $END $STEP $N_TRAIN $N_TEST $N_REG $CHOLESKY $LOOP $OUTPUT_FILE_TILES
-  START=100
-  END=100
-  #./tiles_script.sh $START $END $STEP $N_TRAIN $N_TEST $N_REG $CHOLESKY $LOOP $OUTPUT_FILE_TILES
-  # Run tiles_script
+  #./tiles_script.sh $START $END $STEP $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
+  # from 25 to 200 tiles per dimension
   START=25
   END=200
   STEP=2
-  N_TRAIN=20000
+  #./tiles_script.sh $START $END $STEP $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
+  # for 500 tiles per dimension
+  #./tiles_script.sh 500 500 2 $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
+  ##############################################################################
+  # Run data_script on 128 cores
+  N_CORES=128
+  N_TILES=200
   N_TEST=5000
   N_REG=100
-  #./tiles_script.sh $START $END $STEP $N_TRAIN $N_TEST $N_REG $CHOLESKY $LOOP $OUTPUT_FILE_TILES
-  # Run data_script
-  START=100
-  END=900
-  STEP=100
-  N_TILES=1
-  N_TEST=1000
-  N_REG=100
-  #./data_script.sh $START $END $STEP $N_TILES $N_TEST $N_REG $CHOLESKY $LOOP $OUTPUT_FILE_DATA
-  # Run data_script
+  # from 10^3 to 10^4
   START=1000
-  END=10000
+  END=9000
   STEP=1000
-  N_TILES=1
-  N_TEST=1000
-  N_REG=100
-  #./data_script.sh $START $END $STEP $N_TILES $N_TEST $N_REG $CHOLESKY $LOOP $OUTPUT_FILE_DATA
-  # Run data_script
+  #./data_script.sh $START $END $STEP $N_TILES $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
+  # from 10^4 to 10^5
   START=10000
   END=100000
   STEP=10000
-  N_TILES=200
-  N_TEST=5000
-  N_REG=100
-  #./data_script.sh $START $END $STEP $N_TILES $N_TEST $N_REG $CHOLESKY $LOOP $OUTPUT_FILE_DATA
-  # Run data_script
+  #./data_script.sh $START $END $STEP $N_TILES $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
+  ##############################################################################
+  # Run data_script for testing
   START=10000
   END=10000
   STEP=10000
+  N_CORES=8
   N_TILES=200
   N_TEST=5000
   N_REG=100
-  ./data_script.sh $START $END $STEP $N_TILES $N_TEST $N_REG $CHOLESKY $LOOP $OUTPUT_FILE_DATA
+  ./data_script.sh $START $END $STEP $N_TILES $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
 done
