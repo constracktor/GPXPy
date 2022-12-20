@@ -3,20 +3,8 @@
 #include <iostream>
 #include <chrono>
 
-// #include <boost/numeric/ublas/vector.hpp>
-// #include <boost/numeric/ublas/vector_proxy.hpp>
-// #include <boost/numeric/ublas/matrix.hpp>
-// #include <boost/numeric/ublas/matrix_proxy.hpp>
-// #include <boost/numeric/ublas/vector_expression.hpp>
-// #include <boost/numeric/ublas/matrix_expression.hpp>
-// #include <boost/numeric/ublas/triangular.hpp>
-// #include <boost/numeric/ublas/operation.hpp>
-//
-// namespace ublas = boost::numeric::ublas;
-
 #include "ublas/ublas_adapter.hpp"
 #define CALC_TYPE float
-
 
 int main(int argc, char* argv[])
 { // loop size for averaging
