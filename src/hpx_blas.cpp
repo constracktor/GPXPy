@@ -1,96 +1,22 @@
-// Disable ublas debug mode
-#ifndef NDEBUG
-  #define BOOST_UBLAS_NDEBUG
-#endif
-
 #include <cmath>
 #include <random>
 #include <iostream>
 #include <chrono>
 
-#include <boost/numeric/ublas/vector.hpp>
-#include <boost/numeric/ublas/vector_proxy.hpp>
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/matrix_proxy.hpp>
-#include <boost/numeric/ublas/vector_expression.hpp>
-#include <boost/numeric/ublas/matrix_expression.hpp>
-#include <boost/numeric/ublas/triangular.hpp>
-#include <boost/numeric/ublas/operation.hpp>
+// #include <boost/numeric/ublas/vector.hpp>
+// #include <boost/numeric/ublas/vector_proxy.hpp>
+// #include <boost/numeric/ublas/matrix.hpp>
+// #include <boost/numeric/ublas/matrix_proxy.hpp>
+// #include <boost/numeric/ublas/vector_expression.hpp>
+// #include <boost/numeric/ublas/matrix_expression.hpp>
+// #include <boost/numeric/ublas/triangular.hpp>
+// #include <boost/numeric/ublas/operation.hpp>
+//
+// namespace ublas = boost::numeric::ublas;
 
-namespace ublas = boost::numeric::ublas;
-#define CALC_TYPE double
+#include "ublas/ublas_adapter.hpp"
+#define CALC_TYPE float
 
-////////////////////////////////////////////////////////////////////////////////
-// BLAS operations for tiled cholkesy
-// Cholesky decomposition of A -> return factorized matrix L
-std::vector<CALC_TYPE> potrf(std::vector<CALC_TYPE> A,
-                             std::size_t N)
-{
-  // convert to boost matrices
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
-  A_blas.data() = A;
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > L_blas(N, N);
-  // POTRF (compute Cholesky)
-  for (size_t k=0 ; k < N; k++)
-  {
-    // compute squared diagonal entry
-    CALC_TYPE qL_kk = A_blas(k,k) - ublas::inner_prod( ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ), ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ) );
-    // check if positive
-    if (qL_kk <= 0)
-    {
-      std::cout << qL_kk << '\n' << std::flush;
-    }
-    else
-    {
-      // set diagonal entry
-      CALC_TYPE L_kk = std::sqrt( qL_kk );
-      L_blas(k,k) = L_kk;
-      // compute corresponding column
-      ublas::matrix_column<ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> >> cLk(L_blas, k);
-      ublas::project( cLk, ublas::range(k+1, N) )
-        = ( ublas::project( ublas::column(A_blas, k), ublas::range(k+1, N) )
-            - ublas::prod( ublas::project(L_blas, ublas::range(k+1, N), ublas::range(0, k)),
-                    ublas::project(ublas::row(L_blas, k), ublas::range(0, k) ) ) ) / L_kk;
-    }
-  }
-  // reformat to std::vector
-  A = L_blas.data();
-  return A;
-}
-
-// solve L * X = A^T where L triangular
-std::vector<CALC_TYPE> trsm(std::vector<CALC_TYPE> L,
-                            std::vector<CALC_TYPE> A,
-                            std::size_t N)
-{
-  // convert to boost matrices
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > L_blas(N, N);
-  L_blas.data() = L;
-  ublas::matrix< CALC_TYPE, ublas::column_major, std::vector<CALC_TYPE> > A_blas(N, N);//use column_major because A^T
-  A_blas.data() = A;
-  // TRSM
-  ublas::inplace_solve(L_blas, A_blas, ublas::lower_tag());
-  // reformat to std::vector
-  A = A_blas.data();
-  return A;
-}
-
-//  A = A - B * B^T
-std::vector<CALC_TYPE> syrk(std::vector<CALC_TYPE> A,
-                            std::vector<CALC_TYPE> B,
-                            std::size_t N)
-{
-  // convert to boost matrices
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
-  A_blas.data() = A;
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > B_blas(N, N);
-  B_blas.data() = B;
-  //SYRK
-  A_blas = A_blas - ublas::prod(B_blas,ublas::trans(B_blas));
-  // reformat to std::vector
-  A = A_blas.data();
-  return A;
-}
 
 int main(int argc, char* argv[])
 { // loop size for averaging
