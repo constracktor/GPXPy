@@ -205,20 +205,20 @@ void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CAL
   for (std::size_t k = 0; k < n_tiles; k++)
   {
     // POTRF
-    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&potrf), "cholesky_tiled"), ft_tiles[k * n_tiles + k], N);
+    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&potrf<CALC_TYPE>), "cholesky_tiled"), ft_tiles[k * n_tiles + k], N);
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
       // TRSM
-      ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&trsm), "cholesky_tiled"), ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
+      ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&trsm<CALC_TYPE>), "cholesky_tiled"), ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
     }
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
       // SYRK
-      ft_tiles[m * n_tiles + m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&syrk), "cholesky_tiled"), ft_tiles[m * n_tiles + m], ft_tiles[m * n_tiles + k], N);
+      ft_tiles[m * n_tiles + m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&syrk<CALC_TYPE>), "cholesky_tiled"), ft_tiles[m * n_tiles + m], ft_tiles[m * n_tiles + k], N);
       for (std::size_t n = k + 1; n < m; n++)
       {
         // GEMM
-        ft_tiles[m * n_tiles + n] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemm), "cholesky_tiled"), ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
+        ft_tiles[m * n_tiles + n] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemm<CALC_TYPE>), "cholesky_tiled"), ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
       }
     }
   }
@@ -233,19 +233,19 @@ void left_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC
     for (std::size_t n = 0; n < k; n++)
     {
       // SYRK
-      ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&syrk), "cholesky_tiled"), ft_tiles[k * n_tiles + k], ft_tiles[k * n_tiles + n], N);
+      ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&syrk<CALC_TYPE>), "cholesky_tiled"), ft_tiles[k * n_tiles + k], ft_tiles[k * n_tiles + n], N);
       for (std::size_t m = k + 1; m < n_tiles; m++)
       {
         // GEMM
-        ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemm), "cholesky_tiled"), ft_tiles[m * n_tiles + n], ft_tiles[k * n_tiles + n], ft_tiles[m * n_tiles + k], N);
+        ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemm<CALC_TYPE>), "cholesky_tiled"), ft_tiles[m * n_tiles + n], ft_tiles[k * n_tiles + n], ft_tiles[m * n_tiles + k], N);
       }
     }
     // POTRF
-    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&potrf), "cholesky_tiled"), ft_tiles[k * n_tiles + k], N);
+    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&potrf<CALC_TYPE>), "cholesky_tiled"), ft_tiles[k * n_tiles + k], N);
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
       // TRSM
-      ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&trsm), "cholesky_tiled"), ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
+      ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&trsm<CALC_TYPE>), "cholesky_tiled"), ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
     }
   }
 }
@@ -261,18 +261,18 @@ void top_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC_
       for (std::size_t m = 0; m < n; m++)
       {
         // GEMM
-        ft_tiles[k * n_tiles + n] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemm), "cholesky_tiled"), ft_tiles[k * n_tiles + m], ft_tiles[n * n_tiles + m], ft_tiles[k * n_tiles + n], N);
+        ft_tiles[k * n_tiles + n] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemm<CALC_TYPE>), "cholesky_tiled"), ft_tiles[k * n_tiles + m], ft_tiles[n * n_tiles + m], ft_tiles[k * n_tiles + n], N);
       }
       // TRSM
-      ft_tiles[k * n_tiles + n] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&trsm), "cholesky_tiled"), ft_tiles[n * n_tiles + n], ft_tiles[k * n_tiles + n], N);
+      ft_tiles[k * n_tiles + n] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&trsm<CALC_TYPE>), "cholesky_tiled"), ft_tiles[n * n_tiles + n], ft_tiles[k * n_tiles + n], N);
     }
     for (std::size_t n = 0; n < k; n++)
     {
       // SYRK
-      ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&syrk), "cholesky_tiled"), ft_tiles[k * n_tiles + k], ft_tiles[k * n_tiles + n], N);
+      ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&syrk<CALC_TYPE>), "cholesky_tiled"), ft_tiles[k * n_tiles + k], ft_tiles[k * n_tiles + n], N);
     }
     // POTRF
-    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&potrf), "cholesky_tiled"), ft_tiles[k * n_tiles + k], N);
+    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&potrf<CALC_TYPE>), "cholesky_tiled"), ft_tiles[k * n_tiles + k], N);
   }
 }
 
@@ -285,11 +285,11 @@ void right_looking_cholesky_tiled_cublas(hpx::cuda::experimental::cublas_executo
   for (std::size_t k = 0; k < n_tiles; k++)
   {
     // POTRF
-    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&potrf), "cholesky_tiled"), ft_tiles[k * n_tiles + k], N);
+    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&potrf<CALC_TYPE>), "cholesky_tiled"), ft_tiles[k * n_tiles + k], N);
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
       // TRSM
-      ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&trsm), "cholesky_tiled"), ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
+      ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&trsm<CALC_TYPE>), "cholesky_tiled"), ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
     }
     // update using cublas for tile update
     for (std::size_t m = k + 1; m < n_tiles; m++)
@@ -305,7 +305,6 @@ void right_looking_cholesky_tiled_cublas(hpx::cuda::experimental::cublas_executo
   }
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // Tiled Triangular Solve Algorithms
 void forward_solve_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles,
@@ -316,11 +315,11 @@ void forward_solve_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>>
   for (std::size_t k = 0; k < n_tiles; k++)
   {
     // TRSM
-    ft_rhs[k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&trsm_l), "triangular_solve_tiled"), ft_tiles[k * n_tiles + k], ft_rhs[k], N);
+    ft_rhs[k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&trsm_l<CALC_TYPE>), "triangular_solve_tiled"), ft_tiles[k * n_tiles + k], ft_rhs[k], N);
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
       // GEMV
-      ft_rhs[m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemv_l), "triangular_solve_tiled"), ft_tiles[m * n_tiles + k], ft_rhs[k], ft_rhs[m], N);
+      ft_rhs[m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemv_l<CALC_TYPE>), "triangular_solve_tiled"), ft_tiles[m * n_tiles + k], ft_rhs[k], ft_rhs[m], N);
     }
   }
 }
@@ -333,11 +332,11 @@ void backward_solve_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>
   for (int k = n_tiles - 1; k >= 0; k--) // int instead of std::size_t for last comparison
   {
     // TRSM
-    ft_rhs[k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&trsm_u), "triangular_solve_tiled"), ft_tiles[k * n_tiles + k], ft_rhs[k], N);
+    ft_rhs[k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&trsm_u<CALC_TYPE>), "triangular_solve_tiled"), ft_tiles[k * n_tiles + k], ft_rhs[k], N);
     for (int m = k - 1; m >= 0; m--) // int instead of std::size_t for last comparison
     {
       // GEMV
-      ft_rhs[m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemv_u), "triangular_solve_tiled"), ft_tiles[k * n_tiles + m], ft_rhs[k], ft_rhs[m], N);
+      ft_rhs[m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemv_u<CALC_TYPE>), "triangular_solve_tiled"), ft_tiles[k * n_tiles + m], ft_rhs[k], ft_rhs[m], N);
     }
   }
 }
@@ -354,7 +353,7 @@ void prediction_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &f
   {
     for (std::size_t m = 0; m < n_tiles; m++)
     {
-      ft_rhs[k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemv_p), "prediction_tiled"), ft_tiles[k * n_tiles + m], ft_vector[m], ft_rhs[k], N_row, N_col);
+      ft_rhs[k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemv_p<CALC_TYPE>), "prediction_tiled"), ft_tiles[k * n_tiles + m], ft_vector[m], ft_rhs[k], N_row, N_col);
     }
   }
 }
@@ -501,13 +500,13 @@ int hpx_main(hpx::program_options::variables_map& vm)
     {
       left_looking_cholesky_tiled(K_tiles, tile_size, n_tiles);
     }
-    else if (cholesky.compare("right") == 0)
-    {
-      right_looking_cholesky_tiled(K_tiles, tile_size, n_tiles);
-    }
-    else // set to "top" per default
+    else if (cholesky.compare("top") == 0)
     {
       top_looking_cholesky_tiled(K_tiles, tile_size, n_tiles);
+    }
+    else // set to "right" per default
+    {
+      right_looking_cholesky_tiled(K_tiles, tile_size, n_tiles);
     }
   }
   //////////////////////////////////////////////////////////////////////////////

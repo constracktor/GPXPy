@@ -17,18 +17,19 @@ namespace ublas = boost::numeric::ublas;
 ////////////////////////////////////////////////////////////////////////////////
 // BLAS operations for tiled cholkesy
 // Cholesky decomposition of A -> return factorized matrix L
-std::vector<CALC_TYPE> potrf(std::vector<CALC_TYPE> A,
+template <typename T>
+std::vector<T> potrf(std::vector<T> A,
                              std::size_t N)
 {
   // convert to boost matrices
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
+  ublas::matrix< T, ublas::row_major, std::vector<T> > A_blas(N, N);
   A_blas.data() = A;
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > L_blas(N, N);
+  ublas::matrix< T, ublas::row_major, std::vector<T> > L_blas(N, N);
   // POTRF (compute Cholesky)
   for (size_t k=0 ; k < N; k++)
   {
     // compute squared diagonal entry
-    CALC_TYPE qL_kk = A_blas(k,k) - ublas::inner_prod( ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ), ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ) );
+    T qL_kk = A_blas(k,k) - ublas::inner_prod( ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ), ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ) );
     // check if positive
     if (qL_kk <= 0)
     {
@@ -37,10 +38,10 @@ std::vector<CALC_TYPE> potrf(std::vector<CALC_TYPE> A,
     else
     {
       // set diagonal entry
-      CALC_TYPE L_kk = std::sqrt( qL_kk );
+      T L_kk = std::sqrt( qL_kk );
       L_blas(k,k) = L_kk;
       // compute corresponding column
-      ublas::matrix_column<ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> >> cLk(L_blas, k);
+      ublas::matrix_column<ublas::matrix< T, ublas::row_major, std::vector<T> >> cLk(L_blas, k);
       ublas::project( cLk, ublas::range(k+1, N) )
         = ( ublas::project( ublas::column(A_blas, k), ublas::range(k+1, N) )
             - ublas::prod( ublas::project(L_blas, ublas::range(k+1, N), ublas::range(0, k)),
@@ -53,14 +54,15 @@ std::vector<CALC_TYPE> potrf(std::vector<CALC_TYPE> A,
 }
 
 // solve L * X = A^T where L triangular
-std::vector<CALC_TYPE> trsm(std::vector<CALC_TYPE> L,
-                            std::vector<CALC_TYPE> A,
+template <typename T>
+std::vector<T> trsm(std::vector<T> L,
+                            std::vector<T> A,
                             std::size_t N)
 {
   // convert to boost matrices
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > L_blas(N, N);
+  ublas::matrix< T, ublas::row_major, std::vector<T> > L_blas(N, N);
   L_blas.data() = L;
-  ublas::matrix< CALC_TYPE, ublas::column_major, std::vector<CALC_TYPE> > A_blas(N, N);//use column_major because A^T
+  ublas::matrix< T, ublas::column_major, std::vector<T> > A_blas(N, N);//use column_major because A^T
   A_blas.data() = A;
   // TRSM
   ublas::inplace_solve(L_blas, A_blas, ublas::lower_tag());
@@ -70,14 +72,15 @@ std::vector<CALC_TYPE> trsm(std::vector<CALC_TYPE> L,
 }
 
 //  A = A - B * B^T
-std::vector<CALC_TYPE> syrk(std::vector<CALC_TYPE> A,
-                            std::vector<CALC_TYPE> B,
+template <typename T>
+std::vector<T> syrk(std::vector<T> A,
+                            std::vector<T> B,
                             std::size_t N)
 {
   // convert to boost matrices
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
+  ublas::matrix< T, ublas::row_major, std::vector<T> > A_blas(N, N);
   A_blas.data() = A;
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > B_blas(N, N);
+  ublas::matrix< T, ublas::row_major, std::vector<T> > B_blas(N, N);
   B_blas.data() = B;
   //SYRK
   A_blas = A_blas - ublas::prod(B_blas,ublas::trans(B_blas));
@@ -87,17 +90,18 @@ std::vector<CALC_TYPE> syrk(std::vector<CALC_TYPE> A,
 }
 
 //C = C - A * B^T
-std::vector<CALC_TYPE> gemm(std::vector<CALC_TYPE> A,
-                            std::vector<CALC_TYPE> B,
-                            std::vector<CALC_TYPE> C,
+template <typename T>
+std::vector<T> gemm(std::vector<T> A,
+                            std::vector<T> B,
+                            std::vector<T> C,
                             std::size_t N)
 {
   // convert to boost matrices
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
+  ublas::matrix< T, ublas::row_major, std::vector<T> > A_blas(N, N);
   A_blas.data() = A;
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > B_blas(N, N);
+  ublas::matrix< T, ublas::row_major, std::vector<T> > B_blas(N, N);
   B_blas.data() = B;
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > C_blas(N, N);
+  ublas::matrix< T, ublas::row_major, std::vector<T> > C_blas(N, N);
   C_blas.data() = C;
   // GEMM
   C_blas = C_blas - ublas::prod(A_blas, ublas::trans(B_blas));
@@ -108,14 +112,15 @@ std::vector<CALC_TYPE> gemm(std::vector<CALC_TYPE> A,
 
 // BLAS operations for tiled triangular solve
 // solve L * x = a where L lower triangular
-std::vector<CALC_TYPE> trsm_l(std::vector<CALC_TYPE> L,
-                              std::vector<CALC_TYPE> a,
+template <typename T>
+std::vector<T> trsm_l(std::vector<T> L,
+                              std::vector<T> a,
                               std::size_t N)
 {
   // convert to boost matrices
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > L_blas(N, N);
+  ublas::matrix< T, ublas::row_major, std::vector<T> > L_blas(N, N);
   L_blas.data() = L;
-  ublas::vector< CALC_TYPE, std::vector<CALC_TYPE> > a_blas(N);
+  ublas::vector< T, std::vector<T> > a_blas(N);
   a_blas.data() = a;
   // TRSM
   ublas::inplace_solve(L_blas, a_blas, ublas::lower_tag());
@@ -125,14 +130,15 @@ std::vector<CALC_TYPE> trsm_l(std::vector<CALC_TYPE> L,
 }
 
 // solve L^T * x = a where L lower triangular
-std::vector<CALC_TYPE> trsm_u(std::vector<CALC_TYPE> L,
-                              std::vector<CALC_TYPE> a,
+template <typename T>
+std::vector<T> trsm_u(std::vector<T> L,
+                              std::vector<T> a,
                               std::size_t N)
 {
   // convert to boost matrices
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > L_blas(N, N);
+  ublas::matrix< T, ublas::row_major, std::vector<T> > L_blas(N, N);
   L_blas.data() = L;
-  ublas::vector< CALC_TYPE, std::vector<CALC_TYPE> > a_blas(N);
+  ublas::vector< T, std::vector<T> > a_blas(N);
   a_blas.data() = a;
   // TRSM
   ublas::inplace_solve(ublas::trans(L_blas), a_blas, ublas::upper_tag());
@@ -142,17 +148,18 @@ std::vector<CALC_TYPE> trsm_u(std::vector<CALC_TYPE> L,
 }
 
 // b = b - A * a
-std::vector<CALC_TYPE> gemv_l(std::vector<CALC_TYPE> A,
-                            std::vector<CALC_TYPE> a,
-                            std::vector<CALC_TYPE> b,
+template <typename T>
+std::vector<T> gemv_l(std::vector<T> A,
+                            std::vector<T> a,
+                            std::vector<T> b,
                             std::size_t N)
 {
   // convert to boost matrix and vectors
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
+  ublas::matrix< T, ublas::row_major, std::vector<T> > A_blas(N, N);
   A_blas.data() = A;
-  ublas::vector< CALC_TYPE, std::vector<CALC_TYPE> > a_blas(N);
+  ublas::vector< T, std::vector<T> > a_blas(N);
   a_blas.data() = a;
-  ublas::vector< CALC_TYPE, std::vector<CALC_TYPE> > b_blas(N);
+  ublas::vector< T, std::vector<T> > b_blas(N);
   b_blas.data() = b;
   // GEMM
   b_blas = b_blas - ublas::prod(A_blas, a_blas);
@@ -162,17 +169,18 @@ std::vector<CALC_TYPE> gemv_l(std::vector<CALC_TYPE> A,
 }
 
 // b = b - A^T * a
-std::vector<CALC_TYPE> gemv_u(std::vector<CALC_TYPE> A,
-                            std::vector<CALC_TYPE> a,
-                            std::vector<CALC_TYPE> b,
+template <typename T>
+std::vector<T> gemv_u(std::vector<T> A,
+                            std::vector<T> a,
+                            std::vector<T> b,
                             std::size_t N)
 {
   // convert to boost matrix and vectors
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N, N);
+  ublas::matrix< T, ublas::row_major, std::vector<T> > A_blas(N, N);
   A_blas.data() = A;
-  ublas::vector< CALC_TYPE, std::vector<CALC_TYPE> > a_blas(N);
+  ublas::vector< T, std::vector<T> > a_blas(N);
   a_blas.data() = a;
-  ublas::vector< CALC_TYPE, std::vector<CALC_TYPE> > b_blas(N);
+  ublas::vector< T, std::vector<T> > b_blas(N);
   b_blas.data() = b;
   // GEMM
   b_blas = b_blas - ublas::prod(ublas::trans(A_blas), a_blas);
@@ -183,18 +191,19 @@ std::vector<CALC_TYPE> gemv_u(std::vector<CALC_TYPE> A,
 
 // BLAS operations for tiled prediction
 // b = b + A * a where A(N_row, N_col), a(N_col) and b(N_row)
-std::vector<CALC_TYPE> gemv_p(std::vector<CALC_TYPE> A,
-                            std::vector<CALC_TYPE> a,
-                            std::vector<CALC_TYPE> b,
+template <typename T>
+std::vector<T> gemv_p(std::vector<T> A,
+                            std::vector<T> a,
+                            std::vector<T> b,
                             std::size_t N_row,
                             std::size_t N_col)
 {
   // convert to boost matrix and vectors
-  ublas::matrix< CALC_TYPE, ublas::row_major, std::vector<CALC_TYPE> > A_blas(N_row, N_col);
+  ublas::matrix< T, ublas::row_major, std::vector<T> > A_blas(N_row, N_col);
   A_blas.data() = A;
-  ublas::vector< CALC_TYPE, std::vector<CALC_TYPE> > a_blas(N_col);
+  ublas::vector< T, std::vector<T> > a_blas(N_col);
   a_blas.data() = a;
-  ublas::vector< CALC_TYPE, std::vector<CALC_TYPE> > b_blas(N_row);
+  ublas::vector< T, std::vector<T> > b_blas(N_row);
   b_blas.data() = b;
   // GEMM
   b_blas = b_blas  + ublas::prod(A_blas, a_blas);
@@ -204,16 +213,17 @@ std::vector<CALC_TYPE> gemv_p(std::vector<CALC_TYPE> A,
 }
 
 // ||a - b||^2
-CALC_TYPE norm_2(std::vector<CALC_TYPE> a,
-                 std::vector<CALC_TYPE> b,
+template <typename T>
+T norm_2(std::vector<T> a,
+                 std::vector<T> b,
                  std::size_t N)
 {
   // convert to boost vectors
-  ublas::vector< CALC_TYPE, std::vector<CALC_TYPE> > a_blas(N);
+  ublas::vector< T, std::vector<T> > a_blas(N);
   a_blas.data() = a;
-  ublas::vector< CALC_TYPE, std::vector<CALC_TYPE> > b_blas(N);
+  ublas::vector< T, std::vector<T> > b_blas(N);
   b_blas.data() = b;
   // NORM
-  CALC_TYPE error = ublas::norm_2(a_blas - b_blas);
+  T error = ublas::norm_2(a_blas - b_blas);
   return error;
 }
