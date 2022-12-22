@@ -3,7 +3,7 @@ project(hpx_project CXX)
 find_package(HPX REQUIRED)
 
 # set header file
-set(HEADER_FILES src/ublas/ublas_adapter.cpp src/cublas/cublas_adapter.cpp)
+set(HEADER_FILES src/ublas/ublas_adapter.hpp src/cublas/cublas_adapter.hpp)
 
 # build various executables
 add_executable(hpx_cholesky src/hpx_cholesky.cpp ${HEADER_FILES})

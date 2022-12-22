@@ -5,9 +5,6 @@ export HPXSC_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd 
 export CMAKE_COMMAND=${HPXSC_ROOT}/build/cmake/bin/cmake
 # Compile Code
 rm -rf build && mkdir build && cd build && $CMAKE_COMMAND .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${HPXSC_ROOT}/build/hpx/build/lib/cmake/HPX" && make all
-# test cublas
-#./cublas_matmul --sizemult=10 --iterations=25 --hpx:threads=8
-./cublas_adapter --sizemult=1 --hpx:threads=8
 cd ../benchmark_scripts
 # Run BLAS benchmark
 OUTPUT_FILE_BLAS="blas_hpx.txt"
@@ -76,7 +73,7 @@ for CHOLESKY in $CHOLESKY_VARIANTS; do
   END=10000
   STEP=1000
   N_CORES=16
-  N_TILES=100
+  N_TILES=10
   N_TEST=5000
   N_REG=100
   ./data_script.sh $START $END $STEP $N_TILES $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA

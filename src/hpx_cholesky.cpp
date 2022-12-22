@@ -1,24 +1,42 @@
-//#define CALC_TYPE double
-//#define TYPE "%lf"
 #define CALC_TYPE float
-#define TYPE "%f"
 #define GPU true
 
 
-#include <cmath>
-#include <cassert>
-#include <iostream>
+// set type to read data
+#if CALC_TYPE==float
+  #define TYPE "%f"
+#elif CALC_TYPE==double
+  #define TYPE "%lf"
+#endif
 
-#include <hpx/local/chrono.hpp>
+#include <cmath>
+#include <iostream>
 #include <hpx/local/future.hpp>
 #include <hpx/local/init.hpp>
-#include <hpx/modules/format.hpp>
-#include <hpx/iostream.hpp>
-
-#include <hpx/modules/async_cuda.hpp>
 
 #include "ublas/ublas_adapter.hpp"
-#include "cublas/cublas_adapter.cpp"
+#include "cublas/cublas_adapter.hpp"
+
+void enable_polling(){
+  // install cuda future polling handler
+  hpx::cuda::experimental::enable_user_polling poll("default");
+}
+
+hpx::cuda::experimental::cublas_executor initialize_cuda_executor(std::size_t device)
+{
+
+  // print GPU info
+  hpx::cuda::experimental::target target(device);
+  std::cout << "GPU Device " << target.native_handle().get_device() << ": \""
+       << target.native_handle().processor_name() << "\" "
+       << "with compute capability "
+       << target.native_handle().processor_family() << "\n";
+  // create cublas executor
+  hpx::cuda::experimental::cublas_executor cublas(device,
+  CUBLAS_POINTER_MODE_HOST, hpx::cuda::experimental::event_mode{});
+  return cublas;
+
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // GP functions to assemble K
@@ -195,6 +213,19 @@ std::vector<CALC_TYPE> assemble(std::vector<std::vector<CALC_TYPE>> tiles,
   }
   return vector;
 }
+
+CALC_TYPE norm_2(std::vector<CALC_TYPE> a,
+                 std::vector<CALC_TYPE> b,
+                 std::size_t N)
+{
+  CALC_TYPE error = 0.f;
+  // ||a - b||_2
+  for (size_t i = 0; i < N; i++)
+  {
+    error += (b[i] - a[i]) * (b[i] - a[i]);
+  }
+  return sqrt(error);
+}
 ////////////////////////////////////////////////////////////////////////////////
 // Tiled Cholesky Algorithms
 void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles,
@@ -205,7 +236,7 @@ void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CAL
   for (std::size_t k = 0; k < n_tiles; k++)
   {
     // POTRF
-    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&potrf<CALC_TYPE>), "cholesky_tiled"), ft_tiles[k * n_tiles + k], N);
+    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&(potrf<CALC_TYPE>)), "cholesky_tiled"), ft_tiles[k * n_tiles + k], N);
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
       // TRSM
@@ -363,6 +394,8 @@ int hpx_main(hpx::program_options::variables_map& vm)
 {
   // determine choleksy variant
   std::string cholesky = vm["cholesky"].as<std::string>();
+  // get device - not relevant if GPU is turned off
+  std::size_t device = vm["device"].as<std::size_t>();
   // GP parameters
   std::size_t n_train = vm["n_train"].as<std::size_t>();  //max 100*1000
   std::size_t n_test = vm["n_test"].as<std::size_t>();     //max 5*1000
@@ -478,19 +511,11 @@ int hpx_main(hpx::program_options::variables_map& vm)
   // Compute Cholesky decomposition
   if (GPU)
   {
+    //enable_polling();
     // install cuda future polling handler
     hpx::cuda::experimental::enable_user_polling poll("default");
-    // get device
-    std::size_t device = vm["device"].as<std::size_t>();
-    // create cublas executor
-    hpx::cuda::experimental::cublas_executor cublas(device,
-    CUBLAS_POINTER_MODE_HOST, hpx::cuda::experimental::event_mode{});
-    // print GPU info
-    hpx::cuda::experimental::target target(device);
-    std::cout << "GPU Device " << target.native_handle().get_device() << ": \""
-         << target.native_handle().processor_name() << "\" "
-         << "with compute capability "
-         << target.native_handle().processor_family() << "\n";
+    // initialize cuda executor
+    auto cublas = initialize_cuda_executor(device);
     // only right looking implemented
     right_looking_cholesky_tiled_cublas(cublas, K_tiles, tile_size, n_tiles);
   }
