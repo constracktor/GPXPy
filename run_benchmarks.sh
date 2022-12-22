@@ -4,13 +4,13 @@ export APEX_SCREEN_OUTPUT=1 APEX_CSV_OUTPUT=1
 export HPXSC_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd )/dependencies"
 export CMAKE_COMMAND=${HPXSC_ROOT}/build/cmake/bin/cmake
 # Compile Code
-rm -rf build && mkdir build && cd build && $CMAKE_COMMAND .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${HPXSC_ROOT}/build/hpx/build/lib/cmake/HPX" && make all
+rm -rf build && mkdir build && cd build && $CMAKE_COMMAND .. -DGPU=0 -DBLAS=1 -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${HPXSC_ROOT}/build/hpx/build/lib/cmake/HPX" && make all
 cd ../benchmark_scripts
 # Run BLAS benchmark
 OUTPUT_FILE_BLAS="blas_hpx.txt"
 rm $OUTPUT_FILE_BLAS
 touch $OUTPUT_FILE_BLAS
-#../build/hpx_blas | tee $OUTPUT_FILE_BLAS
+../build/hpx_blas | tee $OUTPUT_FILE_BLAS
 # Run scripts for different tiled-decomposition
 #CHOLESKY_VARIANTS="left right top"
 CHOLESKY_VARIANTS="right"
@@ -69,12 +69,12 @@ for CHOLESKY in $CHOLESKY_VARIANTS; do
   #./data_script.sh $START $END $STEP $N_TILES $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
   ##############################################################################
   # Run data_script for testing
-  START=10000
-  END=10000
+  START=5000
+  END=5000
   STEP=1000
   N_CORES=16
   N_TILES=10
   N_TEST=5000
   N_REG=100
-  ./data_script.sh $START $END $STEP $N_TILES $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
+  #./data_script.sh $START $END $STEP $N_TILES $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
 done

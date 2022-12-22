@@ -1,10 +1,11 @@
+#define CALC_TYPE float
+
+#include "headers/ublas_adapter.hpp"
+
 #include <cmath>
 #include <random>
 #include <iostream>
 #include <chrono>
-
-#include "ublas/ublas_adapter.hpp"
-#define CALC_TYPE float
 
 int main(int argc, char* argv[])
 { // loop size for averaging
