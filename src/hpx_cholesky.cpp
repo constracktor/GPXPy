@@ -12,7 +12,10 @@
 #include <hpx/modules/format.hpp>
 #include <hpx/iostream.hpp>
 
+#include <hpx/modules/async_cuda.hpp>
+
 #include "ublas/ublas_adapter.hpp"
+#include "cublas/cublas_adapter.cpp"
 
 ////////////////////////////////////////////////////////////////////////////////
 // GP functions to assemble K
@@ -194,7 +197,13 @@ std::vector<CALC_TYPE> assemble(std::vector<std::vector<CALC_TYPE>> tiles,
 void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> &ft_tiles,
                                   std::size_t N,
                                   std::size_t n_tiles)
+
 {
+  hpx::cuda::experimental::enable_user_polling poll("default");
+  // std::size_t device = 0;
+  // hpx::cuda::experimental::cublas_executor cublas(device,
+  //     CUBLAS_POINTER_MODE_HOST, hpx::cuda::experimental::event_mode{});
+
   for (std::size_t k = 0; k < n_tiles; k++)
   {
     // POTRF
@@ -211,7 +220,9 @@ void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<CAL
       for (std::size_t n = k + 1; n < m; n++)
       {
         // GEMM
-        ft_tiles[m * n_tiles + n] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemm), "cholesky_tiled"), ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
+        ft_tiles[m * n_tiles + n] = gemm_cublas<CALC_TYPE>(ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
+
+        //ft_tiles[m * n_tiles + n] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemm), "cholesky_tiled"), ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
       }
     }
   }

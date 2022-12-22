@@ -72,11 +72,11 @@ for CHOLESKY in $CHOLESKY_VARIANTS; do
   #./data_script.sh $START $END $STEP $N_TILES $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
   ##############################################################################
   # Run data_script for testing
-  START=10000
-  END=10000
-  STEP=10000
-  N_CORES=8
-  N_TILES=200
+  START=5000
+  END=5000
+  STEP=1000
+  N_CORES=16
+  N_TILES=10
   N_TEST=5000
   N_REG=100
   ./data_script.sh $START $END $STEP $N_TILES $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
