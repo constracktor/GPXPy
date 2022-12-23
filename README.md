@@ -44,40 +44,11 @@ Install HPX manually:
 `cd && hpx_project/dependencies && git pull --rebase && ./build-all.sh Release`
 
 
-## Compile Code Manually
-
-### Release
-
-Compile Code (requires cmake):
-
-`cd && cd hpx_project && rm -rf build && git pull --rebase && mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release && make all`
-
-### Debug
-
-Compile Code (requires cmake):
-
-`cd && cd hpx_project && rm -rf build && git pull --rebase && mkdir build && cd build && cmake .. && make all`
-
-## Run Code Manually
-
-Run Code:
-
-`cd && cd hpx_project/build && ./hpx_cholesky --n_train 1000 --n_test 1000 --n_regressors 100 --n_tiles 1 --cholesky left`
-
-
-## Scripts
-
-Tile Number Loop:
-
-`cd && cd hpx_project/benchmark_scripts && ./tiles_script.sh 10 100 10 1000 1000 100 left 5`
-
-Training Size Loop:
-
-`cd && cd hpx_project/benchmark_scripts && ./data_script.sh 1000 5000 1000 10 1000 100 left 5`
+## Compile and Run Code
 
 Benchmark Script:
 
-`cd && cd hpx_project && git pull --rebase && ./run_benchmarks.sh`
+`cd && cd hpx_project && git pull --rebase && ./run_benchmarks.sh cpu/gpu/blas`
 
 
 ## Git Commands for Developing
