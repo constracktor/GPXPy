@@ -1,7 +1,7 @@
-#define CALC_TYPE double
-#define TYPE "%lf"
-//#define CALC_TYPE float
-//#define TYPE "%f"
+// #define CALC_TYPE double
+// #define TYPE "%lf"
+#define CALC_TYPE float
+#define TYPE "%f"
 
 #include "headers/gp_functions.hpp"
 #include "headers/tiled_algorithms_cpu.hpp"
