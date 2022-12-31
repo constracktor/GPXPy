@@ -118,8 +118,7 @@ std::vector<T> gen_tile_output(std::size_t row,
 template <typename T>
 std::vector<T> gen_tile_cross_covariance(std::size_t row,
                                                  std::size_t col,
-                                                 std::size_t N_row,
-                                                 std::size_t N_col,
+                                                 std::size_t N,
                                                  std::size_t n_regressors,
                                                  T *hyperparameters,
                                                  std::vector<T> row_input,
@@ -128,30 +127,30 @@ std::vector<T> gen_tile_cross_covariance(std::size_t row,
    std::size_t i_global,j_global;
    T covariance_function;
    std::vector<std::vector<T>> z_row, z_col;
-   z_row.resize(N_row);
-   z_col.resize(N_col);
+   z_row.resize(N);
+   z_col.resize(N);
    // compute row regressor vectors beforehand
-   for(std::size_t i = 0; i < N_row; i++)
+   for(std::size_t i = 0; i < N; i++)
    {
-     i_global = N_row * row + i;
+     i_global = N * row + i;
      z_row[i] = compute_regressor_vector(i_global, n_regressors, row_input);
    }
    // compute column regressor vectors beforehand
-   for(std::size_t j = 0; j < N_col; j++)
+   for(std::size_t j = 0; j < N; j++)
    {
-     j_global = N_col * col + j;
+     j_global = N * col + j;
      z_col[j] = compute_regressor_vector(j_global, n_regressors, col_input);
    }
    // Initialize tile
    std::vector<T> tile;
-   tile.resize(N_row * N_col);
-   for(std::size_t i = 0; i < N_row; i++)
+   tile.resize(N * N);
+   for(std::size_t i = 0; i < N; i++)
    {
-      for(std::size_t j = 0; j < N_col; j++)
+      for(std::size_t j = 0; j < N; j++)
       {
          // compute covariance function
          covariance_function = compute_covariance_function(n_regressors, hyperparameters, z_row[i], z_col[j]);
-         tile[i * N_col + j] = covariance_function;
+         tile[i * N + j] = covariance_function;
       }
    }
    return tile;
@@ -168,34 +167,23 @@ std::vector<T> gen_tile_zeros(std::size_t N)
 }
 
 template <typename T>
-std::vector<T> assemble(std::vector<std::vector<T>> tiles,
+T compute_error_norm(std::vector<std::vector<T>> tiles,
+                                std::vector<T> b,
                                 std::size_t n_tiles,
                                 std::size_t tile_size)
 {
   std::vector<T> vector;
-  vector.resize(n_tiles * tile_size);
+  vector.resize(n_tiles);
+  T error = 0.0;
   for (std::size_t k = 0; k < n_tiles; k++)
   {
-    auto tile = tiles[k];
+    auto a = tiles[k];
     for(std::size_t i = 0; i < tile_size; i++)
     {
       std::size_t i_global = tile_size * k + i;
-      vector[i_global] = tile[i];
+      // ||a - b||_2
+      error += (b[i_global] - a[i]) * (b[i_global] - a[i]);
     }
-  }
-  return vector;
-}
-
-template <typename T>
-T norm_2(std::vector<T> a,
-                 std::vector<T> b,
-                 std::size_t N)
-{
-  T error = 0.f;
-  // ||a - b||_2
-  for (size_t i = 0; i < N; i++)
-  {
-    error += (b[i] - a[i]) * (b[i] - a[i]);
   }
   return sqrt(error);
 }

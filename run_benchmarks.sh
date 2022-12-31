@@ -33,8 +33,8 @@ else
   # Run scripts for different tiled-decomposition
   #CHOLESKY_VARIANTS="left right top"
   CHOLESKY_VARIANTS="right"
-  LOOP=5
-  #LOOP=1
+  #LOOP=5
+  LOOP=1
   for CHOLESKY in $CHOLESKY_VARIANTS; do
     OUTPUT_FILE_CORES="cores_hpx_${CHOLESKY}.txt"
     OUTPUT_FILE_TILES="tiles_hpx_${CHOLESKY}.txt"
@@ -45,7 +45,7 @@ else
     ##############################################################################
     # Run cores_script
     START=1
-    END=256
+    END=128
     STEP=2
     N_TRAIN=20000
     N_TEST=5000
@@ -53,7 +53,7 @@ else
     N_TILES=200
     #./cores_script.sh $START $END $STEP $N_TILES $N_TRAIN $N_TEST $N_REG $CHOLESKY $LOOP $OUTPUT_FILE_CORES
     ##############################################################################
-    # Run tiles_script for cores 16,23,64,128
+    # Run tiles_script for cores 16,128 cores on 2x EPYC 7742 and on 18 cores on Intel i9
     N_CORES=18
     N_TRAIN=20000
     N_TEST=5000
@@ -62,14 +62,14 @@ else
     START=1
     END=8
     STEP=2
-    ./tiles_script.sh $START $END $STEP $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
+    #./tiles_script.sh $START $END $STEP $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
     # from 25 to 200 tiles per dimension
     START=25
     END=200
     STEP=2
-    ./tiles_script.sh $START $END $STEP $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
+    #./tiles_script.sh $START $END $STEP $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
     # for 500 tiles per dimension
-    ./tiles_script.sh 500 500 1 $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
+    #./tiles_script.sh 500 500 2 $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
     ##############################################################################
     # Run data_script on 128 cores
     N_CORES=128
@@ -88,13 +88,13 @@ else
     #./data_script.sh $START $END $STEP $N_TILES $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
     ##############################################################################
     # Run data_script for testing
-    START=5000
-    END=5000
+    START=10000
+    END=10000
     STEP=1000
     N_CORES=16
-    N_TILES=10
+    TILE_SIZE=100
     N_TEST=5000
     N_REG=100
-    #./data_script.sh $START $END $STEP $N_TILES $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
+    ./data_script.sh $START $END $STEP $TILE_SIZE $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
   done
 fi

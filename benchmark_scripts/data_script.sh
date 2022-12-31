@@ -2,7 +2,7 @@
 START=$1
 END=$2
 STEP=$3
-N_TILES=$4
+TILE_SIZE=$4
 N_TEST=$5
 N_REG=$6
 N_CORES=$7
@@ -20,8 +20,8 @@ do
   for (( l=0; l<$N_LOOP; l=l+1 ))
   do
     cd ../build && touch $ERROR_FILE
-    ./hpx_cholesky -t$N_CORES --n_train $i --n_test $N_TEST --n_regressors $N_REG --n_tiles $N_TILES --cholesky $CHOLESKY
-    cd ../benchmark_scripts && ./output_formater.sh $N_TILES $i $N_TEST $N_REG $N_CORES $CHOLESKY $APEX_FILE $OUTPUT_FILE $ERROR_FILE
+    ./hpx_cholesky -t$N_CORES --n_train $i --n_test $N_TEST --n_regressors $N_REG --tile_size $TILE_SIZE --cholesky $CHOLESKY
+    cd ../benchmark_scripts && ./output_formater.sh $TILE_SIZE $i $N_TEST $N_REG $N_CORES $CHOLESKY $APEX_FILE $OUTPUT_FILE $ERROR_FILE
     cd ../build && rm $ERROR_FILE
   done
 done
