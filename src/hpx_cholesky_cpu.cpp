@@ -22,17 +22,34 @@ int hpx_main(hpx::program_options::variables_map& vm)
   hyperparameters[0] = 1.0;   // lengthscale = variance of training_output
   hyperparameters[1] = 1.0;   // vertical_lengthscale = standard deviation of training_input
   hyperparameters[2] = 0.1;   // noise_variance = small value
-  // tiled parameters
+  // tile parameters
   std::size_t tile_size = vm["tile_size"].as<std::size_t>();
-  std::size_t n_tiles = n_train / tile_size;
-  std::size_t n_tiles_prediction = n_test / tile_size;
-  std::cout << "tile_size: " << tile_size << '\n' << "n_tile: " << n_tiles  << '\n' << "n_pred: " << n_tiles_prediction << '\n';
-
+  std::size_t n_tiles = vm["n_tiles"].as<std::size_t>();
+  if (tile_size == 0 && n_tiles > 0)
+  {
+    tile_size = n_train / n_tiles;
+  }
+  else if (tile_size > 0 && n_tiles == 0)
+  {
+    n_tiles =  n_train / tile_size;
+  }
+  else
+  {
+    printf("Error: Please specify either a valid value for tile_size or n_tiles.\n");
+    return hpx::local::finalize();    // Handles HPX shutdown
+  }
+  std::size_t m_tiles = n_test / tile_size;
+  printf("N: %zu\n", n_train);
+  printf("M: %zu\n", n_test);
+  printf("Tile size: %zux%zu\n", tile_size,tile_size);
+  printf("Tiles in N dimension: %zu\n", n_tiles);
+  printf("Tiles in M dimension: %zu\n", m_tiles);
+  // tiled future data structures
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> K_tiles;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> alpha_tiles;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> cross_covariance_tiles;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> prediction_tiles;
-  hpx::shared_future<std::vector<CALC_TYPE>> ft_prediction;
+  // future data structures
   hpx::shared_future<CALC_TYPE> ft_error;
   // data holders for assembly
   std::vector<CALC_TYPE>   training_input;
@@ -57,7 +74,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   test_output_file = fopen("../src/data/test/test_output.txt", "r");
   if (training_input_file == NULL || training_output_file == NULL || test_input_file == NULL || test_output_file == NULL)
   {
-    printf("Files not found!\n");
+    printf("Error: Files not found.\n");
     return hpx::local::finalize();    // Handles HPX shutdown
   }
   // load training data
@@ -69,7 +86,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   }
   if (scanned_elements != 2 * n_train)
   {
-    printf("Error in reading training data!\n");
+    printf("Error: Training data not correctly read.\n");
     return hpx::local::finalize();    // Handles HPX shutdown
   }
   // load test data
@@ -81,7 +98,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   }
   if (scanned_elements != 2 * n_test)
   {
-    printf("Error in reading test data!\n");
+    printf("Error: Test data not correctly read.\n");
     return hpx::local::finalize();    // Handles HPX shutdown
   }
   // close file streams
@@ -107,8 +124,8 @@ int hpx_main(hpx::program_options::variables_map& vm)
     alpha_tiles[i] = hpx::dataflow(hpx::annotated_function(&gen_tile_output<CALC_TYPE>, "assemble_tiled"), i, tile_size, training_output);
   }
   // Assemble transposed covariance matrix vector
-  cross_covariance_tiles.resize(n_tiles_prediction * n_tiles);
-  for (std::size_t i = 0; i < n_tiles_prediction; i++)
+  cross_covariance_tiles.resize(m_tiles * n_tiles);
+  for (std::size_t i = 0; i < m_tiles; i++)
   {
      for (std::size_t j = 0; j < n_tiles; j++)
      {
@@ -116,8 +133,8 @@ int hpx_main(hpx::program_options::variables_map& vm)
      }
   }
   // Assemble zero prediction
-  prediction_tiles.resize(n_tiles_prediction);
-  for (std::size_t i = 0; i < n_tiles_prediction; i++)
+  prediction_tiles.resize(m_tiles);
+  for (std::size_t i = 0; i < m_tiles; i++)
   {
     prediction_tiles[i] = hpx::dataflow(hpx::annotated_function(&gen_tile_zeros<CALC_TYPE>, "assemble_tiled"), tile_size);
   }
@@ -142,9 +159,9 @@ int hpx_main(hpx::program_options::variables_map& vm)
   backward_solve_tiled(K_tiles, alpha_tiles, tile_size, n_tiles);
   //////////////////////////////////////////////////////////////////////////////
   // PREDICT
-  prediction_tiled(cross_covariance_tiles, alpha_tiles, prediction_tiles, tile_size, n_tiles, n_tiles_prediction);
+  prediction_tiled(cross_covariance_tiles, alpha_tiles, prediction_tiles, tile_size, n_tiles, m_tiles);
   // compute error
-  ft_error = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&compute_error_norm<CALC_TYPE>), "prediction_tiled"), prediction_tiles, test_output, n_tiles_prediction, tile_size);
+  ft_error = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&compute_error_norm<CALC_TYPE>), "prediction_tiled"), prediction_tiles, test_output, m_tiles, tile_size);
   //////////////////////////////////////////////////////////////////////////////
   // write error to file
   CALC_TYPE average_error = ft_error.get() / n_test;
@@ -170,7 +187,9 @@ int main(int argc, char* argv[])
          "Number of test samples (max 5 000)")
         ("n_regressors", hpx::program_options::value<std::size_t>()->default_value(100),
         "Number of delayed input regressors")
-        ("tile_size", hpx::program_options::value<std::size_t>()->default_value(100),
+        ("n_tiles", hpx::program_options::value<std::size_t>()->default_value(0),
+         "Number of tiles per dimension -> n_tiles * n_tiles total")
+        ("tile_size", hpx::program_options::value<std::size_t>()->default_value(0),
          "Tile size per dimension -> tile_size * tile_size total entries")
         ("cholesky", hpx::program_options::value<std::string>()->default_value("right"),
          "Choose between left- right- or top-looking tiled Cholesky decomposition")

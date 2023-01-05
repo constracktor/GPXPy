@@ -131,9 +131,9 @@ void prediction_tiled(std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
                       std::vector<hpx::shared_future<std::vector<T>>> &ft_rhs,
                       std::size_t N,
                       std::size_t n_tiles,
-                      std::size_t n_tiles_prediction)
+                      std::size_t m_tiles)
 {
-  for (std::size_t k = 0; k < n_tiles_prediction; k++)
+  for (std::size_t k = 0; k < m_tiles; k++)
   {
     for (std::size_t m = 0; m < n_tiles; m++)
     {
