@@ -166,7 +166,6 @@ int hpx_main(hpx::program_options::variables_map& vm)
   // write error to file
   CALC_TYPE average_error = ft_error.get() / n_test;
   error_file = fopen("error.csv", "w");
-  std::cout << "average_error: " << average_error << '\n';
   fprintf(error_file, "\"error\",%lf\n", average_error);
   fclose(error_file);
   //////////////////////////////////////////////////////////////////////////////
