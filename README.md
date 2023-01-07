@@ -9,50 +9,33 @@ the research project:
 
 ### Release (HPX installed in Release mode)
 
-Build image inside hpx_project folder:
-
-`sudo docker build . -f docker/release/Dockerfile -t hpx_release_image`
-
-Start container:
-
-`sudo docker run -it --rm --user user hpx_release_image`
-
+Build image inside hpx_project folder:  
+`sudo docker build . -f docker/Dockerfile_release -t hpx_release_image`  
+Start container:  
+`sudo docker run -it --rm --user user hpx_release_image`  
 
 ### Debug (HPX installed in Debug mode)
 
-Build image inside hpx_project folder:
-
-`sudo docker build . -f docker/debug/Dockerfile -t hpx_debug_image`
-
-Run container inside hpx_project folder:
-
-`sudo docker run -it --rm --user user  hpx_debug_image`
-
+Build image inside hpx_project folder:  
+`sudo docker build . -f docker/Dockerfile_debug -t hpx_debug_image`  
+Start container:  
+`sudo docker run -it --rm --user user hpx_debug_image`  
 
 ### Base (Install HPX manually)
 
-Build image inside hpx_project folder:
+Build image inside hpx_project folder:  
+`sudo docker build . -f docker/Dockerfile_base -t hpx_base_image`  
+Start container:  
+`sudo docker run -it --rm --user user hpx_base_image`  
+Install HPX manually:  
+`cd && hpx_project/dependencies && git pull --rebase && ./build-all.sh Release`  
 
-`sudo docker build . -f docker/base/Dockerfile -t hpx_base_image`
+## Compile and Run Benchmark
 
-Run container inside hpx_project folder:
-
-`sudo docker run -it --rm --user user hpx_base_image`
-
-Install HPX manually:
-
-`cd && hpx_project/dependencies && git pull --rebase && ./build-all.sh Release`
-
-
-## Compile and Run Code
-
-Benchmark Script:
-
-`cd && cd hpx_project && git pull --rebase && ./run_benchmarks.sh cpu/gpu/blas`
-
+Benchmark Script:  
+`cd && cd hpx_project && git pull --rebase && ./run_benchmarks.sh cpu/gpu/blas`  
 
 ## Git Commands for Developing
 
-`git add . && git commit -m "comment" && git push`
-
+`git add . && git commit -m "comment" && git push`  
 `git add . && git commit --amend --no-edit && git push -f`

@@ -6,7 +6,7 @@ SHELL ["/bin/bash","-c"]
 RUN apt-get update -y && apt-get install -y git wget xz-utils bzip2 libz-dev build-essential autoconf
 
 # install dev tools (not necessary to run benchmark script)
-RUN apt-get install -y vim cmake
+RUN apt-get install -y vim
 
 # add user
 RUN useradd -ms /bin/bash user
