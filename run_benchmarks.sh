@@ -88,7 +88,7 @@ else
     #./data_script.sh $START $END $STEP $N_TILES $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
     ##############################################################################
     # Run data_script for testing
-    START=10000
+    START=5000
     END=10000
     STEP=1000
     N_CORES=16
