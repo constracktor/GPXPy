@@ -54,7 +54,8 @@ else
     #./cores_script.sh $START $END $STEP $N_TILES $N_TRAIN $N_TEST $N_REG $CHOLESKY $LOOP $OUTPUT_FILE_CORES
     ##############################################################################
     # Run tiles_script for cores 16,128 cores on 2x EPYC 7742 and on 18 cores on Intel i9
-    N_CORES=18
+    #N_CORES=18
+    N_CORES=128
     N_TRAIN=20000
     N_TEST=5000
     N_REG=100
@@ -71,28 +72,30 @@ else
     # for 500 tiles per dimension
     #./tiles_script.sh 500 500 2 $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
     ##############################################################################
-    # Run data_script on 128 cores
+    # Run data_script on 128 cores on 2x EPYC 7742 and on 18 cores on Intel i9
+    #N_CORES=18
+    #TILE_SIZE=1000
     N_CORES=128
-    N_TILES=200
+    TILE_SIZE=100
     N_TEST=5000
     N_REG=100
     # from 10^3 to 10^4
     START=1000
     END=9000
     STEP=1000
-    #./data_script.sh $START $END $STEP $N_TILES $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
+    #./data_script.sh $START $END $STEP $TILE_SIZE $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
     # from 10^4 to 10^5
     START=10000
     END=100000
     STEP=10000
-    #./data_script.sh $START $END $STEP $N_TILES $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
+    #./data_script.sh $START $END $STEP $TILE_SIZE $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
     ##############################################################################
     # Run data_script for testing
     START=5000
     END=10000
     STEP=1000
     N_CORES=16
-    TILE_SIZE=100
+    TILE_SIZE=200
     N_TEST=5000
     N_REG=100
     ./data_script.sh $START $END $STEP $TILE_SIZE $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
