@@ -129,7 +129,8 @@ template <typename T>
 void prediction_tiled(std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
                       std::vector<hpx::shared_future<std::vector<T>>> &ft_vector,
                       std::vector<hpx::shared_future<std::vector<T>>> &ft_rhs,
-                      std::size_t N,
+                      std::size_t N_row,
+                      std::size_t N_col,
                       std::size_t n_tiles,
                       std::size_t m_tiles)
 {
@@ -137,7 +138,7 @@ void prediction_tiled(std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
   {
     for (std::size_t m = 0; m < n_tiles; m++)
     {
-      ft_rhs[k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemv_p<T>), "prediction_tiled"), ft_tiles[k * n_tiles + m], ft_vector[m], ft_rhs[k], N);
+      ft_rhs[k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemv_p<T>), "prediction_tiled"), ft_tiles[k * n_tiles + m], ft_vector[m], ft_rhs[k], N_row, N_col);
     }
   }
 }

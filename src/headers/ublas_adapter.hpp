@@ -190,22 +190,23 @@ std::vector<T> gemv_u(std::vector<T> A,
 }
 
 // BLAS operations for tiled prediction
-// b = b + A * a
+// b = b + A * a where A(N_row, N_col), a(N_col) and b(N_row)
 template <typename T>
 std::vector<T> gemv_p(std::vector<T> A,
-                            std::vector<T> a,
-                            std::vector<T> b,
-                            std::size_t N)
+                      std::vector<T> a,
+                      std::vector<T> b,
+                      std::size_t N_row,
+                      std::size_t N_col)
 {
   // convert to boost matrix and vectors
-  ublas::matrix< T, ublas::row_major, std::vector<T> > A_blas(N, N);
+  ublas::matrix< T, ublas::row_major, std::vector<T> > A_blas(N_row, N_col);
   A_blas.data() = A;
-  ublas::vector< T, std::vector<T> > a_blas(N);
+  ublas::vector< T, std::vector<T> > a_blas(N_col);
   a_blas.data() = a;
-  ublas::vector< T, std::vector<T> > b_blas(N);
+  ublas::vector< T, std::vector<T> > b_blas(N_row);
   b_blas.data() = b;
   // GEMM
-  b_blas = b_blas  + ublas::prod(A_blas, a_blas);
+  b_blas = b_blas + ublas::prod(A_blas, a_blas);
   // reformat to std::vector
   b = b_blas.data();
   return b;

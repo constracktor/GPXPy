@@ -118,7 +118,8 @@ std::vector<T> gen_tile_output(std::size_t row,
 template <typename T>
 std::vector<T> gen_tile_cross_covariance(std::size_t row,
                                                  std::size_t col,
-                                                 std::size_t N,
+                                                 std::size_t N_row,
+                                                 std::size_t N_col,
                                                  std::size_t n_regressors,
                                                  T *hyperparameters,
                                                  std::vector<T> row_input,
@@ -127,30 +128,30 @@ std::vector<T> gen_tile_cross_covariance(std::size_t row,
    std::size_t i_global,j_global;
    T covariance_function;
    std::vector<std::vector<T>> z_row, z_col;
-   z_row.resize(N);
-   z_col.resize(N);
+   z_row.resize(N_row);
+   z_col.resize(N_col);
    // compute row regressor vectors beforehand
-   for(std::size_t i = 0; i < N; i++)
+   for(std::size_t i = 0; i < N_row; i++)
    {
-     i_global = N * row + i;
+     i_global = N_row * row + i;
      z_row[i] = compute_regressor_vector(i_global, n_regressors, row_input);
    }
    // compute column regressor vectors beforehand
-   for(std::size_t j = 0; j < N; j++)
+   for(std::size_t j = 0; j < N_col; j++)
    {
-     j_global = N * col + j;
+     j_global = N_col * col + j;
      z_col[j] = compute_regressor_vector(j_global, n_regressors, col_input);
    }
    // Initialize tile
    std::vector<T> tile;
-   tile.resize(N * N);
-   for(std::size_t i = 0; i < N; i++)
+   tile.resize(N_row * N_col);
+   for(std::size_t i = 0; i < N_row; i++)
    {
-      for(std::size_t j = 0; j < N; j++)
+      for(std::size_t j = 0; j < N_col; j++)
       {
          // compute covariance function
          covariance_function = compute_covariance_function(n_regressors, hyperparameters, z_row[i], z_col[j]);
-         tile[i * N + j] = covariance_function;
+         tile[i * N_col + j] = covariance_function;
       }
    }
    return tile;

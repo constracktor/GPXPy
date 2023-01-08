@@ -23,25 +23,38 @@ int hpx_main(hpx::program_options::variables_map& vm)
   hyperparameters[1] = 1.0;   // vertical_lengthscale = standard deviation of training_input
   hyperparameters[2] = 0.1;   // noise_variance = small value
   // tile parameters
-  std::size_t tile_size = vm["tile_size"].as<std::size_t>();
+  std::size_t n_tile_size = vm["tile_size"].as<std::size_t>();
   std::size_t n_tiles = vm["n_tiles"].as<std::size_t>();
-  if (tile_size == 0 && n_tiles > 0)
+  if (n_tile_size == 0 && n_tiles > 0)
   {
-    tile_size = n_train / n_tiles;
+    n_tile_size = n_train / n_tiles;
   }
-  else if (tile_size > 0 && n_tiles == 0)
+  else if (n_tile_size > 0 && n_tiles == 0)
   {
-    n_tiles =  n_train / tile_size;
+    n_tiles =  n_train / n_tile_size;
   }
   else
   {
-    printf("Error: Please specify either a valid value for tile_size or n_tiles.\n");
+    printf("Error: Please specify either a valid value for n_tile_size or n_tiles.\n");
     return hpx::local::finalize();    // Handles HPX shutdown
   }
-  std::size_t m_tiles = ((n_test / tile_size) > 1) ? n_test / tile_size : 1;
+  // set different tile size for prediction if too large for n_test
+  std::size_t m_tiles;
+  std::size_t m_tile_size;
+  if ((n_test / n_tile_size) > 1)
+  {
+    m_tiles = n_test / n_tile_size;
+    m_tile_size = n_tile_size;
+  }
+  else
+  {
+    m_tiles = 1;
+    m_tile_size = n_test;
+  }
   printf("N: %zu\n", n_train);
   printf("M: %zu\n", n_test);
-  printf("Tile size: %zux%zu\n", tile_size,tile_size);
+  printf("Tile size in N dimension: %zu\n", n_tile_size);
+  printf("Tile size in M dimension: %zu\n", m_tile_size);
   printf("Tiles in N dimension: %zu\n", n_tiles);
   printf("Tiles in M dimension: %zu\n", m_tiles);
   // tiled future data structures
@@ -114,14 +127,14 @@ int hpx_main(hpx::program_options::variables_map& vm)
   {
      for (std::size_t j = 0; j <= i; j++)
      {
-        K_tiles[i * n_tiles + j] = hpx::dataflow(hpx::annotated_function(&gen_tile_covariance<CALC_TYPE>, "assemble_tiled"), i, j, tile_size, n_regressors, hyperparameters, training_input);
+        K_tiles[i * n_tiles + j] = hpx::dataflow(hpx::annotated_function(&gen_tile_covariance<CALC_TYPE>, "assemble_tiled"), i, j, n_tile_size, n_regressors, hyperparameters, training_input);
      }
   }
   // Assemble alpha
   alpha_tiles.resize(n_tiles);
   for (std::size_t i = 0; i < n_tiles; i++)
   {
-    alpha_tiles[i] = hpx::dataflow(hpx::annotated_function(&gen_tile_output<CALC_TYPE>, "assemble_tiled"), i, tile_size, training_output);
+    alpha_tiles[i] = hpx::dataflow(hpx::annotated_function(&gen_tile_output<CALC_TYPE>, "assemble_tiled"), i, n_tile_size, training_output);
   }
   // Assemble transposed covariance matrix vector
   cross_covariance_tiles.resize(m_tiles * n_tiles);
@@ -129,39 +142,39 @@ int hpx_main(hpx::program_options::variables_map& vm)
   {
      for (std::size_t j = 0; j < n_tiles; j++)
      {
-        cross_covariance_tiles[i * n_tiles + j] = hpx::dataflow(hpx::annotated_function(&gen_tile_cross_covariance<CALC_TYPE>, "assemble_tiled"), i, j, tile_size, n_regressors, hyperparameters, test_input, training_input);
+        cross_covariance_tiles[i * n_tiles + j] = hpx::dataflow(hpx::annotated_function(&gen_tile_cross_covariance<CALC_TYPE>, "assemble_tiled"), i, j, m_tile_size, n_tile_size, n_regressors, hyperparameters, test_input, training_input);
      }
   }
   // Assemble zero prediction
   prediction_tiles.resize(m_tiles);
   for (std::size_t i = 0; i < m_tiles; i++)
   {
-    prediction_tiles[i] = hpx::dataflow(hpx::annotated_function(&gen_tile_zeros<CALC_TYPE>, "assemble_tiled"), tile_size);
+    prediction_tiles[i] = hpx::dataflow(hpx::annotated_function(&gen_tile_zeros<CALC_TYPE>, "assemble_tiled"), m_tile_size);
   }
   //////////////////////////////////////////////////////////////////////////////
   // CHOLESKY
   // Compute Cholesky decomposition
   if (cholesky.compare("left") == 0)
   {
-    left_looking_cholesky_tiled(K_tiles, tile_size, n_tiles);
+    left_looking_cholesky_tiled(K_tiles, n_tile_size, n_tiles);
   }
   else if (cholesky.compare("top") == 0)
   {
-    top_looking_cholesky_tiled(K_tiles, tile_size, n_tiles);
+    top_looking_cholesky_tiled(K_tiles, n_tile_size, n_tiles);
   }
   else // set to "right" per default
   {
-    right_looking_cholesky_tiled(K_tiles, tile_size, n_tiles);
+    right_looking_cholesky_tiled(K_tiles, n_tile_size, n_tiles);
   }
   //////////////////////////////////////////////////////////////////////////////
   // TRIANGULAR SOLVE
-  forward_solve_tiled(K_tiles, alpha_tiles, tile_size, n_tiles);
-  backward_solve_tiled(K_tiles, alpha_tiles, tile_size, n_tiles);
+  forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
+  backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
   //////////////////////////////////////////////////////////////////////////////
   // PREDICT
-  prediction_tiled(cross_covariance_tiles, alpha_tiles, prediction_tiles, tile_size, n_tiles, m_tiles);
+  prediction_tiled(cross_covariance_tiles, alpha_tiles, prediction_tiles, m_tile_size, n_tile_size, n_tiles, m_tiles);
   // compute error
-  ft_error = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&compute_error_norm<CALC_TYPE>), "prediction_tiled"), prediction_tiles, test_output, m_tiles, tile_size);
+  ft_error = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&compute_error_norm<CALC_TYPE>), "prediction_tiled"), prediction_tiles, test_output, m_tiles, m_tile_size);
   //////////////////////////////////////////////////////////////////////////////
   // write error to file
   CALC_TYPE average_error = ft_error.get() / n_test;
