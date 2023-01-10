@@ -15,20 +15,19 @@ hpx::shared_future<std::vector<T>> gemm_cublas(hpx::cuda::experimental::cublas_e
   // GEMM constants
   const T alpha = -1.0f;
   const T beta = 1.0f;
+  std::size_t size = N * N;
   // allocate device memory
   T *d_A, *d_B, *d_C;
-  std::size_t size = N * N;
   hpx::cuda::experimental::check_cuda_error(cudaMalloc((void**) &d_A, size * sizeof(T)));
   hpx::cuda::experimental::check_cuda_error(cudaMalloc((void**) &d_B, size * sizeof(T)));
   hpx::cuda::experimental::check_cuda_error(cudaMalloc((void**) &d_C, size * sizeof(T)));
-  // get host data from futures when ready
-  std::vector<T> h_A = A.get();
-  std::vector<T> h_B = B.get();
-  std::vector<T> h_C = C.get();
-  // copy data from host to device
+  // copy data from host to device when ready
   std::vector<hpx::future<void>> copy_host_to_device;
+  std::vector<T> h_A = A.get();
   copy_host_to_device.push_back(hpx::async(cublas, cudaMemcpyAsync, d_A, h_A.data(), size * sizeof(T), cudaMemcpyHostToDevice));
+  std::vector<T> h_B = B.get();
   copy_host_to_device.push_back(hpx::async(cublas, cudaMemcpyAsync, d_B, h_B.data(), size * sizeof(T), cudaMemcpyHostToDevice));
+  std::vector<T> h_C = C.get();
   copy_host_to_device.push_back(hpx::async(cublas, cudaMemcpyAsync, d_C, h_C.data(), size * sizeof(T), cudaMemcpyHostToDevice));
   hpx::wait_all(copy_host_to_device);
   // compute GEMM (C = C - A * B^T) on device
@@ -56,17 +55,16 @@ hpx::shared_future<std::vector<T>> syrk_cublas(hpx::cuda::experimental::cublas_e
   // GEMM constants
   const T alpha = -1.0f;
   const T beta = 1.0f;
+  std::size_t size = N * N;
   // allocate device memory
   T *d_A, *d_B;
-  std::size_t size = N * N;
   hpx::cuda::experimental::check_cuda_error(cudaMalloc((void**) &d_A, size * sizeof(T)));
   hpx::cuda::experimental::check_cuda_error(cudaMalloc((void**) &d_B, size * sizeof(T)));
-  // get host data from futures when ready
-  std::vector<T> h_A = A.get();
-  std::vector<T> h_B = B.get();
-  // copy data from host to device
+  // copy data from host to device when ready
   std::vector<hpx::future<void>> copy_host_to_device;
+  std::vector<T> h_A = A.get();
   copy_host_to_device.push_back(hpx::async(cublas, cudaMemcpyAsync, d_A, h_A.data(), size * sizeof(T), cudaMemcpyHostToDevice));
+  std::vector<T> h_B = B.get();
   copy_host_to_device.push_back(hpx::async(cublas, cudaMemcpyAsync, d_B, h_B.data(), size * sizeof(T), cudaMemcpyHostToDevice));
   hpx::wait_all(copy_host_to_device);
   // compute SYRK (A = A - B * B^T) on device
@@ -81,7 +79,4 @@ hpx::shared_future<std::vector<T>> syrk_cublas(hpx::cuda::experimental::cublas_e
   // return future
   return hpx::make_ready_future(h_A);
 }
-
-
-
 #endif

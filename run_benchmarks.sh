@@ -33,8 +33,8 @@ else
   # Run scripts for different tiled-decomposition
   #CHOLESKY_VARIANTS="left right top"
   CHOLESKY_VARIANTS="right"
-  LOOP=5
-  #LOOP=1
+  #LOOP=5
+  LOOP=1
   for CHOLESKY in $CHOLESKY_VARIANTS; do
     OUTPUT_FILE_CORES="cores_hpx_${CHOLESKY}.txt"
     OUTPUT_FILE_TILES="tiles_hpx_${CHOLESKY}.txt"
@@ -63,14 +63,14 @@ else
     START=1
     END=8
     STEP=2
-    ./tiles_script.sh $START $END $STEP $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
+    #./tiles_script.sh $START $END $STEP $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
     # from 25 to 200 tiles per dimension
     START=25
-    END=200
+    END=25
     STEP=2
     ./tiles_script.sh $START $END $STEP $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
     # for 500 tiles per dimension
-    ./tiles_script.sh 500 500 2 $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
+    #./tiles_script.sh 500 500 2 $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
     ##############################################################################
     # Run data_script on 128 cores on 2x EPYC 7742 and on 18 cores on Intel i9
     #N_CORES=18

@@ -15,11 +15,11 @@ void right_looking_cholesky_tiled_cublas(hpx::cuda::experimental::cublas_executo
   for (std::size_t k = 0; k < n_tiles; k++)
   {
     // POTRF
-    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&potrf<T>), "cholesky_tiled"), ft_tiles[k * n_tiles + k], N);
+    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::unwrapping(&potrf<T>), ft_tiles[k * n_tiles + k], N);
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
       // TRSM
-      ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&trsm<T>), "cholesky_tiled"), ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
+      ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::unwrapping(&trsm<T>), ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
     }
     // using cublas for tile update
     for (std::size_t m = k + 1; m < n_tiles; m++)

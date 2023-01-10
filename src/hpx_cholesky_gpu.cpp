@@ -37,18 +37,18 @@ int hpx_main(hpx::program_options::variables_map& vm)
     printf("Error: Please specify either a valid value for n_tile_size or n_tiles.\n");
     return hpx::local::finalize();    // Handles HPX shutdown
   }
-  // set different tile size for prediction if too large for n_test
+  // set different tile size for prediction
   std::size_t m_tiles;
   std::size_t m_tile_size;
-  if ((n_test / n_tile_size) > 1)
+  if ((n_test % n_tile_size) > 0)
   {
-    m_tiles = n_test / n_tile_size;
-    m_tile_size = n_tile_size;
+    m_tiles = n_tiles;
+    m_tile_size = n_test / m_tiles;
   }
   else
   {
-    m_tiles = 1;
-    m_tile_size = n_test;
+    m_tiles = n_test / n_tile_size;
+    m_tile_size = n_tile_size;
   }
   printf("N: %zu\n", n_train);
   printf("M: %zu\n", n_test);
