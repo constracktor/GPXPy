@@ -10,11 +10,48 @@
 
 int hpx_main(hpx::program_options::variables_map& vm)
 {
-  // determine choleksy variant
+  //////////////////////////////////////////////////////////////////////////////
+  // declare data structures
+  // tiled future data structures
+  std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> K_tiles;
+  std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> alpha_tiles;
+  std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> cross_covariance_tiles;
+  std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> prediction_tiles;
+  // future data structures
+  hpx::shared_future<CALC_TYPE> ft_error;
+  // data holders for assembly
+  std::vector<CALC_TYPE>   training_input;
+  std::vector<CALC_TYPE>   training_output;
+  std::vector<CALC_TYPE>   test_input;
+  std::vector<CALC_TYPE>   test_output;
+  // data files
+  FILE    *training_input_file;
+  FILE    *training_output_file;
+  FILE    *test_input_file;
+  FILE    *test_output_file;
+  FILE    *error_file;
+  ////////////////////////////////////////////////////////////////////////////
+  // GPU stuff
+  // get device
+  std::size_t device = vm["device"].as<std::size_t>();
+  // install cuda future polling handler
+  hpx::cuda::experimental::enable_user_polling poll("default");
+  // print GPU info
+  hpx::cuda::experimental::target target(device);
+  std::cout << "GPU Device " << target.native_handle().get_device() << ": \""
+       << target.native_handle().processor_name() << "\" "
+       << "with compute capability "
+       << target.native_handle().processor_family() << "\n";
+  // create cublas executor
+  hpx::cuda::experimental::cublas_executor cublas(device,
+  CUBLAS_POINTER_MODE_HOST, hpx::cuda::experimental::event_mode{});
+  //////////////////////////////////////////////////////////////////////////////
+  // Get and set parameters
+  // determine choleksy variant and problem size
   std::string cholesky = vm["cholesky"].as<std::string>();
-  // GP parameters
   std::size_t n_train = vm["n_train"].as<std::size_t>();  //max 100*1000
   std::size_t n_test = vm["n_test"].as<std::size_t>();     //max 5*1000
+  // GP parameters
   std::size_t n_regressors = vm["n_regressors"].as<std::size_t>();
   CALC_TYPE    hyperparameters[3];
   // initalize hyperparameters to empirical moments of the data
@@ -35,9 +72,9 @@ int hpx_main(hpx::program_options::variables_map& vm)
   else
   {
     printf("Error: Please specify either a valid value for n_tile_size or n_tiles.\n");
-    return hpx::local::finalize();    // Handles HPX shutdown
+    return hpx::local::finalize();
   }
-  // set different tile size for prediction
+  // set different tile size for prediction if n_test not dividable
   std::size_t m_tiles;
   std::size_t m_tile_size;
   if ((n_test % n_tile_size) > 0)
@@ -50,45 +87,13 @@ int hpx_main(hpx::program_options::variables_map& vm)
     m_tiles = n_test / n_tile_size;
     m_tile_size = n_tile_size;
   }
+  // output information about the tiles
   printf("N: %zu\n", n_train);
   printf("M: %zu\n", n_test);
   printf("Tile size in N dimension: %zu\n", n_tile_size);
   printf("Tile size in M dimension: %zu\n", m_tile_size);
   printf("Tiles in N dimension: %zu\n", n_tiles);
   printf("Tiles in M dimension: %zu\n", m_tiles);
-  // tiled future data structures
-  std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> K_tiles;
-  std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> alpha_tiles;
-  std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> cross_covariance_tiles;
-  std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> prediction_tiles;
-  // future data structures
-  hpx::shared_future<CALC_TYPE> ft_error;
-  // data holders for assembly
-  std::vector<CALC_TYPE>   training_input;
-  std::vector<CALC_TYPE>   training_output;
-  std::vector<CALC_TYPE>   test_input;
-  std::vector<CALC_TYPE>   test_output;
-  // data files
-  FILE    *training_input_file;
-  FILE    *training_output_file;
-  FILE    *test_input_file;
-  FILE    *test_output_file;
-  FILE    *error_file;
-  ////////////////////////////////////////////////////////////////////////////
-  // initialize GPU stuff
-  // get device
-  std::size_t device = vm["device"].as<std::size_t>();
-  // install cuda future polling handler
-  hpx::cuda::experimental::enable_user_polling poll("default");
-  // print GPU info
-  hpx::cuda::experimental::target target(device);
-  std::cout << "GPU Device " << target.native_handle().get_device() << ": \""
-       << target.native_handle().processor_name() << "\" "
-       << "with compute capability "
-       << target.native_handle().processor_family() << "\n";
-  // create cublas executor
-  hpx::cuda::experimental::cublas_executor cublas(device,
-  CUBLAS_POINTER_MODE_HOST, hpx::cuda::experimental::event_mode{});
   ////////////////////////////////////////////////////////////////////////////
   // Load data
   training_input.resize(n_train);
@@ -102,7 +107,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   if (training_input_file == NULL || training_output_file == NULL || test_input_file == NULL || test_output_file == NULL)
   {
     printf("Error: Files not found.\n");
-    return hpx::local::finalize();    // Handles HPX shutdown
+    return hpx::local::finalize();
   }
   // load training data
   std::size_t scanned_elements = 0;
@@ -114,7 +119,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   if (scanned_elements != 2 * n_train)
   {
     printf("Error: Training data not correctly read.\n");
-    return hpx::local::finalize();    // Handles HPX shutdown
+    return hpx::local::finalize();
   }
   // load test data
   scanned_elements = 0;
@@ -126,7 +131,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   if (scanned_elements != 2 * n_test)
   {
     printf("Error: Test data not correctly read.\n");
-    return hpx::local::finalize();    // Handles HPX shutdown
+    return hpx::local::finalize();
   }
   // close file streams
   fclose(training_input_file);
@@ -134,7 +139,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   fclose(test_input_file);
   fclose(test_output_file);
   //////////////////////////////////////////////////////////////////////////////
-  // ASSEMBLE
+  // PART 1: ASSEMBLE
   // Assemble covariance matrix vector
   K_tiles.resize(n_tiles * n_tiles);
   for (std::size_t i = 0; i < n_tiles; i++)
@@ -150,7 +155,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   {
     alpha_tiles[i] = hpx::dataflow(hpx::annotated_function(&gen_tile_output<CALC_TYPE>, "assemble_tiled"), i, n_tile_size, training_output);
   }
-  // Assemble transposed covariance matrix vector
+  // Assemble transposed cross-covariance matrix vector
   cross_covariance_tiles.resize(m_tiles * n_tiles);
   for (std::size_t i = 0; i < m_tiles; i++)
   {
@@ -166,16 +171,15 @@ int hpx_main(hpx::program_options::variables_map& vm)
     prediction_tiles[i] = hpx::dataflow(hpx::annotated_function(&gen_tile_zeros<CALC_TYPE>, "assemble_tiled"), m_tile_size);
   }
   //////////////////////////////////////////////////////////////////////////////
-  // CHOLESKY
-  // Compute Cholesky decomposition
-  // only right-looking currently implemented
+  // PART 2: CHOLESKY SOLVE
+  // Cholesky decomposition
+  // only right-looking variant currently implemented
   right_looking_cholesky_tiled_cublas(cublas, K_tiles, n_tile_size, n_tiles);
-  //////////////////////////////////////////////////////////////////////////////
-  // TRIANGULAR SOLVE
+  // Triangular solve
   forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
   backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
   //////////////////////////////////////////////////////////////////////////////
-  // PREDICT
+  // PART 3: PREDICTION
   prediction_tiled(cross_covariance_tiles, alpha_tiles, prediction_tiles, m_tile_size, n_tile_size, n_tiles, m_tiles);
   // compute error
   ft_error = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&compute_error_norm<CALC_TYPE>), "prediction_tiled"), prediction_tiles, test_output, m_tiles, m_tile_size);
@@ -185,16 +189,13 @@ int hpx_main(hpx::program_options::variables_map& vm)
   error_file = fopen("error.csv", "w");
   fprintf(error_file, "\"error\",%lf\n", average_error);
   fclose(error_file);
-  //////////////////////////////////////////////////////////////////////////////
   return hpx::local::finalize();    // Handles HPX shutdown
 }
 
 int main(int argc, char* argv[])
 {
-    // hpx
     hpx::program_options::options_description desc_commandline;
     hpx::local::init_params init_args;
-    ////////////////////////////////////////////////////////////////////////////
     // Setup input arguments
     desc_commandline.add_options()
         ("n_train", hpx::program_options::value<std::size_t>()->default_value(1 * 1000),
@@ -208,12 +209,11 @@ int main(int argc, char* argv[])
         ("tile_size", hpx::program_options::value<std::size_t>()->default_value(0),
          "Tile size per dimension -> tile_size * tile_size total entries")
         ("cholesky", hpx::program_options::value<std::string>()->default_value("right"),
-         "Choose between left- right- or top-looking tiled Cholesky decomposition")
+         "Choose between right- left- or top-looking tiled Cholesky decomposition")
         ("device", hpx::program_options::value<std::size_t>()->default_value(0),
-         "Device to use")
+         "Choose the active device")
     ;
-    ////////////////////////////////////////////////////////////////////////////
-    // Run HPX
+    // Run HPX main
     init_args.desc_cmdline = desc_commandline;
     return hpx::local::init(hpx_main, argc, argv, init_args);
 }

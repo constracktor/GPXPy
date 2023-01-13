@@ -14,12 +14,12 @@
 #include <boost/numeric/ublas/triangular.hpp>
 #include <boost/numeric/ublas/operation.hpp>
 namespace ublas = boost::numeric::ublas;
-
+////////////////////////////////////////////////////////////////////////////////
 // BLAS operations for tiled cholkesy
-// Cholesky decomposition of A -> return factorized matrix L
+// in-place Cholesky decomposition of A -> return factorized matrix L
 template <typename T>
 std::vector<T> potrf(std::vector<T> A,
-                             std::size_t N)
+                     std::size_t N)
 {
   // convert to boost matrices
   ublas::matrix< T, ublas::row_major, std::vector<T> > A_blas(N, N);
@@ -29,7 +29,9 @@ std::vector<T> potrf(std::vector<T> A,
   for (size_t k=0 ; k < N; k++)
   {
     // compute squared diagonal entry
-    T qL_kk = A_blas(k,k) - ublas::inner_prod( ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ), ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ) );
+    T qL_kk = A_blas(k,k) - ublas::inner_prod(
+      ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ),
+      ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ) );
     // check if positive
     if (qL_kk <= 0)
     {
@@ -53,11 +55,11 @@ std::vector<T> potrf(std::vector<T> A,
   return A;
 }
 
-// solve L * X = A^T where L triangular
+// in-place solve L * X = A^T where L triangular
 template <typename T>
 std::vector<T> trsm(std::vector<T> L,
-                            std::vector<T> A,
-                            std::size_t N)
+                    std::vector<T> A,
+                    std::size_t N)
 {
   // convert to boost matrices
   ublas::matrix< T, ublas::row_major, std::vector<T> > L_blas(N, N);
@@ -74,8 +76,8 @@ std::vector<T> trsm(std::vector<T> L,
 //  A = A - B * B^T
 template <typename T>
 std::vector<T> syrk(std::vector<T> A,
-                            std::vector<T> B,
-                            std::size_t N)
+                    std::vector<T> B,
+                    std::size_t N)
 {
   // convert to boost matrices
   ublas::matrix< T, ublas::row_major, std::vector<T> > A_blas(N, N);
@@ -92,9 +94,9 @@ std::vector<T> syrk(std::vector<T> A,
 //C = C - A * B^T
 template <typename T>
 std::vector<T> gemm(std::vector<T> A,
-                            std::vector<T> B,
-                            std::vector<T> C,
-                            std::size_t N)
+                    std::vector<T> B,
+                    std::vector<T> C,
+                    std::size_t N)
 {
   // convert to boost matrices
   ublas::matrix< T, ublas::row_major, std::vector<T> > A_blas(N, N);
@@ -110,12 +112,13 @@ std::vector<T> gemm(std::vector<T> A,
   return C;
 }
 
+////////////////////////////////////////////////////////////////////////////////
 // BLAS operations for tiled triangular solve
-// solve L * x = a where L lower triangular
+// in-place solve L * x = a where L lower triangular
 template <typename T>
 std::vector<T> trsm_l(std::vector<T> L,
-                              std::vector<T> a,
-                              std::size_t N)
+                      std::vector<T> a,
+                      std::size_t N)
 {
   // convert to boost matrices
   ublas::matrix< T, ublas::row_major, std::vector<T> > L_blas(N, N);
@@ -129,11 +132,11 @@ std::vector<T> trsm_l(std::vector<T> L,
   return a;
 }
 
-// solve L^T * x = a where L lower triangular
+// in-place solve L^T * x = a where L lower triangular
 template <typename T>
 std::vector<T> trsm_u(std::vector<T> L,
-                              std::vector<T> a,
-                              std::size_t N)
+                      std::vector<T> a,
+                      std::size_t N)
 {
   // convert to boost matrices
   ublas::matrix< T, ublas::row_major, std::vector<T> > L_blas(N, N);
@@ -189,6 +192,7 @@ std::vector<T> gemv_u(std::vector<T> A,
   return b;
 }
 
+////////////////////////////////////////////////////////////////////////////////
 // BLAS operations for tiled prediction
 // b = b + A * a where A(N_row, N_col), a(N_col) and b(N_row)
 template <typename T>

@@ -8,7 +8,8 @@
 #include <chrono>
 
 int main(int argc, char* argv[])
-{ // loop size for averaging
+{
+  // loop size for averaging
   std::size_t n_loop = 500;
   // define exponents of 10
   std::size_t exp_start = 1;
@@ -32,7 +33,7 @@ int main(int argc, char* argv[])
   n_vector[9 * (exp_end - exp_start)] = pow(10, exp_end);
   // genereate header
   std::cout << "N;POTRF;TRSM;GEMM;loop;" << n_loop << "\n";
-  // warm up
+  // short warm up
   std::size_t warmup = 0;
   for (size_t k = 0; k < 100000; k++)
   {
@@ -77,7 +78,7 @@ int main(int argc, char* argv[])
           M1[j * n_dim + i] = M1[i * n_dim + j];
         }
       }
-      // add 1 on diagonal
+      // then add 1 on diagonal
       for (size_t i = 0; i < n_dim; i++)
       {
         M1[i * n_dim + i] = M1[i * n_dim + i] + 1.0;

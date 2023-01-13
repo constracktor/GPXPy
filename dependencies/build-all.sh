@@ -47,7 +47,7 @@ mkdir -p ${SOURCE_ROOT} ${INSTALL_ROOT}
 ################################################################################
 # Build tools
 ################################################################################
-echo "Building GCC"
+#echo "Building GCC"
 #./build-gcc.sh
 
 echo "Building CMake"
@@ -67,12 +67,3 @@ echo "Building jemalloc"
 
 echo "Building HPX"
 ./build-hpx.sh
-
-################################################################################
-# HPXSc - for latter
-################################################################################
-#[[ -n ${BUILD_TARGET_HPXSC+x} ]] && \
-#(
-#    echo "Building HPXSc"
-#    ./build-hpxsc.sh
-#)

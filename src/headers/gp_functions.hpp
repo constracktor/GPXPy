@@ -3,12 +3,12 @@
 
 #include <cmath>
 #include <vector>
-////////////////////////////////////////////////////////////////////////////////
-// GP functions to assemble K
+
+// compute feature vector z_i
 template <typename T>
 std::vector<T> compute_regressor_vector(std::size_t row,
-                                                std::size_t n_regressors,
-                                                std::vector<T> input)
+                                        std::size_t n_regressors,
+                                        std::vector<T> input)
 {
   std::vector<T> regressor_vector;
   regressor_vector.resize(n_regressors);
@@ -28,13 +28,13 @@ std::vector<T> compute_regressor_vector(std::size_t row,
   return regressor_vector;
 }
 
+// compute the squared exponential kernel of two feature vectors
 template <typename T>
 T compute_covariance_function(std::size_t n_regressors,
-                                      T* hyperparameters,
-                                      std::vector<T> z_i,
-                                      std::vector<T> z_j)
+                              T* hyperparameters,
+                              std::vector<T> z_i,
+                              std::vector<T> z_j)
 {
-  // Compute the Squared Exponential Covariance Function
   // C(z_i,z_j) = vertical_lengthscale * exp(-0.5*lengthscale*(z_i-z_j)^2)
   T distance = 0.0;
   for (std::size_t i = 0; i < n_regressors; i++)
@@ -44,13 +44,14 @@ T compute_covariance_function(std::size_t n_regressors,
   return hyperparameters[1] * exp(-0.5 * hyperparameters[0] * distance);
 }
 
+// generate a tile of the covariance matrix
 template <typename T>
 std::vector<T> gen_tile_covariance(std::size_t row,
-                                           std::size_t col,
-                                           std::size_t N,
-                                           std::size_t n_regressors,
-                                           T *hyperparameters,
-                                           std::vector<T> input)
+                                   std::size_t col,
+                                   std::size_t N,
+                                   std::size_t n_regressors,
+                                   T *hyperparameters,
+                                   std::vector<T> input)
 {
    std::size_t i_global,j_global;
    T covariance_function;
@@ -90,6 +91,7 @@ std::vector<T> gen_tile_covariance(std::size_t row,
         covariance_function = compute_covariance_function(n_regressors, hyperparameters, z_row[i], z_col[j]);
         if (i_global==j_global)
         {
+          // noise variance on diagonal
           covariance_function += hyperparameters[2];
         }
         tile[i * N + j] = covariance_function;
@@ -98,10 +100,11 @@ std::vector<T> gen_tile_covariance(std::size_t row,
    return tile;
 }
 
+// generate a tile containing the output observations
 template <typename T>
 std::vector<T> gen_tile_output(std::size_t row,
-                                       std::size_t N,
-                                       std::vector<T> output)
+                               std::size_t N,
+                               std::vector<T> output)
 {
    std::size_t i_global;
    // Initialize tile
@@ -115,15 +118,16 @@ std::vector<T> gen_tile_output(std::size_t row,
    return tile;
 }
 
+// generate a tile of the cross-covariance matrix
 template <typename T>
 std::vector<T> gen_tile_cross_covariance(std::size_t row,
-                                                 std::size_t col,
-                                                 std::size_t N_row,
-                                                 std::size_t N_col,
-                                                 std::size_t n_regressors,
-                                                 T *hyperparameters,
-                                                 std::vector<T> row_input,
-                                                 std::vector<T> col_input)
+                                         std::size_t col,
+                                         std::size_t N_row,
+                                         std::size_t N_col,
+                                         std::size_t n_regressors,
+                                         T *hyperparameters,
+                                         std::vector<T> row_input,
+                                         std::vector<T> col_input)
 {
    std::size_t i_global,j_global;
    T covariance_function;
@@ -157,6 +161,7 @@ std::vector<T> gen_tile_cross_covariance(std::size_t row,
    return tile;
 }
 
+// generate a empty tile
 template <typename T>
 std::vector<T> gen_tile_zeros(std::size_t N)
 {
@@ -167,11 +172,12 @@ std::vector<T> gen_tile_zeros(std::size_t N)
    return tile;
 }
 
+// compute the total 2-norm error
 template <typename T>
 T compute_error_norm(std::vector<std::vector<T>> tiles,
-                                std::vector<T> b,
-                                std::size_t n_tiles,
-                                std::size_t tile_size)
+                     std::vector<T> b,
+                     std::size_t n_tiles,
+                     std::size_t tile_size)
 {
   std::vector<T> vector;
   vector.resize(n_tiles);

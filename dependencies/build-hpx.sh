@@ -19,12 +19,6 @@ if [[ ! -d ${DIR_SRC} ]]; then
       mkdir -p ${DIR_SRC}
       cd ${DIR_SRC}
       wget -O- ${DOWNLOAD_URL} | tar xz --strip-components=1
-      # Legacy command. Clone the entire repository and use master/HEAD
-      #cd ..
-      #git clone https://github.com/STEllAR-GROUP/hpx.git
-      #cd hpx
-      #git checkout ${HPX_VERSION}
-      #cd ..
     )
 fi
 
@@ -51,7 +45,9 @@ ${CMAKE_COMMAND} \
     -DHPX_WITH_MAX_CPU_COUNT=256 \
     -DHPX_WITH_EXAMPLES=OFF \
     -DHPX_WITH_TESTS=OFF \
-    -DHPX_WITH_APEX=ON
+    -DHPX_WITH_APEX=ON \
+    -DHPX_WITH_CUDA=OFF \
+    -DHPX_WITH_GPUBLAS=OFF
 
 ${CMAKE_COMMAND} --build ${DIR_BUILD} -- -j${PARALLEL_BUILD} VERBOSE=1
 ${CMAKE_COMMAND} --build ${DIR_BUILD} --target install

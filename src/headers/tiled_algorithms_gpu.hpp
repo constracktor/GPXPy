@@ -3,8 +3,8 @@
 
 //#include <hpx/local/future.hpp>
 #include "cublas_adapter.hpp"
-////////////////////////////////////////////////////////////////////////////////
-// Tiled Cholesky Algorithms
+
+// right-looking tiled Cholesky algorithm using cuBLAS
 template <typename T>
 void right_looking_cholesky_tiled_cublas(hpx::cuda::experimental::cublas_executor& cublas,
                                          std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
@@ -34,5 +34,4 @@ void right_looking_cholesky_tiled_cublas(hpx::cuda::experimental::cublas_executo
     }
   }
 }
-
 #endif

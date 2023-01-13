@@ -31,7 +31,7 @@ hpx::shared_future<std::vector<T>> gemm_cublas(hpx::cuda::experimental::cublas_e
   copy_host_to_device.push_back(hpx::async(cublas, cudaMemcpyAsync, d_C, h_C.data(), size * sizeof(T), cudaMemcpyHostToDevice));
   hpx::wait_all(copy_host_to_device);
   // compute GEMM (C = C - A * B^T) on device
-  // note cublas is column major ordering : (A * B^T)^T = B * A^T
+  // note cublas uses column major ordering : (A * B^T)^T = B * A^T
   auto compute_on_device = hpx::async(cublas, cublasSgemm, CUBLAS_OP_T, CUBLAS_OP_N, N, N, N, &alpha, d_B, N, d_A, N, &beta, d_C, N);
   compute_on_device.get();
   // copy the result back to the host

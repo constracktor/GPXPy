@@ -2,8 +2,8 @@
 
 Repository that contains the HPX implementation of the non-linear system
 identification with Gaussian processes minimum working example used for
-the research project:
-"A comparison of PETSc and HPX for a Scientific Computation Problem"
+"Scalability of Gaussian Processes using Asynchronous Tasks:
+A Comparison between HPX and PETSc"
 
 ## Docker Containers
 
@@ -28,7 +28,7 @@ Build image inside hpx_project folder:
 Start container:  
 `sudo docker run -it --rm --user user hpx_base_image`  
 Install HPX manually:  
-`cd && hpx_project/dependencies && git pull --rebase && ./build-all.sh Release`  
+`cd && hpx_project/dependencies && git pull --rebase && ./build-all.sh Release/Debug`  
 
 ## Compile and Run Benchmark
 
