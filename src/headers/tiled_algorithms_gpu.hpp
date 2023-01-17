@@ -27,22 +27,16 @@ void right_looking_cholesky_tiled_cublas(std::vector<hpx::cuda::experimental::cu
     // using cublas for tile update
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
-      // SYRK
-      std::cout << "SYRK b " << counter << '\n';
       // increase or reset counter
       counter = (counter < n_executors - 1 ) ? counter + 1 : 0;
-      std::cout << "SYRK a " << counter << '\n';
-
+      // SYRK
       ft_tiles[m * n_tiles + m] = syrk_cublas<T>(cublas[counter], ft_tiles[m * n_tiles + m], ft_tiles[m * n_tiles + k], N);
 
 
       for (std::size_t n = k + 1; n < m; n++)
       {
-        std::cout << "GEMM b " << counter << '\n';
         // increase or reset counter
-        counter = (counter < n_executors - 1) ? counter + 1 : 0;
-        std::cout  << "GEMM a " << counter << '\n';
-
+        counter = (counter < n_executors - 1 ) ? counter + 1 : 0;
         // GEMM
         ft_tiles[m * n_tiles + n] = gemm_cublas<T>(cublas[counter], ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
 

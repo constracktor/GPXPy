@@ -43,14 +43,17 @@ int hpx_main(hpx::program_options::variables_map& vm)
        << "with compute capability "
        << target.native_handle().processor_family() << "\n";
   // create cublas executors
-  std::size_t n_executors = 20;
+  std::size_t n_executors = 50;
   std::vector<hpx::cuda::experimental::cublas_executor> cublas_executors;
   for (size_t i = 0; i < n_executors; i++)
   {
-    hpx::cuda::experimental::cublas_executor cublas(0, CUBLAS_POINTER_MODE_HOST, hpx::cuda::experimental::event_mode{});
+    hpx::cuda::experimental::cublas_executor cublas(device, CUBLAS_POINTER_MODE_HOST, hpx::cuda::experimental::event_mode{});
     cublas_executors.push_back(cublas);
   }
   std::cout << "n_executors: " << cublas_executors.size() <<'\n';
+  if ( &cublas_executors[0] == &cublas_executors[0] ) {
+    std::cout << "the same object!!" << '\n';
+}
   // hpx::cuda::experimental::cublas_executor cublas(device,
   // CUBLAS_POINTER_MODE_HOST, hpx::cuda::experimental::event_mode{});
   //////////////////////////////////////////////////////////////////////////////
