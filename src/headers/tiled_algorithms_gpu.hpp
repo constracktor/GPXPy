@@ -4,14 +4,17 @@
 //#include <hpx/local/future.hpp>
 #include "cublas_adapter.hpp"
 
+#include <iostream>
 // right-looking tiled Cholesky algorithm using cuBLAS
 template <typename T>
-void right_looking_cholesky_tiled_cublas(hpx::cuda::experimental::cublas_executor& cublas,
+void right_looking_cholesky_tiled_cublas(std::vector<hpx::cuda::experimental::cublas_executor> cublas,
                                          std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
                                          std::size_t N,
                                          std::size_t n_tiles)
 
-{
+{ // counter to eqally split workload among the cublas executors
+  std::size_t counter = 0;
+  std::size_t n_executors = cublas.size();
   for (std::size_t k = 0; k < n_tiles; k++)
   {
     // POTRF
@@ -25,11 +28,24 @@ void right_looking_cholesky_tiled_cublas(hpx::cuda::experimental::cublas_executo
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
       // SYRK
-      ft_tiles[m * n_tiles + m] = syrk_cublas<T>(cublas, ft_tiles[m * n_tiles + m], ft_tiles[m * n_tiles + k], N);
+      std::cout << "SYRK b " << counter << '\n';
+      // increase or reset counter
+      counter = (counter < n_executors - 1 ) ? counter + 1 : 0;
+      std::cout << "SYRK a " << counter << '\n';
+
+      ft_tiles[m * n_tiles + m] = syrk_cublas<T>(cublas[counter], ft_tiles[m * n_tiles + m], ft_tiles[m * n_tiles + k], N);
+
+
       for (std::size_t n = k + 1; n < m; n++)
       {
+        std::cout << "GEMM b " << counter << '\n';
+        // increase or reset counter
+        counter = (counter < n_executors - 1) ? counter + 1 : 0;
+        std::cout  << "GEMM a " << counter << '\n';
+
         // GEMM
-        ft_tiles[m * n_tiles + n] = gemm_cublas<T>(cublas, ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
+        ft_tiles[m * n_tiles + n] = gemm_cublas<T>(cublas[counter], ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
+
       }
     }
   }

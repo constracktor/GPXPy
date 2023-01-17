@@ -42,9 +42,17 @@ int hpx_main(hpx::program_options::variables_map& vm)
        << target.native_handle().processor_name() << "\" "
        << "with compute capability "
        << target.native_handle().processor_family() << "\n";
-  // create cublas executor
-  hpx::cuda::experimental::cublas_executor cublas(device,
-  CUBLAS_POINTER_MODE_HOST, hpx::cuda::experimental::event_mode{});
+  // create cublas executors
+  std::size_t n_executors = 20;
+  std::vector<hpx::cuda::experimental::cublas_executor> cublas_executors;
+  for (size_t i = 0; i < n_executors; i++)
+  {
+    hpx::cuda::experimental::cublas_executor cublas(0, CUBLAS_POINTER_MODE_HOST, hpx::cuda::experimental::event_mode{});
+    cublas_executors.push_back(cublas);
+  }
+  std::cout << "n_executors: " << cublas_executors.size() <<'\n';
+  // hpx::cuda::experimental::cublas_executor cublas(device,
+  // CUBLAS_POINTER_MODE_HOST, hpx::cuda::experimental::event_mode{});
   //////////////////////////////////////////////////////////////////////////////
   // Get and set parameters
   // determine choleksy variant and problem size
@@ -174,7 +182,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   // PART 2: CHOLESKY SOLVE
   // Cholesky decomposition
   // only right-looking variant currently implemented
-  right_looking_cholesky_tiled_cublas(cublas, K_tiles, n_tile_size, n_tiles);
+  right_looking_cholesky_tiled_cublas(cublas_executors, K_tiles, n_tile_size, n_tiles);
   // Triangular solve
   forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
   backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
