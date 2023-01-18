@@ -51,9 +51,6 @@ int hpx_main(hpx::program_options::variables_map& vm)
     cublas_executors.push_back(cublas);
   }
   std::cout << "n_executors: " << cublas_executors.size() <<'\n';
-  if ( &cublas_executors[0] == &cublas_executors[0] ) {
-    std::cout << "the same object!!" << '\n';
-}
   // hpx::cuda::experimental::cublas_executor cublas(device,
   // CUBLAS_POINTER_MODE_HOST, hpx::cuda::experimental::event_mode{});
   //////////////////////////////////////////////////////////////////////////////

@@ -25,17 +25,3 @@ mkdir -p ${DIR_BUILD}
     ${DIR_SRC}/bootstrap --parallel=${PARALLEL_BUILD} --prefix=${DIR_INSTALL} -- -DCMAKE_BUILD_TYPE=Release -DCMAKE_USE_OPENSSL=OFF
     make -j${PARALLEL_BUILD} install
 )
-
-mkdir -p $(dirname ${FILE_MODULE})
-cat >${FILE_MODULE} <<EOF
-#%Module
-proc ModulesHelp { } {
-  puts stderr {CMake}
-}
-module-whatis {CMake}
-set root    ${DIR_INSTALL}
-conflict    cmake
-prepend-path    PATH            \$root/bin
-prepend-path    ACLOCAL_PATH    \$root/share/aclocal
-setenv          CMAKE_COMMAND   \$root/bin/cmake
-EOF

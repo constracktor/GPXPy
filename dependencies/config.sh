@@ -9,11 +9,12 @@ export SOURCE_ROOT=${HPXSC_ROOT}/src
 # CMake
 export CMAKE_VERSION=3.19.5
 
-# GCC - not activated
+# GCC
 export GCC_VERSION=10.3.0
 
-# clang - not implemented
+# clang
 export CLANG_VERSION=12.0.0
+#export CLANG_VERSION=release/12.x
 
 # Boost
 export BOOST_VERSION=1.75.0

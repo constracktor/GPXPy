@@ -46,36 +46,10 @@ ${CMAKE_COMMAND} \
     -DHPX_WITH_EXAMPLES=OFF \
     -DHPX_WITH_TESTS=OFF \
     -DHPX_WITH_APEX=ON \
-    -DHPX_WITH_CUDA=OFF \
-    -DHPX_WITH_GPUBLAS=OFF
+    -DAPEX_WITH_CUDA=${HPX_WITH_CUDA} \
+    -DHPX_WITH_CUDA=${HPX_WITH_CUDA} \
+    -DHPX_WITH_GPUBLAS=${HPX_WITH_CUDA}
 
 ${CMAKE_COMMAND} --build ${DIR_BUILD} -- -j${PARALLEL_BUILD} VERBOSE=1
 ${CMAKE_COMMAND} --build ${DIR_BUILD} --target install
 cp ${DIR_BUILD}/compile_commands.json ${DIR_SRC}/compile_commands.json
-
-mkdir -p $(dirname ${FILE_MODULE})
-cat >${FILE_MODULE} <<EOF
-#%Module
-proc ModulesHelp { } {
-  puts stderr {HPX}
-}
-module-whatis {HPX}
-set root    ${DIR_INSTALL}
-conflict    hpx
-module load gcc/${GCC_VERSION}
-module load boost/${BOOST_VERSION}-${BOOST_BUILD_TYPE}
-module load cmake/${CMAKE_VERSION}
-module load jemalloc/${JEMALLOC_VERSION}
-module load hwloc/${HWLOC_VERSION}
-prereq      gcc/${GCC_VERSION}
-prereq      boost/${BOOST_VERSION}-${BOOST_BUILD_TYPE}
-prereq      cmake/${CMAKE_VERSION}
-prereq      jemalloc/${JEMALLOC_VERSION}
-prereq      hwloc/${HWLOC_VERSION}
-prepend-path    CPATH              \$root/include
-prepend-path    PATH               \$root/bin
-prepend-path    LD_LIBRARY_PATH    \$root/lib
-prepend-path    LIBRARY_PATH       \$root/lib
-setenv          HPX_DIR            \$root/${LIB_DIR_NAME}/cmake/HPX
-setenv          HPX_VERSION        ${HPX_VERSION}
-EOF

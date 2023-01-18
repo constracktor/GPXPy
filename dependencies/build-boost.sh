@@ -25,25 +25,11 @@ fi
 (
     cd ${DIR_SRC}
 
-    ./bootstrap.sh --prefix=${DIR_INSTALL} --with-toolset=gcc
+    if [[ "${HPX_WITH_CLANG}" == "ON" ]]; then
+        ./bootstrap.sh --prefix=${DIR_INSTALL} --with-toolset=clang
+    else
+        ./bootstrap.sh --prefix=${DIR_INSTALL} --with-toolset=gcc
+    fi
 
     ./b2 -j${PARALLEL_BUILD} "${flag1}" ${flag2} --with-atomic --with-filesystem --with-program_options --with-regex --with-system --with-chrono --with-date_time --with-thread --with-iostreams ${BOOST_BUILD_TYPE} install
 )
-
-mkdir -p $(dirname ${FILE_MODULE})
-cat >${FILE_MODULE} <<EOF
-#%Module
-proc ModulesHelp { } {
-  puts stderr {boost}
-}
-module-whatis {boost}
-set root    ${DIR_INSTALL}
-conflict    boost
-module load gcc/${GCC_VERSION}
-prereq      gcc/${GCC_VERSION}
-prepend-path    CPATH           \$root
-prepend-path    LD_LIBRARY_PATH \$root/lib
-prepend-path    LIBRARY_PATH    \$root/lib
-setenv          BOOST_ROOT      \$root
-setenv          BOOST_VERSION   ${BOOST_VERSION}
-EOF

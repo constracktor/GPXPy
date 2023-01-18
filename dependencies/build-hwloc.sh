@@ -26,23 +26,3 @@ fi
     make -j ${PARALLEL_BUILD}
     make install
 )
-
-mkdir -p $(dirname ${FILE_MODULE})
-cat >${FILE_MODULE} <<EOF
-#%Module
-proc ModulesHelp { } {
-  puts stderr {hwloc}
-}
-module-whatis {hwloc}
-set root    ${DIR_INSTALL}
-conflict    hwloc
-module load gcc/${GCC_VERSION}
-prereq      gcc/${GCC_VERSION}
-prepend-path    CPATH           \$root/include
-prepend-path    PATH            \$root/bin
-prepend-path    MANPATH         \$root/share/man
-prepend-path    LD_LIBRARY_PATH \$root/lib
-prepend-path    LIBRARY_PATH    \$root/lib
-setenv HWLOC_ROOT               \$root
-setenv HWLOC_VERSION            ${HWLOC_VERSION}
-EOF

@@ -30,23 +30,3 @@ fi
     make -j${PARALLEL_BUILD}
     make install
 )
-
-mkdir -p $(dirname ${FILE_MODULE})
-cat >${FILE_MODULE} <<EOF
-#%Module
-proc ModulesHelp { } {
-  puts stderr {GCC}
-}
-module-whatis {GCC}
-set root    ${DIR_INSTALL}
-conflict    GCC
-prepend-path    CPATH              \$root/include
-prepend-path    LD_LIBRARY_PATH    \$root/lib
-prepend-path    LD_LIBRARY_PATH    \$root/lib64
-prepend-path    LD_LIBRARY_PATH    \$root/lib/gcc/$(ls ${DIR_INSTALL}/lib/gcc/)/${GCC_VERSION}
-prepend-path    LIBRARY_PATH       \$root/lib
-prepend-path    LIBRARY_PATH       \$root/lib64
-prepend-path    MANPATH            \$root/share/man
-prepend-path    PATH               \$root/bin
-setenv  GCC_VERSION     ${GCC_VERSION}
-EOF

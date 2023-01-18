@@ -8,6 +8,8 @@ if [[ "$1" == "gpu" ]]
 then
     GPU=1
     BLAS=0
+    # load cuda on pcsgs05
+    module load cuda/11.0.3
 elif [[ "$1" == "cpu" ]]
 then
     GPU=0
