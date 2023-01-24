@@ -1,8 +1,11 @@
 #!/bin/bash
 # Set variables
+set +x
 export APEX_SCREEN_OUTPUT=1 APEX_CSV_OUTPUT=1
 export HPXSC_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd )/dependencies"
 export CMAKE_COMMAND=${HPXSC_ROOT}/build/cmake/bin/cmake
+export CPPUDDLE_DIR=${HPXSC_ROOT}/build/cppuddle/build/cppuddle/lib/cmake/CPPuddle
+
 # Compile Code
 if [[ "$1" == "gpu" ]]
 then
@@ -22,7 +25,7 @@ else
   echo "Please Specify what to run: cpu, gpu or blas"
   exit 1
 fi
-rm -rf build && mkdir build && cd build && $CMAKE_COMMAND .. -DGPU=$GPU -DBLAS=$BLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${HPXSC_ROOT}/build/hpx/build/lib/cmake/HPX" && make all
+rm -rf build && mkdir build && cd build && $CMAKE_COMMAND .. -DGPU=$GPU -DBLAS=$BLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${HPXSC_ROOT}/build/hpx/build/lib/cmake/HPX" -DCPPuddle_DIR=${CPPUDDLE_DIR} && make all
 cd ../benchmark_scripts
 if [ $BLAS == 1 ]
 then
@@ -92,10 +95,10 @@ else
     #./data_script.sh $START $END $STEP $TILE_SIZE $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
     ##############################################################################
     # Run data_script for testing
-    START=5000
+    START=10000
     END=10000
     STEP=1000
-    N_CORES=8
+    N_CORES=18
     TILE_SIZE=200
     N_TEST=5000
     N_REG=100

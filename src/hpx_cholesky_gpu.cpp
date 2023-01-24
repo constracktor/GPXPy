@@ -43,7 +43,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
        << "with compute capability "
        << target.native_handle().processor_family() << "\n";
   // create cublas executors
-  std::size_t n_executors = 50;
+  std::size_t n_executors = 1;
   std::vector<hpx::cuda::experimental::cublas_executor> cublas_executors;
   for (size_t i = 0; i < n_executors; i++)
   {
@@ -197,6 +197,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   error_file = fopen("error.csv", "w");
   fprintf(error_file, "\"error\",%lf\n", average_error);
   fclose(error_file);
+  recycler::force_cleanup();
   return hpx::local::finalize();    // Handles HPX shutdown
 }
 
