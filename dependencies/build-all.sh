@@ -89,7 +89,7 @@ mkdir -p ${SOURCE_ROOT} ${INSTALL_ROOT}
 if [[ "${HPX_COMPILER_OPTION}" == "with-gcc" ]]; then
     echo "Building GCC"
     ./build-gcc.sh
-    echo "Configureing GCC"
+    echo "Configuring GCC"
     source gcc-config.sh
 elif [[ "${HPX_COMPILER_OPTION}" == "with-clang" ]]; then
     echo "Building clang"
@@ -104,6 +104,9 @@ export CMAKE_COMMAND=${INSTALL_ROOT}/cmake/bin/cmake
 ################################################################################
 # Dependencies
 ################################################################################
+echo "Building CPPuddle"
+./build-cppuddle.sh
+
 echo "Building Boost"
 ./build-boost.sh
 
