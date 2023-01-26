@@ -26,7 +26,7 @@ fi
     mkdir -p ${DIR_BUILD}
     cd ${DIR_BUILD}
 
-    ${DIR_SRC}/configure --prefix=${DIR_INSTALL} --enable-languages=c,c++,fortran --disable-multilib --disable-nls
+    ${DIR_SRC}/configure --prefix=${DIR_INSTALL} --enable-languages=c,c++ --disable-multilib --disable-nls
     make -j${PARALLEL_BUILD}
     make install
 )

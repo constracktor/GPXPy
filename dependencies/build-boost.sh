@@ -3,7 +3,8 @@
 set -ex
 
 : ${SOURCE_ROOT:?} ${INSTALL_ROOT:?} ${GCC_VERSION:?} \
-    ${BOOST_VERSION:?} ${BOOST_BUILD_TYPE:?} ${HPXSC_ROOT:?}
+    ${BOOST_VERSION:?} ${BOOST_BUILD_TYPE:?} ${HPXSC_ROOT:?} \
+    ${HPX_WITH_CLANG:?}
 
 DIR_SRC=${SOURCE_ROOT}/boost
 

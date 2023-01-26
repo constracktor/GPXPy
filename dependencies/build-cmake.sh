@@ -3,7 +3,6 @@
 set -ex
 
 : ${SOURCE_ROOT:?} ${INSTALL_ROOT:?} ${CMAKE_VERSION:?}
-
 DIR_SRC=${SOURCE_ROOT}/cmake
 DIR_BUILD=${INSTALL_ROOT}/cmake/build
 DIR_INSTALL=${INSTALL_ROOT}/cmake

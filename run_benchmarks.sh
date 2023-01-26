@@ -1,18 +1,28 @@
 #!/bin/bash
-# Set variables
+################################################################################
+# Diagnostics
+################################################################################
 set +x
+
+################################################################################
+# Variables
+################################################################################
 export APEX_SCREEN_OUTPUT=1 APEX_CSV_OUTPUT=1
 export HPXSC_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd )/dependencies"
 export CMAKE_COMMAND=${HPXSC_ROOT}/build/cmake/bin/cmake
-export CPPUDDLE_DIR=${HPXSC_ROOT}/build/cppuddle/build/cppuddle/lib/cmake/CPPuddle
 
-# Compile Code
+################################################################################
+# Command-line options
+################################################################################
+# Determine Code
 if [[ "$1" == "gpu" ]]
 then
     GPU=1
     BLAS=0
-    # load cuda on pcsgs05
+    # load cuda module (on pcsgs05 use e.g. 11.0.3)
     module load cuda/11.0.3
+    # set CPPuddle 
+    export CPPUDDLE_DIR=${HPXSC_ROOT}/build/cppuddle/build/cppuddle/lib/cmake/CPPuddle
 elif [[ "$1" == "cpu" ]]
 then
     GPU=0
@@ -22,10 +32,39 @@ then
     GPU=0
     BLAS=1
 else
-  echo "Please Specify what to run: cpu, gpu or blas"
+  echo 'Please specify what to run: "cpu", "gpu" or "blas"'
   exit 1
 fi
+# Set Compiler Environment Variables
+export INSTALL_ROOT=${HPXSC_ROOT}/build
+export HPX_COMPILER_OPTION="$2"
+if [[ "${HPX_COMPILER_OPTION}" == "with-gcc" ]]; then
+    echo "Configuring self-built GCC"
+    source dependencies/gcc-config.sh
+elif [[ "${HPX_COMPILER_OPTION}" == "with-clang" ]]; then
+    echo "Configuring self-built clang"
+    source dependencies/clang-config.sh
+elif [[ "${HPX_COMPILER_OPTION}" == "with-CC" ]]; then
+    HPX_USE_CC_COMPILER=ON
+    echo "Configuring GCC"
+    source dependencies/gcc-config.sh
+elif [[ "${HPX_COMPILER_OPTION}" == "with-CC-clang" ]]; then
+    HPX_USE_CC_COMPILER=ON
+    echo "Configuring clang"
+    source dependencies/clang-config.sh
+else
+  echo 'Please specify compiler: "with-gcc" or "with-clang" or "with-CC" or "with-CC-clang"'
+  exit 1
+fi
+
+################################################################################
+# Compile code
+################################################################################
 rm -rf build && mkdir build && cd build && $CMAKE_COMMAND .. -DGPU=$GPU -DBLAS=$BLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${HPXSC_ROOT}/build/hpx/build/lib/cmake/HPX" -DCPPuddle_DIR=${CPPUDDLE_DIR} && make all
+
+################################################################################
+# Run benchmark script
+################################################################################
 cd ../benchmark_scripts
 if [ $BLAS == 1 ]
 then
