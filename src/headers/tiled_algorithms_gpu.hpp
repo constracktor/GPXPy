@@ -2,13 +2,13 @@
 #define TILED_ALGORITHMS_GPU_H_INCLUDED
 
 //#include <hpx/local/future.hpp>
+#include <iostream>
 #include "cublas_adapter.hpp"
 
-#include <iostream>
 // right-looking tiled Cholesky algorithm using cuBLAS
 template <typename T>
 void right_looking_cholesky_tiled_cublas(std::vector<hpx::cuda::experimental::cublas_executor> cublas,
-                                         std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
+                                         std::vector<hpx::shared_future<host_buffer_t<T>>> &ft_tiles,
                                          std::size_t N,
                                          std::size_t n_tiles)
 
@@ -31,15 +31,12 @@ void right_looking_cholesky_tiled_cublas(std::vector<hpx::cuda::experimental::cu
       counter = (counter < n_executors - 1 ) ? counter + 1 : 0;
       // SYRK
       ft_tiles[m * n_tiles + m] = syrk_cublas<T>(cublas[counter], ft_tiles[m * n_tiles + m], ft_tiles[m * n_tiles + k], N);
-
-
       for (std::size_t n = k + 1; n < m; n++)
       {
         // increase or reset counter
         counter = (counter < n_executors - 1 ) ? counter + 1 : 0;
         // GEMM
         ft_tiles[m * n_tiles + n] = gemm_cublas<T>(cublas[counter], ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
-
       }
     }
   }

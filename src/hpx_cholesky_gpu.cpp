@@ -1,6 +1,14 @@
 #define CALC_TYPE float
 #define TYPE "%f"
 
+#include <cuda_buffer_util.hpp>
+template <typename T>
+using cuda_device_buffer_t = recycler::cuda_device_buffer<T>;
+
+template <typename T>
+using host_buffer_t = std::vector<T>;//, recycler::recycle_allocator_cuda_host<T>>;
+
+
 #include "headers/gp_functions.hpp"
 #include "headers/tiled_algorithms_cpu.hpp"
 #include "headers/tiled_algorithms_gpu.hpp"
@@ -8,12 +16,13 @@
 #include <iostream>
 #include <hpx/local/init.hpp>
 
+
 int hpx_main(hpx::program_options::variables_map& vm)
 {
   //////////////////////////////////////////////////////////////////////////////
   // declare data structures
   // tiled future data structures
-  std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> K_tiles;
+  std::vector<hpx::shared_future<host_buffer_t<CALC_TYPE>>> K_tiles;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> alpha_tiles;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> cross_covariance_tiles;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> prediction_tiles;

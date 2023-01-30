@@ -14,7 +14,8 @@ export LDCXXFLAGS="${LDFLAGS} -std=c++17 "
 
 case $(uname -i) in
     x86_64)
-        export CXXFLAGS="-fPIC -march=native -ffast-math -std=c++17 "
+        export CXXFLAGS="-std=c++17"
+        #export CXXFLAGS="-fPIC -march=native -ffast-math -std=c++17"
         ;;
     *)
         echo 'Unknown architecture encountered.' 2>&1

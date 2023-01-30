@@ -46,7 +46,7 @@ T compute_covariance_function(std::size_t n_regressors,
 
 // generate a tile of the covariance matrix
 template <typename T>
-std::vector<T> gen_tile_covariance(std::size_t row,
+host_buffer_t<T> gen_tile_covariance(std::size_t row,
                                    std::size_t col,
                                    std::size_t N,
                                    std::size_t n_regressors,
@@ -79,8 +79,8 @@ std::vector<T> gen_tile_covariance(std::size_t row,
      }
    }
    // Initialize tile
-   std::vector<T> tile;
-   tile.resize(N * N);
+   host_buffer_t<T> tile(N * N);
+   //tile.resize(N * N);
    for(std::size_t i = 0; i < N; i++)
    {
       i_global = N * row + i;
@@ -97,7 +97,7 @@ std::vector<T> gen_tile_covariance(std::size_t row,
         tile[i * N + j] = covariance_function;
       }
    }
-   return tile;
+   return std::move(tile);
 }
 
 // generate a tile containing the output observations
