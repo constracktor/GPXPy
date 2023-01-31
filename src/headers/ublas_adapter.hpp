@@ -75,44 +75,44 @@ host_buffer_t<T> trsm(host_buffer_t<T> L,
   return A;
 }
 
-// //  A = A - B * B^T
-// template <typename T>
-// std::vector<T> syrk(std::vector<T> A,
-//                     std::vector<T> B,
-//                     std::size_t N)
-// {
-//   // convert to boost matrices
-//   ublas::matrix< T, ublas::row_major, std::vector<T> > A_blas(N, N);
-//   A_blas.data() = A;
-//   ublas::matrix< T, ublas::row_major, std::vector<T> > B_blas(N, N);
-//   B_blas.data() = B;
-//   //SYRK
-//   A_blas = A_blas - ublas::prod(B_blas,ublas::trans(B_blas));
-//   // reformat to std::vector
-//   A = A_blas.data();
-//   return A;
-// }
+//  A = A - B * B^T
+template <typename T>
+std::vector<T> syrk(std::vector<T> A,
+                    std::vector<T> B,
+                    std::size_t N)
+{
+  // convert to boost matrices
+  ublas::matrix< T, ublas::row_major, std::vector<T> > A_blas(N, N);
+  A_blas.data() = A;
+  ublas::matrix< T, ublas::row_major, std::vector<T> > B_blas(N, N);
+  B_blas.data() = B;
+  //SYRK
+  A_blas = A_blas - ublas::prod(B_blas,ublas::trans(B_blas));
+  // reformat to std::vector
+  A = A_blas.data();
+  return A;
+}
 
-// //C = C - A * B^T
-// template <typename T>
-// std::vector<T> gemm(std::vector<T> A,
-//                     std::vector<T> B,
-//                     std::vector<T> C,
-//                     std::size_t N)
-// {
-//   // convert to boost matrices
-//   ublas::matrix< T, ublas::row_major, std::vector<T> > A_blas(N, N);
-//   A_blas.data() = A;
-//   ublas::matrix< T, ublas::row_major, std::vector<T> > B_blas(N, N);
-//   B_blas.data() = B;
-//   ublas::matrix< T, ublas::row_major, std::vector<T> > C_blas(N, N);
-//   C_blas.data() = C;
-//   // GEMM
-//   C_blas = C_blas - ublas::prod(A_blas, ublas::trans(B_blas));
-//   // reformat to std::vector
-//   C = C_blas.data();
-//   return C;
-// }
+//C = C - A * B^T
+template <typename T>
+std::vector<T> gemm(std::vector<T> A,
+                    std::vector<T> B,
+                    std::vector<T> C,
+                    std::size_t N)
+{
+  // convert to boost matrices
+  ublas::matrix< T, ublas::row_major, std::vector<T> > A_blas(N, N);
+  A_blas.data() = A;
+  ublas::matrix< T, ublas::row_major, std::vector<T> > B_blas(N, N);
+  B_blas.data() = B;
+  ublas::matrix< T, ublas::row_major, std::vector<T> > C_blas(N, N);
+  C_blas.data() = C;
+  // GEMM
+  C_blas = C_blas - ublas::prod(A_blas, ublas::trans(B_blas));
+  // reformat to std::vector
+  C = C_blas.data();
+  return C;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // BLAS operations for tiled triangular solve

@@ -3,6 +3,10 @@
 #define CALC_TYPE float
 #define TYPE "%f"
 
+#include <vector>
+template <typename T>
+using host_buffer_t = std::vector<T>;
+
 #include "headers/gp_functions.hpp"
 #include "headers/tiled_algorithms_cpu.hpp"
 
