@@ -8,7 +8,7 @@
 
 #include <iostream>
 #include <hpx/local/init.hpp>
-#include <mkl.h>
+//#include <mkl.h>
 
 int hpx_main(hpx::program_options::variables_map& vm)
 {

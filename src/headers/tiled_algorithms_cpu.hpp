@@ -3,6 +3,7 @@
 
 #include <hpx/local/future.hpp>
 #include "ublas_adapter.hpp"
+#include "mkl_adapter.hpp"
 ////////////////////////////////////////////////////////////////////////////////
 // Tiled Cholesky Algorithms
 template <typename T>
@@ -27,7 +28,7 @@ void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<T>>
       for (std::size_t n = k + 1; n < m; n++)
       {
         // GEMM
-        ft_tiles[m * n_tiles + n] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemm<T>), "cholesky_tiled"), ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
+        ft_tiles[m * n_tiles + n] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm<T>), "cholesky_tiled"), ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
       }
     }
   }

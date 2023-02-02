@@ -2,12 +2,11 @@ cmake_minimum_required(VERSION 3.18)
 project(hpx_project CXX)
 find_package(HPX REQUIRED)
 find_package(MKL CONFIG REQUIRED)
-#include_directories(${MKL_INCLUDE_DIRS})
-#link_directories(${MKL_LIBRARIES})
 
 # set header file
 set(HEADER_FILES src/headers/ublas_adapter.hpp 
-                 src/headers/cublas_adapter.hpp 
+                 src/headers/cublas_adapter.hpp
+                 src/headers/mkl_adapter.hpp 
                  src/headers/tiled_algorithms_cpu.hpp 
                  src/headers/tiled_algorithms_gpu.hpp 
                  src/headers/gp_functions.hpp)
