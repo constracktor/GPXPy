@@ -24,7 +24,7 @@ void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<T>>
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
       // SYRK
-      ft_tiles[m * n_tiles + m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&syrk<T>), "cholesky_tiled"), ft_tiles[m * n_tiles + m], ft_tiles[m * n_tiles + k], N);
+      ft_tiles[m * n_tiles + m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_syrk<T>), "cholesky_tiled"), ft_tiles[m * n_tiles + m], ft_tiles[m * n_tiles + k], N);
       for (std::size_t n = k + 1; n < m; n++)
       {
         // GEMM

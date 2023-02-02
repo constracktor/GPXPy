@@ -84,19 +84,77 @@
 //     printf (" Example completed. \n\n");
 //     return 0;
 // }
+////////////////////////////////////////////////////////////////////////////////
+// BLAS operations for tiled cholkesy
+// // in-place Cholesky decomposition of A -> return factorized matrix L
+// template <typename T>
+// std::vector<T> potrf(std::vector<T> A,
+//                      std::size_t N)
+// {
+//   // convert to boost matrices
+//   ublas::matrix< T, ublas::row_major, std::vector<T> > A_blas(N, N);
+//   A_blas.data() = A;
+//   ublas::matrix< T, ublas::row_major, std::vector<T> > L_blas(N, N);
+//   // POTRF (compute Cholesky)
+//   for (size_t k=0 ; k < N; k++)
+//   {
+//     // compute squared diagonal entry
+//     T qL_kk = A_blas(k,k) - ublas::inner_prod(
+//       ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ),
+//       ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ) );
+//     // check if positive
+//     if (qL_kk <= 0)
+//     {
+//       std::cout << qL_kk << '\n' << std::flush;
+//     }
+//     else
+//     {
+//       // set diagonal entry
+//       T L_kk = std::sqrt( qL_kk );
+//       L_blas(k,k) = L_kk;
+//       // compute corresponding column
+//       ublas::matrix_column<ublas::matrix< T, ublas::row_major, std::vector<T> >> cLk(L_blas, k);
+//       ublas::project( cLk, ublas::range(k+1, N) )
+//         = ( ublas::project( ublas::column(A_blas, k), ublas::range(k+1, N) )
+//             - ublas::prod( ublas::project(L_blas, ublas::range(k+1, N), ublas::range(0, k)),
+//                     ublas::project(ublas::row(L_blas, k), ublas::range(0, k) ) ) ) / L_kk;
+//     }
+//   }
+//   // reformat to std::vector
+//   A = L_blas.data();
+//   return A;
+// }
 
+// // in-place solve L * X = A^T where L triangular
+// template <typename T>
+// std::vector<T> mkl_trsm(std::vector<T> L,
+//                     std::vector<T> A,
+//                     std::size_t N)
+// {
+//   // TRSM constants
+//   const T alpha = 1.0f; 
+//   // TRSM kernel - caution with dtrsm
+//   cblas_strsm(CblasRowMajor, CblasLeft, CblasLower, CblasNoTrans, CblasNonUnit, N, N, alpha, L.data(), N, A.data(), N);
+//   // return vector
+//   return A;
+// }
 
-// //Just some initialization code, don't bother about this part
-// int n = 10000;
-// std::vector<double> input(n, 42.0);
-// std::vector<double> output(input.size());
+// A = A - B * B^T
+template <typename T>
+std::vector<T> mkl_syrk(std::vector<T> A,
+                        std::vector<T> B,
+                        std::size_t N)
+{
+  // SYRK constants
+  const T alpha = -1.0f;
+  const T beta = 1.0f;
+  // SYRK kernel - caution with dsyrk
+  cblas_ssyrk(CblasRowMajor, CblasLower, CblasNoTrans,
+              N, N, alpha, B.data(), N, beta, A.data(), N);
+  // return vector
+  return A;
+}
 
-// double alpha = 69.0;
-
-// //the actual calculation:
-// cblas_daxpby (output.size(), alpha, input.data(), 1, 0.0, output.data(), 1);
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
 //C = C - A * B^T
 template <typename T>
 std::vector<T> mkl_gemm(std::vector<T> A,
@@ -107,7 +165,7 @@ std::vector<T> mkl_gemm(std::vector<T> A,
   // GEMM constants
   const T alpha = -1.0f;
   const T beta = 1.0f;
-  // GEMM kernel
+  // GEMM kernel - caution with dgemm
   cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
               N, N, N, alpha, A.data(), N, B.data(), N, beta, C.data(), N);
   // return vector
