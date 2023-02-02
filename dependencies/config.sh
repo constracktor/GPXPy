@@ -15,10 +15,12 @@ export GCC_VERSION=10.3.0
 export CC_VERSION=-9
 
 # clang
-#export CLANG_VERSION=12.0.0
 export CLANG_VERSION=release/12.x
 # specific version of system clang
-#export CC_CLANG_VERSION=-12
+export CC_CLANG_VERSION=-10
+
+# MKL version 
+export MKL_VERSION=2023.0.0
 
 # Boost
 echo ${BUILD_TYPE}

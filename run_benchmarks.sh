@@ -10,6 +10,7 @@ set +x
 export APEX_SCREEN_OUTPUT=1 APEX_CSV_OUTPUT=1
 export HPXSC_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd )/dependencies"
 export CMAKE_COMMAND=${HPXSC_ROOT}/build/cmake/bin/cmake
+export MKL_DIR=${HPXSC_ROOT}/build/mkl/mkl/2023.0.0/lib/cmake/mkl
 
 ################################################################################
 # Command-line options
@@ -60,7 +61,7 @@ fi
 ################################################################################
 # Compile code
 ################################################################################
-rm -rf build && mkdir build && cd build && $CMAKE_COMMAND .. -DGPU=$GPU -DBLAS=$BLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${HPXSC_ROOT}/build/hpx/build/lib/cmake/HPX" -DCPPuddle_DIR=${CPPUDDLE_DIR} && make all
+rm -rf build && mkdir build && cd build && $CMAKE_COMMAND .. -DGPU=$GPU -DBLAS=$BLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${HPXSC_ROOT}/build/hpx/build/lib/cmake/HPX" -DMKL_DIR=${MKL_DIR} -DCPPuddle_DIR=${CPPUDDLE_DIR} && make all
 
 ################################################################################
 # Run benchmark script

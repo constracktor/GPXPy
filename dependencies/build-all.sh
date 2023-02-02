@@ -47,12 +47,14 @@ else
 fi
 # Determine compiler
 if [[ "$2" == "with-gcc" ]]; then
+    export HPX_WITH_CLANG=OFF
     export HPX_WITH_CUDA=OFF
     echo "Using self-built gcc - CUDA Support diasbled"
 elif [[ "$2" == "with-clang" ]]; then
     export HPX_WITH_CLANG=ON
     echo "Using self-built clang "
 elif [[ "$2" == "with-CC" ]]; then
+    export HPX_WITH_CLANG=OFF
     export HPX_USE_CC_COMPILER=ON
     export HPX_WITH_CUDA=OFF
     echo "Using CC / CXX compiler (whatever it may be) - CUDA Support diasbled"
@@ -115,6 +117,9 @@ if [[ "${HPX_WITH_CUDA}" == "ON" ]]; then
     echo "Building CPPuddle"
     ./build-cppuddle.sh
 fi
+
+echo "Building MKL"
+#./build-mkl.sh
 
 echo "Building Boost"
 ./build-boost.sh
