@@ -89,7 +89,7 @@
 // in-place Cholesky decomposition of A -> return factorized matrix L
 template <typename T>
 std::vector<T> mkl_potrf(std::vector<T> A,
-                     std::size_t N)
+                         std::size_t N)
 {
   // POTRF - caution with dpotrf  
   LAPACKE_spotrf(LAPACK_ROW_MAJOR, 'L', N, A.data(), N);
@@ -97,19 +97,19 @@ std::vector<T> mkl_potrf(std::vector<T> A,
   return A;
 }
 
-// // in-place solve L * X = A^T where L triangular
-// template <typename T>
-// std::vector<T> mkl_trsm(std::vector<T> L,
-//                     std::vector<T> A,
-//                     std::size_t N)
-// {
-//   // TRSM constants
-//   const T alpha = 1.0f; 
-//   // TRSM kernel - caution with dtrsm
-//   cblas_strsm(CblasRowMajor, CblasLeft, CblasLower, CblasNoTrans, CblasNonUnit, N, N, alpha, L.data(), N, A.data(), N);
-//   // return vector
-//   return A;
-// }
+// in-place solve L * X = A^T where L triangular
+template <typename T>
+std::vector<T> mkl_trsm(std::vector<T> L,
+                        std::vector<T> A,
+                        std::size_t N)
+{
+  // TRSM constants
+  const T alpha = 1.0f; 
+  // TRSM kernel - caution with dtrsm
+  cblas_strsm(CblasRowMajor, CblasRight, CblasLower, CblasTrans, CblasNonUnit, N, N, alpha, L.data(), N, A.data(), N);
+  // return vector
+  return A;
+}
 
 // A = A - B * B^T
 template <typename T>
