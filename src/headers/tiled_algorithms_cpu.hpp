@@ -15,7 +15,7 @@ void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<T>>
   for (std::size_t k = 0; k < n_tiles; k++)
   {
     // POTRF
-    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&(potrf<T>)), "cholesky_tiled"), ft_tiles[k * n_tiles + k], N);
+    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&(mkl_potrf<T>)), "cholesky_tiled"), ft_tiles[k * n_tiles + k], N);
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
       // TRSM

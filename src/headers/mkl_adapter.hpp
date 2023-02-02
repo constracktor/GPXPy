@@ -86,44 +86,16 @@
 // }
 ////////////////////////////////////////////////////////////////////////////////
 // BLAS operations for tiled cholkesy
-// // in-place Cholesky decomposition of A -> return factorized matrix L
-// template <typename T>
-// std::vector<T> potrf(std::vector<T> A,
-//                      std::size_t N)
-// {
-//   // convert to boost matrices
-//   ublas::matrix< T, ublas::row_major, std::vector<T> > A_blas(N, N);
-//   A_blas.data() = A;
-//   ublas::matrix< T, ublas::row_major, std::vector<T> > L_blas(N, N);
-//   // POTRF (compute Cholesky)
-//   for (size_t k=0 ; k < N; k++)
-//   {
-//     // compute squared diagonal entry
-//     T qL_kk = A_blas(k,k) - ublas::inner_prod(
-//       ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ),
-//       ublas::project( ublas::row(L_blas, k), ublas::range(0, k) ) );
-//     // check if positive
-//     if (qL_kk <= 0)
-//     {
-//       std::cout << qL_kk << '\n' << std::flush;
-//     }
-//     else
-//     {
-//       // set diagonal entry
-//       T L_kk = std::sqrt( qL_kk );
-//       L_blas(k,k) = L_kk;
-//       // compute corresponding column
-//       ublas::matrix_column<ublas::matrix< T, ublas::row_major, std::vector<T> >> cLk(L_blas, k);
-//       ublas::project( cLk, ublas::range(k+1, N) )
-//         = ( ublas::project( ublas::column(A_blas, k), ublas::range(k+1, N) )
-//             - ublas::prod( ublas::project(L_blas, ublas::range(k+1, N), ublas::range(0, k)),
-//                     ublas::project(ublas::row(L_blas, k), ublas::range(0, k) ) ) ) / L_kk;
-//     }
-//   }
-//   // reformat to std::vector
-//   A = L_blas.data();
-//   return A;
-// }
+// in-place Cholesky decomposition of A -> return factorized matrix L
+template <typename T>
+std::vector<T> mkl_potrf(std::vector<T> A,
+                     std::size_t N)
+{
+  // POTRF - caution with dpotrf  
+  LAPACKE_spotrf(LAPACK_ROW_MAJOR, 'L', N, A.data(), N);
+  // return vector
+  return A;
+}
 
 // // in-place solve L * X = A^T where L triangular
 // template <typename T>
