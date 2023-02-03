@@ -3,7 +3,6 @@ project(hpx_project CXX)
 find_package(HPX REQUIRED)
 find_package(MKL CONFIG REQUIRED)
 
-# set header file
 set(HEADER_FILES src/headers/ublas_adapter.hpp 
                  src/headers/cublas_adapter.hpp
                  src/headers/mkl_adapter.hpp 
@@ -39,6 +38,10 @@ else()
                           HPX::hpx 
                           HPX::wrap_main 
                           HPX::iostreams_component
-                          $<LINK_ONLY:MKL::MKL>)
+                          MKL::mkl_intel_lp64
+                          MKL::mkl_core
+                          MKL::MKL
+                          MKL::mkl_sequential
+                          )
   endif()
 endif()

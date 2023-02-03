@@ -10,8 +10,12 @@ set +x
 export APEX_SCREEN_OUTPUT=1 APEX_CSV_OUTPUT=1
 export HPXSC_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd )/dependencies"
 export CMAKE_COMMAND=${HPXSC_ROOT}/build/cmake/bin/cmake
-export MKL_DIR=${HPXSC_ROOT}/build/mkl/mkl/2023.0.0/lib/cmake/mkl
+export HPX_DIR=${HPXSC_ROOT}/build/hpx/build/lib
+export MKL_DIR=${HPXSC_ROOT}/build/mkl/mkl/2023.0.0/lib
+export CPPUDDLE_DIR=${HPXSC_ROOT}/build/cppuddle/build/cppuddle/lib
 
+# Configure MKL
+export MKL_CONFIG='-DMKL_ARCH=intel64 -DMKL_LINK=dynamic -DMKL_INTERFACE_FULL=intel_lp64 -DMKL_THREADING=sequential'
 ################################################################################
 # Command-line options
 ################################################################################
@@ -23,7 +27,7 @@ then
     # load cuda module (on pcsgs05 use e.g. 11.0.3)
     module load cuda/11.0.3
     # set CPPuddle 
-    export CPPUDDLE_DIR=${HPXSC_ROOT}/build/cppuddle/build/cppuddle/lib/cmake/CPPuddle
+    #export CPPUDDLE_DIR=${HPXSC_ROOT}/build/cppuddle/build/cppuddle/lib
 elif [[ "$1" == "cpu" ]]
 then
     GPU=0
@@ -61,8 +65,7 @@ fi
 ################################################################################
 # Compile code
 ################################################################################
-rm -rf build && mkdir build && cd build && $CMAKE_COMMAND .. -DGPU=$GPU -DBLAS=$BLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${HPXSC_ROOT}/build/hpx/build/lib/cmake/HPX" -DMKL_DIR=${MKL_DIR} -DCPPuddle_DIR=${CPPUDDLE_DIR} && make all
-
+rm -rf build && mkdir build && cd build && $CMAKE_COMMAND .. -DGPU=$GPU -DBLAS=$BLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${HPX_DIR}/cmake/HPX" -DMKL_DIR="${MKL_DIR}/cmake/mkl" ${MKL_CONFIG} -DCPPuddle_DIR="${CPPUDDLE_DIR}/cmake/CPPuddle" && make all
 ################################################################################
 # Run benchmark script
 ################################################################################
