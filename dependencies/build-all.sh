@@ -10,7 +10,6 @@ SYNOPSIS
     ${0} {Release|RelWithDebInfo|Debug}
     {with-gcc|with-clang|with-CC|with-CC-clang}
     {with-cuda|without-cuda}
-    [gcc|clang]
 DESCRIPTION
     Download, configure, build, and install HPXSc and its dependencies.
 EOF
@@ -84,6 +83,10 @@ mkdir -p ${SOURCE_ROOT} ${INSTALL_ROOT}
 ################################################################################
 # Build tools
 ################################################################################
+echo "Building CMake"
+./build-cmake.sh
+export CMAKE_COMMAND=${INSTALL_ROOT}/cmake/bin/cmake
+
 # Build Compiler and set Compiler Environment Variables
 if [[ "${HPX_COMPILER_OPTION}" == "with-gcc" ]]; then
     echo "Building GCC"
@@ -102,10 +105,6 @@ elif [[ "${HPX_COMPILER_OPTION}" == "with-CC-clang" ]]; then
     echo "Configuring clang"
     source clang-config.sh
 fi
-
-echo "Building CMake"
-./build-cmake.sh
-export CMAKE_COMMAND=${INSTALL_ROOT}/cmake/bin/cmake
 
 ################################################################################
 # Dependencies
