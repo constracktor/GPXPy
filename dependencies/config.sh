@@ -12,7 +12,7 @@ export CMAKE_VERSION=3.19.5
 # GCC
 export GCC_VERSION=10.3.0
 # specific version of system GCC
-export CC_VERSION=-9
+#export CC_VERSION=-9
 
 # clang
 #export CLANG_VERSION=12.0.0
