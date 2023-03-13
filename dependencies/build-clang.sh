@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# clang requires requires cmake and git - gcc does not!
+
 set -ex
 
 : ${SOURCE_ROOT:?} ${INSTALL_ROOT:?} ${CLANG_VERSION:?} ${CMAKE_COMMAND:?}

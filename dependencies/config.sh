@@ -17,7 +17,7 @@ export GCC_VERSION=10.3.0
 # clang
 export CLANG_VERSION=release/12.x
 # specific version of system clang
-export CC_CLANG_VERSION=-10
+#export CC_CLANG_VERSION=-10
 
 # MKL version 
 export MKL_VERSION=2023.0.0
