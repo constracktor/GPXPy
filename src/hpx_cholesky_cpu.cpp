@@ -133,7 +133,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   {
      for (std::size_t j = 0; j <= i; j++)
      {
-      K_tiles[i * n_tiles + j] = hpx::async(hpx::annotated_function(&gen_tile_covariance<CALC_TYPE>, "assemble_tiled"), i, j, n_tile_size, n_regressors, hyperparameters, std::ref(training_input));
+      K_tiles[i * n_tiles + j] = hpx::async(hpx::annotated_function(&gen_tile_covariance<CALC_TYPE>, "assemble_tiled"), i, j, n_tile_size, n_regressors, hyperparameters, training_input);
      }
   }
 
@@ -142,7 +142,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   alpha_tiles.resize(n_tiles);
   for (std::size_t i = 0; i < n_tiles; i++)
   {
-    alpha_tiles[i] = hpx::dataflow(hpx::annotated_function(&gen_tile_output<CALC_TYPE>, "assemble_tiled"), i, n_tile_size, std::ref(training_output));
+    alpha_tiles[i] = hpx::dataflow(hpx::annotated_function(&gen_tile_output<CALC_TYPE>, "assemble_tiled"), i, n_tile_size, training_output);
   }
   // Assemble transposed cross-covariance matrix vector
   cross_covariance_tiles.resize(m_tiles * n_tiles);
@@ -150,7 +150,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   {
      for (std::size_t j = 0; j < n_tiles; j++)
      {
-        cross_covariance_tiles[i * n_tiles + j] = hpx::dataflow(hpx::annotated_function(&gen_tile_cross_covariance<CALC_TYPE>, "assemble_tiled"), i, j, m_tile_size, n_tile_size, n_regressors, hyperparameters, std::ref(test_input), std::ref(training_input));
+        cross_covariance_tiles[i * n_tiles + j] = hpx::dataflow(hpx::annotated_function(&gen_tile_cross_covariance<CALC_TYPE>, "assemble_tiled"), i, j, m_tile_size, n_tile_size, n_regressors, hyperparameters, test_input, training_input);
      }
   }
   // Assemble zero prediction
@@ -182,6 +182,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   prediction_tiled(cross_covariance_tiles, alpha_tiles, prediction_tiles, m_tile_size, n_tile_size, n_tiles, m_tiles);
   // compute error
   ft_error = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&compute_error_norm<CALC_TYPE>), "prediction_tiled"), m_tiles, m_tile_size, test_output, prediction_tiles);
+  //ft_error = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&compute_error_norm<CALC_TYPE>), "prediction_tiled"), m_tiles, m_tile_size, test_output, prediction_tiles);
   ////////////////////////////////////////////////////////////////////////////
   // write error to file
   CALC_TYPE average_error = ft_error.get() / n_test;

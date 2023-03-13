@@ -113,12 +113,12 @@ else
     STEP=2
     #./tiles_script.sh $START $END $STEP $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
     # from 25 to 200 tiles per dimension
-    START=100
+    START=25
     END=200
     STEP=2
     ./tiles_script.sh $START $END $STEP $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
     # for 500 tiles per dimension
-    ./tiles_script.sh 500 500 2 $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
+    #./tiles_script.sh 500 500 2 $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
     ##############################################################################
     # Run data_script on 128 cores on 2x EPYC 7742 and on 18 cores on Intel i9
     #N_CORES=18

@@ -20,8 +20,9 @@ T compute_covariance_function(std::size_t i_global,
   for (std::size_t k = 0; k < n_regressors; k++)
   {
     //
-    int i_local = i_global - n_regressors + 1 + k;
-    int j_local = j_global - n_regressors + 1 + k;
+    int offset = - n_regressors + 1 + k;
+    int i_local = i_global + offset;
+    int j_local = j_global + offset;
     //
     if (i_local >= 0)
     {
