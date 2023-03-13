@@ -81,6 +81,10 @@ int hpx_main(hpx::program_options::variables_map& vm)
   printf("Tiles in N dimension: %zu\n", n_tiles);
   printf("Tiles in M dimension: %zu\n", m_tiles);
   ////////////////////////////////////////////////////////////////////////////
+  const size_t size = std::as_const(n_tiles * n_tiles);
+  std::array<hpx::shared_future<std::vector<CALC_TYPE>>, size> K_tiles_two;
+
+  ////////////////////////////////////////////////////////////////////////////
   // Load data
   training_input.resize(n_train);
   training_output.resize(n_train);
