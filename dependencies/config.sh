@@ -36,7 +36,7 @@ export HWLOC_VERSION=1.11.12
 export CUDA_VERSION=11.0.3
 
 # HPX
-export HPX_VERSION=1.8.0
+export HPX_VERSION=1.8.1
 
 # Max number of parallel jobs
 export PARALLEL_BUILD=$(grep -c ^processor /proc/cpuinfo)
