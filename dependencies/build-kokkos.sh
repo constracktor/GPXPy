@@ -15,7 +15,7 @@ if [ ! -d kokkos ] ; then
 fi
 mkdir -p "${DIR_BUILD}"
 cd "${DIR_BUILD}"
-${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Release -H${DIR_SRC} -DCMAKE_INSTALL_PREFIX=$DIR_INSTALL/kokkos -DKokkos_ENABLE_SERIAL=ON -DKokkos_CUDA=ON -DKokkos_ENABLE_HPX=ON -DHPX_DIR="${HPXSC_ROOT}/build/hpx/build/lib/cmake/HPX"
+${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Release -H${DIR_SRC} -DCMAKE_INSTALL_PREFIX=$DIR_INSTALL/kokkos -DKokkos_ENABLE_SERIAL=ON -DKokkos_ENABLE_CUDA=ON -DKokkos_ENABLE_HPX=ON -DHPX_DIR="${HPXSC_ROOT}/build/hpx/build/lib/cmake/HPX"
 make -j${PARALLEL_BUILD} install
 
 cd $BUILD_ROOT

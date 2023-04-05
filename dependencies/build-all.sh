@@ -129,3 +129,6 @@ echo "Building HPX"
 
 echo "Building Kokkos"
 ./build-kokkos.sh
+
+echo "Building HPX-Kokkos"
+./build-hpx-kokkos.sh
