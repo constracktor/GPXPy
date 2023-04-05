@@ -126,3 +126,6 @@ echo "Building jemalloc"
 
 echo "Building HPX"
 ./build-hpx.sh
+
+echo "Building Kokkos"
+./build-kokkos.sh
