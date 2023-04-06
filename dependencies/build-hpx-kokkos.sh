@@ -15,7 +15,7 @@ mkdir -p "${DIR_BUILD}"
 cd "${DIR_BUILD}"
 ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Release -H${DIR_SRC} \
     -DCMAKE_INSTALL_PREFIX=${DIR_INSTALL}/hpx-kokkos \
-    -DCMAKE_CXX_COMPILER=clang++ \
+    -DCMAKE_CXX_COMPILER=${CXX} \
     -DHPX_DIR="${HPXSC_ROOT}/build/hpx/build/lib/cmake/HPX" \
     -DKokkos_DIR="${HPXSC_ROOT}/build/kokkos/kokkos/lib/cmake/Kokkos" \
     -DKokkos_ENABLE_CUDA_LAMBDA=ON \
