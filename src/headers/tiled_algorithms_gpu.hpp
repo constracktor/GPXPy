@@ -3,7 +3,7 @@
 
 //#include <hpx/local/future.hpp>
 #include <iostream>
-#include "cublas_adapter.hpp"
+#include "kokkos_adapter.hpp"
 
 // right-looking tiled Cholesky algorithm using Kokkos
 template <typename T, typename ExecutionSpace>
