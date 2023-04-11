@@ -22,7 +22,9 @@ then
     # load cuda module (on pcsgs05 use e.g. 11.0.3)
     module load cuda/11.0.3
     # set CPPuddle 
-    export CPPUDDLE_DIR=${HPXSC_ROOT}/build/cppuddle/build/cppuddle/lib/cmake/CPPuddle
+    export CPPUDDLE_DIR=${HPXSC_ROOT}/build/cppuddle/cppuddle/lib/cmake/CPPuddle
+    export KOKKOS_DIR=${HPXSC_ROOT}/build/kokkos/kokkos/lib/cmake/Kokkos
+    #-DCMAKE_CXX_COMPILER=${compiler_used_to_build_kokkos}
 elif [[ "$1" == "cpu" ]]
 then
     GPU=0
@@ -60,7 +62,7 @@ fi
 ################################################################################
 # Compile code
 ################################################################################
-rm -rf build && mkdir build && cd build && $CMAKE_COMMAND .. -DGPU=$GPU -DBLAS=$BLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${HPXSC_ROOT}/build/hpx/build/lib/cmake/HPX" -DCPPuddle_DIR=${CPPUDDLE_DIR} && make all
+rm -rf build && mkdir build && cd build && $CMAKE_COMMAND .. -DGPU=$GPU -DBLAS=$BLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${HPXSC_ROOT}/build/hpx/build/lib/cmake/HPX" -DCPPuddle_DIR=${CPPUDDLE_DIR} -DKokkos_ROOT=${KOKKOS_DIR} && make all
 
 ################################################################################
 # Run benchmark script
@@ -112,7 +114,7 @@ else
     START=100
     END=100
     STEP=2
-    ./tiles_script.sh $START $END $STEP $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
+    #./tiles_script.sh $START $END $STEP $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
     # for 500 tiles per dimension
     #./tiles_script.sh 500 500 2 $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
     ##############################################################################
@@ -138,9 +140,9 @@ else
     END=10000
     STEP=1000
     N_CORES=18
-    TILE_SIZE=200
+    TILE_SIZE=1000
     N_TEST=5000
     N_REG=100
-    #./data_script.sh $START $END $STEP $TILE_SIZE $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
+    ./data_script.sh $START $END $STEP $TILE_SIZE $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
   done
 fi

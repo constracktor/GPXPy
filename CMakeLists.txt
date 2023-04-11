@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.18)
 project(hpx_project CXX)
 find_package(HPX REQUIRED)
 
+find_package(Kokkos REQUIRED)
+find_package(HPXKokkos REQUIRED)
+
+
 # set header file
 set(HEADER_FILES src/headers/ublas_adapter.hpp src/headers/cublas_adapter.hpp src/headers/tiled_algorithms_cpu.hpp src/headers/tiled_algorithms_gpu.hpp src/headers/gp_functions.hpp)
 
@@ -16,7 +20,7 @@ else()
     message(STATUS "Run on GPU")
 
     add_executable(hpx_cholesky src/hpx_cholesky_gpu.cpp ${HEADER_FILES})
-    target_link_libraries(hpx_cholesky HPX::hpx HPX::wrap_main HPX::iostreams_component CPPuddle::buffer_manager CPPuddle::stream_manager)
+    target_link_libraries(hpx_cholesky HPX::hpx HPX::wrap_main HPX::iostreams_component CPPuddle::buffer_manager CPPuddle::stream_manager Kokkos::kokkos HPXKokkos::hpx_kokkos)
   else()
     message(STATUS "Run on CPU")
 

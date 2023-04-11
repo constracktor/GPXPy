@@ -6,7 +6,7 @@ set -ex
 
 DIR_SRC=${SOURCE_ROOT}/cppuddle
 DIR_BUILD=${INSTALL_ROOT}/cppuddle/build
-DIR_INSTALL=${INSTALL_ROOT}/cppuddle/build
+DIR_INSTALL=${INSTALL_ROOT}/cppuddle
 mkdir -p ${DIR_BUILD}
 
 export CXX=g++

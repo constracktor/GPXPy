@@ -43,25 +43,38 @@ int hpx_main(hpx::program_options::variables_map& vm)
   // GPU stuff
   // get device
   std::size_t device = vm["device"].as<std::size_t>();
-  // install cuda future polling handler
-  hpx::cuda::experimental::enable_user_polling poll("default");
-  // print GPU info
-  hpx::cuda::experimental::target target(device);
-  std::cout << "GPU Device " << target.native_handle().get_device() << ": \""
-       << target.native_handle().processor_name() << "\" "
-       << "with compute capability "
-       << target.native_handle().processor_family() << "\n";
-  // create cublas executors
-  std::size_t n_executors = 1;
-  std::vector<hpx::cuda::experimental::cublas_executor> cublas_executors;
-  for (size_t i = 0; i < n_executors; i++)
+  Kokkos::initialize(argc, argv);
   {
-    hpx::cuda::experimental::cublas_executor cublas(device, CUBLAS_POINTER_MODE_HOST, hpx::cuda::experimental::event_mode{});
-    cublas_executors.push_back(cublas);
+    hpx::kokkos::detail::polling_helper p;
+    (void)p;
+
+    test(Kokkos::DefaultExecutionSpace{});
+    if (!std::is_same<Kokkos::DefaultExecutionSpace,
+                      Kokkos::DefaultHostExecutionSpace>::value) {
+      test(Kokkos::DefaultHostExecutionSpace{});
+    }
   }
-  std::cout << "n_executors: " << cublas_executors.size() <<'\n';
-  // hpx::cuda::experimental::cublas_executor cublas(device,
-  // CUBLAS_POINTER_MODE_HOST, hpx::cuda::experimental::event_mode{});
+  
+  
+  // install cuda future polling handler
+  // hpx::cuda::experimental::enable_user_polling poll("default");
+  // print GPU info
+  // hpx::cuda::experimental::target target(device);
+  // std::cout << "GPU Device " << target.native_handle().get_device() << ": \""
+  //      << target.native_handle().processor_name() << "\" "
+  //      << "with compute capability "
+  //      << target.native_handle().processor_family() << "\n";
+  
+  // // create kokkos executors
+  // std::size_t n_executors = 1;
+  // std::vector<hpx::cuda::experimental::cublas_executor> cublas_executors;
+  // for (size_t i = 0; i < n_executors; i++)
+  // {
+  //   hpx::cuda::experimental::cublas_executor cublas(device, CUBLAS_POINTER_MODE_HOST, hpx::cuda::experimental::event_mode{});
+  //   cublas_executors.push_back(cublas);
+  // }
+  // std::cout << "n_executors: " << cublas_executors.size() <<'\n';
+
   //////////////////////////////////////////////////////////////////////////////
   // Get and set parameters
   // determine choleksy variant and problem size
@@ -207,7 +220,10 @@ int hpx_main(hpx::program_options::variables_map& vm)
   fprintf(error_file, "\"error\",%lf\n", average_error);
   fclose(error_file);
   recycler::force_cleanup();
-  return hpx::local::finalize();    // Handles HPX shutdown
+
+  Kokkos::finalize();
+  hpx::local::finalize();
+  return hpx::kokkos::detail::report_errors();    // Handles HPX shutdown
 }
 
 int main(int argc, char* argv[])
