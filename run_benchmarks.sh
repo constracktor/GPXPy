@@ -22,8 +22,9 @@ then
     # load cuda module (on pcsgs05 use e.g. 11.0.3)
     module load cuda/11.0.3
     # set CPPuddle 
-    export CPPUDDLE_DIR=${HPXSC_ROOT}/build/cppuddle/cppuddle/lib/cmake/CPPuddle
+    export CPPUDDLE_DIR=${HPXSC_ROOT}/build/cppuddle/build/cppuddle/lib/cmake/CPPuddle
     export KOKKOS_DIR=${HPXSC_ROOT}/build/kokkos/kokkos/lib/cmake/Kokkos
+    export HPX_KOKKOS_DIR=${HPXSC_ROOT}/build/hpx-kokkos/hpx-kokkos/lib/cmake/HPXKokkos
     #-DCMAKE_CXX_COMPILER=${compiler_used_to_build_kokkos}
 elif [[ "$1" == "cpu" ]]
 then
@@ -62,7 +63,7 @@ fi
 ################################################################################
 # Compile code
 ################################################################################
-rm -rf build && mkdir build && cd build && $CMAKE_COMMAND .. -DGPU=$GPU -DBLAS=$BLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${HPXSC_ROOT}/build/hpx/build/lib/cmake/HPX" -DCPPuddle_DIR=${CPPUDDLE_DIR} -DKokkos_ROOT=${KOKKOS_DIR} && make all
+rm -rf build && mkdir build && cd build && $CMAKE_COMMAND .. -DGPU=$GPU -DBLAS=$BLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${HPXSC_ROOT}/build/hpx/build/lib/cmake/HPX" -DCPPuddle_DIR=${CPPUDDLE_DIR} -DKokkos_ROOT=${KOKKOS_DIR} -DHPXKokkos_DIR=${HPX_KOKKOS_DIR} && make all
 
 ################################################################################
 # Run benchmark script
