@@ -43,18 +43,10 @@ int hpx_main(hpx::program_options::variables_map& vm)
   // GPU stuff
   // get device
   std::size_t device = vm["device"].as<std::size_t>();
-  Kokkos::initialize(argc, argv);
-  {
-    hpx::kokkos::detail::polling_helper p;
-    (void)p;
+  Kokkos::initialize();
 
-    test(Kokkos::DefaultExecutionSpace{});
-    if (!std::is_same<Kokkos::DefaultExecutionSpace,
-                      Kokkos::DefaultHostExecutionSpace>::value) {
-      test(Kokkos::DefaultHostExecutionSpace{});
-    }
-  }
-  
+  hpx::kokkos::detail::polling_helper p;
+  (void)p;
   
   // install cuda future polling handler
   // hpx::cuda::experimental::enable_user_polling poll("default");
@@ -204,7 +196,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   // PART 2: CHOLESKY SOLVE
   // Cholesky decomposition
   // only right-looking variant currently implemented
-  right_looking_cholesky_tiled_cublas(cublas_executors, K_tiles, n_tile_size, n_tiles);
+  right_looking_cholesky_tiled_kokkos(Kokkos::DefaultExecutionSpace{}, K_tiles, n_tile_size, n_tiles);
   // Triangular solve
   forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
   backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
@@ -222,8 +214,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   recycler::force_cleanup();
 
   Kokkos::finalize();
-  hpx::local::finalize();
-  return hpx::kokkos::detail::report_errors();    // Handles HPX shutdown
+  return hpx::local::finalize();    // Handles HPX shutdown
 }
 
 int main(int argc, char* argv[])

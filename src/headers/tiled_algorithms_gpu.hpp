@@ -7,7 +7,7 @@
 
 // right-looking tiled Cholesky algorithm using Kokkos
 template <typename T, typename ExecutionSpace>
-void right_looking_cholesky_tiled_cublas(ExecutionSpace &&inst,
+void right_looking_cholesky_tiled_kokkos(ExecutionSpace &&inst,
                                          std::vector<hpx::shared_future<host_buffer_t<T>>> &ft_tiles,
                                          std::size_t N,
                                          std::size_t n_tiles)
@@ -36,7 +36,7 @@ void right_looking_cholesky_tiled_cublas(ExecutionSpace &&inst,
         // increase or reset counter
         counter = (counter < n_executors - 1 ) ? counter + 1 : 0;
         // GEMM
-        ft_tiles[m * n_tiles + n] = gemm_kokkos<T, ExecutionSpace>(inst, ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
+        ft_tiles[m * n_tiles + n] = gemm_kokkos<T>(inst, ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
       }
     }
   }
