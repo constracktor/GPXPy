@@ -5,14 +5,13 @@
 #include <hpx/kokkos.hpp>
 #include <hpx/kokkos/detail/polling_helper.hpp>
 
-//C = C - A * B^T
+//C = C - A * B^T                                       
 template <typename T, typename ExecutionSpace>
-hpx::shared_future<host_buffer_t<T>> gemm_kokkos(ExecutionSpace &&inst,
-                                               hpx::shared_future<host_buffer_t<T>> A,
-                                               hpx::shared_future<host_buffer_t<T>> B,
-                                               hpx::shared_future<host_buffer_t<T>> C,
-                                               std::size_t N)
-                                               
+host_buffer_t<T> gemm_kokkos(ExecutionSpace &&inst,
+                             host_buffer_t<T> A,
+                             host_buffer_t<T> B,
+                             host_buffer_t<T> C,
+                             std::size_t N)    
 {
   // GEMM constants
   const T alpha = -1.0f;
@@ -22,55 +21,106 @@ hpx::shared_future<host_buffer_t<T>> gemm_kokkos(ExecutionSpace &&inst,
   Kokkos::View<T*, typename std::decay<ExecutionSpace>::type> d_A("d_A", size);
   Kokkos::View<T*, typename std::decay<ExecutionSpace>::type> d_B("d_B", size);
   Kokkos::View<T*, typename std::decay<ExecutionSpace>::type> d_C("d_C", size);
-  // copy data from host to device when ready
+  // copy data from host to device
+  // A
   Kokkos::View<T*, Kokkos::DefaultHostExecutionSpace> h_A("h_A", size);
-  host_buffer_t<T> hA = A.get();
-  for (std::size_t i = 0; i < size; ++i) {
-    h_A(i) = hA[i];
+  for (std::size_t i = 0; i < size; ++i) 
+  {
+    h_A(i) = A[i];
   }
   hpx::kokkos::deep_copy_async(inst, d_A, h_A);
-  
+  // B
   Kokkos::View<T*, Kokkos::DefaultHostExecutionSpace> h_B("h_B", size);
-  host_buffer_t<T> hB = B.get();
-  for (std::size_t i = 0; i < size; ++i) {
-    h_B(i) = hB[i];
+  for (std::size_t i = 0; i < size; ++i) 
+  {
+    h_B(i) = B[i];
   }
   hpx::kokkos::deep_copy_async(inst, d_B, h_B);
-  
+  // C
   Kokkos::View<T*, Kokkos::DefaultHostExecutionSpace> h_C("h_C", size);
-  host_buffer_t<T> hC = C.get();
-  for (std::size_t i = 0; i < size; ++i) {
-    h_C(i) = hC[i];
+  for (std::size_t i = 0; i < size; ++i) 
+  {
+    h_C(i) = C[i];
   }
   hpx::kokkos::deep_copy_async(inst, d_C, h_C);
-
-  // compute GEMM (C = C - A * B^T) on device
-  // note cublas uses column major ordering : (A * B^T)^T = B * A^T
+  // compute GEMM (C = C - A * B^T)
   hpx::kokkos::parallel_for_async(
-      Kokkos::RangePolicy<typename std::decay<ExecutionSpace>::type>(inst, 0,
-                                                                     N),
+      Kokkos::RangePolicy<typename std::decay<ExecutionSpace>::type>(inst, 0, N),
       KOKKOS_LAMBDA(int i) 
       { 
         for (int j=0; j < N; j++)
         {
           for(int k=0; k < N; k++)
           {
-            d_C(i * N + j) = d_C(i * N + j) - d_A(i * N + k) * d_B(j * N + k);
+            d_C(i * N + j) = beta * d_C(i * N + j) + alpha * d_A(i * N + k) * d_B(j * N + k);
           }
         }
       });
   // copy the result back to the host
   hpx::kokkos::deep_copy_async(inst, h_C, d_C);
   inst.fence();
-  for (std::size_t i = 0; i < size; ++i) {
-    hC[i] = h_C(i);
+  for (std::size_t i = 0; i < size; ++i) 
+  {
+    C[i] = h_C(i);
   }
-  // return future
-  return hpx::make_ready_future(hC);
+  return C;
+}
+
+//  A = A - B * B^T
+template <typename T, typename ExecutionSpace>
+host_buffer_t<T> syrk_kokkos(ExecutionSpace &&inst,
+                      host_buffer_t<T> A,
+                      host_buffer_t<T> B,
+                      std::size_t N)
+{
+  // GEMM constants
+  const T alpha = -1.0f;
+  const T beta = 1.0f;
+  std::size_t size = N * N;
+  // allocate device memory
+  Kokkos::View<T*, typename std::decay<ExecutionSpace>::type> d_A("d_A", size);
+  Kokkos::View<T*, typename std::decay<ExecutionSpace>::type> d_B("d_B", size);
+  // copy data from host to device
+  // A
+  Kokkos::View<T*, Kokkos::DefaultHostExecutionSpace> h_A("h_A", size);
+  for (std::size_t i = 0; i < size; ++i) 
+  {
+    h_A(i) = A[i];
+  }
+  hpx::kokkos::deep_copy_async(inst, d_A, h_A);
+  // B
+  Kokkos::View<T*, Kokkos::DefaultHostExecutionSpace> h_B("h_B", size);
+  for (std::size_t i = 0; i < size; ++i) 
+  {
+    h_B(i) = B[i];
+  }
+  hpx::kokkos::deep_copy_async(inst, d_B, h_B);
+  // compute SYRK A = A - B * B^T
+  hpx::kokkos::parallel_for_async(
+      Kokkos::RangePolicy<typename std::decay<ExecutionSpace>::type>(inst, 0, N),
+      KOKKOS_LAMBDA(int i) 
+      { 
+        for (int j=0; j < N; j++)
+        {
+          for(int k=0; k < N; k++)
+          {
+            d_A(i * N + j) = beta * d_A(i * N + j) + alpha * d_B(i * N + k) * d_B(j * N + k);
+          }
+        }
+      });
+  // copy the result back to the host
+  hpx::kokkos::deep_copy_async(inst, h_A, d_A);
+  inst.fence();
+  for (std::size_t i = 0; i < size; ++i) 
+  {
+    A[i] = h_A(i);
+  }
+  return A;
 }
 #endif
 
 // How to Access CUBLAS and CBLAS with Kokkos
+// note cublas uses column major ordering : (A * B^T)^T = B * A^T
 // template<class Scalar, class Device>
 // Scalar dot(View<const Scalar* , Device> a,
 //            View<const Scalar*, Device> b) {

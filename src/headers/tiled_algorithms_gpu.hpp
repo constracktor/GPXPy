@@ -12,9 +12,7 @@ void right_looking_cholesky_tiled_kokkos(ExecutionSpace &&inst,
                                          std::size_t N,
                                          std::size_t n_tiles)
 
-{ // counter to eqally split workload among the Kokkos executors
-  std::size_t counter = 0;
-  std::size_t n_executors = 1;//kokkos.size();
+{ 
   for (std::size_t k = 0; k < n_tiles; k++)
   {
     // POTRF
@@ -24,19 +22,15 @@ void right_looking_cholesky_tiled_kokkos(ExecutionSpace &&inst,
       // TRSM
       ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::unwrapping(&trsm<T>), ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
     }
-    // using cublas for tile update
+    // using kokkos for tile update
     for (std::size_t m = k + 1; m < n_tiles; m++)
     {
-      // increase or reset counter
-      counter = (counter < n_executors - 1 ) ? counter + 1 : 0;
       // SYRK
-      ft_tiles[m * n_tiles + m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&syrk<T>), "cholesky_tiled"), ft_tiles[m * n_tiles + m], ft_tiles[m * n_tiles + k], N);
+      ft_tiles[m * n_tiles + m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&syrk_kokkos<T,ExecutionSpace>), "cholesky_tiled"), inst,  ft_tiles[m * n_tiles + m], ft_tiles[m * n_tiles + k], N);
       for (std::size_t n = k + 1; n < m; n++)
       {
-        // increase or reset counter
-        counter = (counter < n_executors - 1 ) ? counter + 1 : 0;
         // GEMM
-        ft_tiles[m * n_tiles + n] = gemm_kokkos<T>(inst, ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
+        ft_tiles[m * n_tiles + n] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gemm_kokkos<T,ExecutionSpace>), "cholesky_tiled"), inst, ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
       }
     }
   }

@@ -44,29 +44,15 @@ int hpx_main(hpx::program_options::variables_map& vm)
   // get device
   std::size_t device = vm["device"].as<std::size_t>();
   Kokkos::initialize();
-
+  // install kokkos future polling handler
   hpx::kokkos::detail::polling_helper p;
   (void)p;
-  
-  // install cuda future polling handler
-  // hpx::cuda::experimental::enable_user_polling poll("default");
   // print GPU info
-  // hpx::cuda::experimental::target target(device);
-  // std::cout << "GPU Device " << target.native_handle().get_device() << ": \""
-  //      << target.native_handle().processor_name() << "\" "
-  //      << "with compute capability "
-  //      << target.native_handle().processor_family() << "\n";
-  
-  // // create kokkos executors
-  // std::size_t n_executors = 1;
-  // std::vector<hpx::cuda::experimental::cublas_executor> cublas_executors;
-  // for (size_t i = 0; i < n_executors; i++)
-  // {
-  //   hpx::cuda::experimental::cublas_executor cublas(device, CUBLAS_POINTER_MODE_HOST, hpx::cuda::experimental::event_mode{});
-  //   cublas_executors.push_back(cublas);
-  // }
-  // std::cout << "n_executors: " << cublas_executors.size() <<'\n';
-
+  hpx::cuda::experimental::target target(device);
+  std::cout << "GPU Device " << target.native_handle().get_device() << ": \""
+       << target.native_handle().processor_name() << "\" "
+       << "with compute capability "
+       << target.native_handle().processor_family() << "\n";
   //////////////////////////////////////////////////////////////////////////////
   // Get and set parameters
   // determine choleksy variant and problem size
