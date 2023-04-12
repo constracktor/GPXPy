@@ -14,8 +14,6 @@ hpx::shared_future<host_buffer_t<T>> gemm_kokkos(ExecutionSpace &&inst,
                                                std::size_t N)
                                                
 {
- // static_assert(Kokkos::is_execution_space<ExecutionSpace>::value,
- //             "ExecutionSpace is not a Kokkos execution space");
   // GEMM constants
   const T alpha = -1.0f;
   const T beta = 1.0f;
@@ -67,50 +65,12 @@ hpx::shared_future<host_buffer_t<T>> gemm_kokkos(ExecutionSpace &&inst,
   for (std::size_t i = 0; i < size; ++i) {
     hC[i] = h_C(i);
   }
-  // // return future
+  // return future
   return hpx::make_ready_future(hC);
 }
 #endif
 
-
-// template <typename ExecutionSpace> 
-//   void test(ExecutionSpace &&inst) {
-//     static_assert(Kokkos::is_execution_space<ExecutionSpace>::value,
-//                   "ExecutionSpace is not a Kokkos execution space");
-//     test_parallel_for(inst);
-//     test_parallel_reduce(inst);
-//     test_parallel_scan(inst);
-// }
-
-// template <typename ExecutionSpace>
-// void test_parallel_for(ExecutionSpace &&inst) {
-//   int const n = 43;call_cblas_dot
-
-//   Kokkos::View<int *, Kokkos::DefaultHostExecutionSpace>
-//       parallel_for_result_host("parallel_for_result_host", n);
-//   Kokkos::View<int *, typename std::decay<ExecutionSpace>::type>
-//       parallel_for_result("parallel_for_result", n);
-//   for (std::size_t i = 0; i < n; ++i) {
-//     parallel_for_result_host(i) = 0;
-//   }
-//   hpx::kokkos::deep_copy_async(inst, parallel_for_result,
-//                                parallel_for_result_host);
-//   hpx::kokkos::parallel_for_async(
-//       Kokkos::RangePolicy<typename std::decay<ExecutionSpace>::type>(inst, 0,
-//                                                                      n),
-//       KOKKOS_LAMBDA(int i) { parallel_for_result(i) = i; });
-//   hpx::kokkos::deep_copy_async(inst, parallel_for_result_host,
-//                                parallel_for_result);
-//   inst.fence();
-//   for (std::size_t i = 0; i < n; ++i) {
-//     HPX_KOKKOS_DETAIL_TEST(parallel_for_result_host(i) == i);
-//   }
-// }
-
-
-
-
-
+// How to Access CUBLAS and CBLAS with Kokkos
 // template<class Scalar, class Device>
 // Scalar dot(View<const Scalar* , Device> a,
 //            View<const Scalar*, Device> b) {
