@@ -9,7 +9,12 @@ DIR_INSTALL=${INSTALL_ROOT}/hpx-kokkos
 
 cd "${SOURCE_ROOT}"
 if [ ! -d hpx-kokkos ] ; then
-    git clone https://github.com/STEllAR-GROUP/hpx-kokkos.git
+    #git clone https://github.com/STEllAR-GROUP/hpx-kokkos.git
+    # work around 
+    git clone https://github.com/constracktor/hpx-kokkos.git
+    cd hpx-kokkos
+    git checkout a7251c8 
+    cd ..
 fi
 mkdir -p "${DIR_BUILD}"
 cd "${DIR_BUILD}"
