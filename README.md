@@ -33,7 +33,7 @@ Install HPX manually:
 ## Compile and Run Benchmark
 
 Benchmark Script:  
-`cd && cd hpx_project && git pull --rebase && ./run_benchmarks.sh cpu/gpu/blas`  
+`cd && cd hpx_project && git pull --rebase && ./run_benchmarks.sh hpx_cuda_v1.8.1 gpu with-CC-clang Release`  
 
 ## Git Commands for Developing
 
