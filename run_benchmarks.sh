@@ -8,11 +8,11 @@ set +x
 # Variables
 ################################################################################
 export APEX_SCREEN_OUTPUT=1 APEX_CSV_OUTPUT=1
-export HPXSC_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd )/dependencies"
+export HPXSC_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd )/../hpxsc_installations/$1"
 export CMAKE_COMMAND=${HPXSC_ROOT}/build/cmake/bin/cmake
 export HPX_DIR=${HPXSC_ROOT}/build/hpx/build/lib
 export MKL_DIR=${HPXSC_ROOT}/build/mkl/mkl/2023.0.0/lib
-export CPPUDDLE_DIR=${HPXSC_ROOT}/build/cppuddle/build/cppuddle/lib
+export CPPUDDLE_DIR=${HPXSC_ROOT}/build/cppuddle/cppuddle/lib
 
 # Configure MKL
 export MKL_CONFIG='-DMKL_ARCH=intel64 -DMKL_LINK=dynamic -DMKL_INTERFACE_FULL=intel_lp64 -DMKL_THREADING=sequential'
@@ -20,7 +20,7 @@ export MKL_CONFIG='-DMKL_ARCH=intel64 -DMKL_LINK=dynamic -DMKL_INTERFACE_FULL=in
 # Command-line options
 ################################################################################
 # Determine Code
-if [[ "$1" == "gpu" ]]
+if [[ "$2" == "gpu" ]]
 then
     GPU=1
     BLAS=0
@@ -28,11 +28,11 @@ then
     module load cuda/11.0.3
     # set CPPuddle 
     #export CPPUDDLE_DIR=${HPXSC_ROOT}/build/cppuddle/build/cppuddle/lib
-elif [[ "$1" == "cpu" ]]
+elif [[ "$2" == "cpu" ]]
 then
     GPU=0
     BLAS=0
-elif [[ "$1" == "blas" ]]
+elif [[ "$2" == "blas" ]]
 then
     GPU=0
     BLAS=1
@@ -42,7 +42,7 @@ else
 fi
 # Set Compiler Environment Variables
 export INSTALL_ROOT=${HPXSC_ROOT}/build
-export HPX_COMPILER_OPTION="$2"
+export HPX_COMPILER_OPTION="$3"
 if [[ "${HPX_COMPILER_OPTION}" == "with-gcc" ]]; then
     echo "Configuring self-built GCC"
     source dependencies/gcc-config.sh
@@ -116,7 +116,7 @@ else
     START=25
     END=200
     STEP=2
-    ./tiles_script.sh $START $END $STEP $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
+    #./tiles_script.sh $START $END $STEP $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
     # for 500 tiles per dimension
     #./tiles_script.sh 500 500 2 $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
     ##############################################################################
@@ -142,9 +142,9 @@ else
     END=10000
     STEP=1000
     N_CORES=18
-    TILE_SIZE=200
+    TILE_SIZE=1000
     N_TEST=5000
     N_REG=100
-    #./data_script.sh $START $END $STEP $TILE_SIZE $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
+    ./data_script.sh $START $END $STEP $TILE_SIZE $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
   done
 fi
