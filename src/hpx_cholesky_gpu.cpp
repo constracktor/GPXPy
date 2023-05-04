@@ -61,7 +61,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   std::size_t n_test = vm["n_test"].as<std::size_t>();     //max 5*1000
   // GP parameters
   std::size_t n_regressors = vm["n_regressors"].as<std::size_t>();
-  CALC_TYPE    hyperparameters[3];
+  std::array<CALC_TYPE, 3> hyperparameters;
   // initalize hyperparameters to empirical moments of the data
   hyperparameters[0] = 1.0;   // lengthscale = variance of training_output
   hyperparameters[1] = 1.0;   // vertical_lengthscale = standard deviation of training_input
@@ -154,7 +154,8 @@ int hpx_main(hpx::program_options::variables_map& vm)
   {
      for (std::size_t j = 0; j <= i; j++)
      {
-        K_tiles[i * n_tiles + j] = hpx::dataflow(hpx::annotated_function(&gen_tile_covariance<CALC_TYPE>, "assemble_tiled"), i, j, n_tile_size, n_regressors, hyperparameters, training_input);
+        //K_tiles[i * n_tiles + j] = 
+        auto a = hpx::dataflow(hpx::annotated_function(&gen_tile_covariance<CALC_TYPE>, "assemble_tiled"), i, j, n_tile_size, n_regressors, hyperparameters, training_input);
      }
   }
   // Assemble alpha

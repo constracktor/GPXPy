@@ -4,42 +4,35 @@
 #include <cmath>
 #include <vector>
 
-// compute feature vector z_i
-template <typename T>
-std::vector<T> compute_regressor_vector(std::size_t row,
-                                        std::size_t n_regressors,
-                                        std::vector<T> input)
-{
-  std::vector<T> regressor_vector;
-  regressor_vector.resize(n_regressors);
-
-  for (std::size_t i = 0; i < n_regressors; i++)
-  {
-   int index = row - n_regressors + 1 + i;
-   if (index < 0)
-   {
-     regressor_vector[i] = 0.0;
-   }
-   else
-   {
-     regressor_vector[i] = input[index];
-   }
-  }
-  return regressor_vector;
-}
-
 // compute the squared exponential kernel of two feature vectors
 template <typename T>
-T compute_covariance_function(std::size_t n_regressors,
+T compute_covariance_function(std::size_t i_global,
+                              std::size_t j_global,
+                              std::size_t n_regressors,
                               T* hyperparameters,
-                              std::vector<T> z_i,
-                              std::vector<T> z_j)
+                              const std::vector<T>& i_input,
+                              const std::vector<T>& j_input)
 {
   // C(z_i,z_j) = vertical_lengthscale * exp(-0.5*lengthscale*(z_i-z_j)^2)
+  T z_ik = 0.0;
+  T z_jk = 0.0;
   T distance = 0.0;
-  for (std::size_t i = 0; i < n_regressors; i++)
+  for (std::size_t k = 0; k < n_regressors; k++)
   {
-    distance += pow(z_i[i] - z_j[i],2);
+    //
+    int offset = - n_regressors + 1 + k;
+    int i_local = i_global + offset;
+    int j_local = j_global + offset;
+    //
+    if (i_local >= 0)
+    {
+      z_ik = i_input[i_local];
+    }
+    if (j_local >= 0)
+    {
+      z_jk = j_input[j_local];
+    }
+    distance += pow(z_ik - z_jk, 2);
   }
   return hyperparameters[1] * exp(-0.5 * hyperparameters[0] * distance);
 }
@@ -51,33 +44,10 @@ std::vector<T> gen_tile_covariance(std::size_t row,
                                    std::size_t N,
                                    std::size_t n_regressors,
                                    T *hyperparameters,
-                                   std::vector<T> input)
+                                   const std::vector<T>& input)
 {
    std::size_t i_global,j_global;
    T covariance_function;
-   std::vector<std::vector<T>> z_row, z_col;
-   z_row.resize(N);
-   z_col.resize(N);
-   // compute row regressor vectors beforehand
-   for(std::size_t i = 0; i < N; i++)
-   {
-     i_global = N * row + i;
-     z_row[i] = compute_regressor_vector(i_global, n_regressors, input);
-   }
-   // compute column regressor vectors beforehand
-   if (row == col)
-   {
-     // symmetric diagonal tile
-     z_col = z_row;
-   }
-   else
-   {
-     for(std::size_t j = 0; j < N; j++)
-     {
-       j_global = N * col + j;
-       z_col[j] = compute_regressor_vector(j_global, n_regressors, input);
-     }
-   }
    // Initialize tile
    std::vector<T> tile;
    tile.resize(N * N);
@@ -88,7 +58,7 @@ std::vector<T> gen_tile_covariance(std::size_t row,
       {
         j_global = N * col + j;
         // compute covariance function
-        covariance_function = compute_covariance_function(n_regressors, hyperparameters, z_row[i], z_col[j]);
+        covariance_function = compute_covariance_function(i_global, j_global, n_regressors, hyperparameters, input, input);
         if (i_global==j_global)
         {
           // noise variance on diagonal
@@ -97,25 +67,7 @@ std::vector<T> gen_tile_covariance(std::size_t row,
         tile[i * N + j] = covariance_function;
       }
    }
-   return tile;
-}
-
-// generate a tile containing the output observations
-template <typename T>
-std::vector<T> gen_tile_output(std::size_t row,
-                               std::size_t N,
-                               std::vector<T> output)
-{
-   std::size_t i_global;
-   // Initialize tile
-   std::vector<T> tile;
-   tile.resize(N);
-   for(std::size_t i = 0; i < N; i++)
-   {
-      i_global = N * row + i;
-      tile[i] = output[i_global];
-   }
-   return tile;
+   return std::move(tile);
 }
 
 // generate a tile of the cross-covariance matrix
@@ -126,39 +78,44 @@ std::vector<T> gen_tile_cross_covariance(std::size_t row,
                                          std::size_t N_col,
                                          std::size_t n_regressors,
                                          T *hyperparameters,
-                                         std::vector<T> row_input,
-                                         std::vector<T> col_input)
+                                         const std::vector<T>& row_input,
+                                         const std::vector<T>& col_input)
 {
    std::size_t i_global,j_global;
    T covariance_function;
-   std::vector<std::vector<T>> z_row, z_col;
-   z_row.resize(N_row);
-   z_col.resize(N_col);
-   // compute row regressor vectors beforehand
-   for(std::size_t i = 0; i < N_row; i++)
-   {
-     i_global = N_row * row + i;
-     z_row[i] = compute_regressor_vector(i_global, n_regressors, row_input);
-   }
-   // compute column regressor vectors beforehand
-   for(std::size_t j = 0; j < N_col; j++)
-   {
-     j_global = N_col * col + j;
-     z_col[j] = compute_regressor_vector(j_global, n_regressors, col_input);
-   }
    // Initialize tile
    std::vector<T> tile;
    tile.resize(N_row * N_col);
    for(std::size_t i = 0; i < N_row; i++)
    {
+      i_global = N_row * row + i;
       for(std::size_t j = 0; j < N_col; j++)
       {
+         j_global = N_col * col + j;
          // compute covariance function
-         covariance_function = compute_covariance_function(n_regressors, hyperparameters, z_row[i], z_col[j]);
+         covariance_function = compute_covariance_function(i_global, j_global, n_regressors, hyperparameters, row_input, col_input);
          tile[i * N_col + j] = covariance_function;
       }
    }
-   return tile;
+   return std::move(tile);
+}
+
+// generate a tile containing the output observations
+template <typename T>
+std::vector<T> gen_tile_output(std::size_t row,
+                               std::size_t N,
+                               const std::vector<T>& output)
+{
+   std::size_t i_global;
+   // Initialize tile
+   std::vector<T> tile;
+   tile.resize(N);
+   for(std::size_t i = 0; i < N; i++)
+   {
+      i_global = N * row + i;
+      tile[i] = output[i_global];
+   }
+   return std::move(tile);
 }
 
 // generate a empty tile
@@ -169,15 +126,15 @@ std::vector<T> gen_tile_zeros(std::size_t N)
    std::vector<T> tile;
    tile.resize(N);
    std::fill(tile.begin(),tile.end(),0.0);
-   return tile;
+   return std::move(tile);
 }
 
 // compute the total 2-norm error
 template <typename T>
-T compute_error_norm(std::vector<std::vector<T>> tiles,
-                     std::vector<T> b,
-                     std::size_t n_tiles,
-                     std::size_t tile_size)
+T compute_error_norm(std::size_t n_tiles,
+                     std::size_t tile_size,
+                     const std::vector<T>& b,
+                     const std::vector<std::vector<T>>& tiles)
 {
   std::vector<T> vector;
   vector.resize(n_tiles);

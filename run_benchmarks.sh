@@ -102,8 +102,8 @@ else
     #./cores_script.sh $START $END $STEP $N_TILES $N_TRAIN $N_TEST $N_REG $CHOLESKY $LOOP $OUTPUT_FILE_CORES
     ##############################################################################
     # Run tiles_script for cores 16,128 cores on 2x EPYC 7742 and on 18 cores on Intel i9
-    N_CORES=18
-    #N_CORES=128
+    #N_CORES=18
+    N_CORES=128
     N_TRAIN=20000
     N_TEST=5000
     N_REG=100
@@ -113,8 +113,8 @@ else
     STEP=2
     #./tiles_script.sh $START $END $STEP $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
     # from 25 to 200 tiles per dimension
-    START=100
-    END=100
+    START=25
+    END=200
     STEP=2
     #./tiles_script.sh $START $END $STEP $N_TRAIN $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_TILES
     # for 500 tiles per dimension
