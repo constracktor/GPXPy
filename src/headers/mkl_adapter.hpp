@@ -1,8 +1,6 @@
 //#include "mkl.h
 #include "mkl_cblas.h"
 #include "mkl_lapacke.h"
-//int i = mkl_set_num_threads(1);
-  //int mkl_set_threading_layer(MKL_THREADING_SEQUENTIAL);
 
 ////////////////////////////////////////////////////////////////////////////////
 // BLAS operations for tiled cholkesy
