@@ -9,8 +9,9 @@ template <typename T>
 std::vector<T> mkl_potrf(std::vector<T> A,
                          std::size_t N)
 {
+  // use ?potrf2 recursive version for better stability
   // POTRF - caution with dpotrf  
-  LAPACKE_spotrf(LAPACK_ROW_MAJOR, 'L', N, A.data(), N);
+  LAPACKE_spotrf2(LAPACK_ROW_MAJOR, 'L', N, A.data(), N);
   // return vector
   return A;
 }
