@@ -8,29 +8,29 @@ set +x
 # Variables
 ################################################################################
 export APEX_SCREEN_OUTPUT=1 APEX_CSV_OUTPUT=1
-export HPXSC_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd )/dependencies"
+export HPXSC_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd )/../hpxsc_installations/$1"
 export CMAKE_COMMAND=${HPXSC_ROOT}/build/cmake/bin/cmake
 
 ################################################################################
 # Command-line options
 ################################################################################
 # Determine Code
-if [[ "$1" == "gpu" ]]
+if [[ "$2" == "gpu" ]]
 then
     GPU=1
     BLAS=0
     # load cuda module (on pcsgs05 use e.g. 11.0.3)
     module load cuda/11.0.3
     # set CPPuddle 
-    export CPPUDDLE_DIR=${HPXSC_ROOT}/build/cppuddle/build/cppuddle/lib/cmake/CPPuddle
+    export CPPUDDLE_DIR=${HPXSC_ROOT}/build/cppuddle/cppuddle/lib/cmake/CPPuddle
     export KOKKOS_DIR=${HPXSC_ROOT}/build/kokkos/kokkos/lib/cmake/Kokkos
     export HPX_KOKKOS_DIR=${HPXSC_ROOT}/build/hpx-kokkos/hpx-kokkos/lib/cmake/HPXKokkos
     #-DCMAKE_CXX_COMPILER=${compiler_used_to_build_kokkos}
-elif [[ "$1" == "cpu" ]]
+elif [[ "$2" == "cpu" ]]
 then
     GPU=0
     BLAS=0
-elif [[ "$1" == "blas" ]]
+elif [[ "$2" == "blas" ]]
 then
     GPU=0
     BLAS=1
@@ -40,7 +40,7 @@ else
 fi
 # Set Compiler Environment Variables
 export INSTALL_ROOT=${HPXSC_ROOT}/build
-export HPX_COMPILER_OPTION="$2"
+export HPX_COMPILER_OPTION="$3"
 if [[ "${HPX_COMPILER_OPTION}" == "with-gcc" ]]; then
     echo "Configuring self-built GCC"
     source dependencies/gcc-config.sh
