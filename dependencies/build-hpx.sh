@@ -1,56 +1,13 @@
 #!/usr/bin/env bash
-
+# script to install spack and hpx (Version: 06.11.23)
 set -ex
-
-: ${SOURCE_ROOT:?} ${INSTALL_ROOT:?} ${LIB_DIR_NAME:?} ${GCC_VERSION:?} ${BUILD_TYPE:?} \
-    ${CMAKE_VERSION:?} ${CMAKE_COMMAND:?} \
-    ${BOOST_VERSION:?} ${BOOST_BUILD_TYPE:?} \
-    ${JEMALLOC_VERSION:?} ${HWLOC_VERSION:?}${HPX_VERSION:?} \
-    ${HPX_WITH_CUDA:?}
-
-DIR_SRC=${SOURCE_ROOT}/hpx
-DIR_BUILD=${INSTALL_ROOT}/hpx/build
-DIR_INSTALL=${INSTALL_ROOT}/hpx
-FILE_MODULE=${INSTALL_ROOT}/modules/hpx/${HPX_VERSION}-${BUILD_TYPE}
-
-DOWNLOAD_URL="https://github.com/stellar-group/hpx/archive/${HPX_VERSION}.tar.gz"
-
-if [[ ! -d ${DIR_SRC} ]]; then
-    (
-      mkdir -p ${DIR_SRC}
-      cd ${DIR_SRC}
-      wget -O- ${DOWNLOAD_URL} | tar xz --strip-components=1
-    )
-fi
-
-${CMAKE_COMMAND} \
-    -H${DIR_SRC} \
-    -B${DIR_BUILD} \
-    -DCMAKE_INSTALL_PREFIX=${DIR_INSTALL} \
-    -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-    -DCMAKE_CXX_FLAGS="${CXXFLAGS}" \
-    -DCMAKE_EXE_LINKER_FLAGS="${LDCXXFLAGS}" \
-    -DCMAKE_SHARED_LINKER_FLAGS="${LDCXXFLAGS}" \
-    -DHPX_WITH_CXX17=ON \
-    -DHPX_WITH_FETCH_ASIO=ON\
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-    -DHPX_WITH_THREAD_IDLE_RATES=ON \
-    -DHPX_WITH_DISABLED_SIGNAL_EXCEPTION_HANDLERS=ON \
-    -DHWLOC_ROOT=${INSTALL_ROOT}/hwloc/ \
-    -DHPX_WITH_MALLOC=JEMALLOC \
-    -DJEMALLOC_ROOT=${INSTALL_ROOT}/jemalloc \
-    -DBOOST_ROOT=${INSTALL_ROOT}/boost \
-    -DHPX_WITH_NETWORKING=OFF \
-    -DHPX_WITH_MORE_THAN_64_THREADS=ON \
-    -DHPX_WITH_MAX_CPU_COUNT=256 \
-    -DHPX_WITH_EXAMPLES=OFF \
-    -DHPX_WITH_TESTS=OFF \
-    -DHPX_WITH_APEX=ON \
-    -DAPEX_WITH_CUDA=${HPX_WITH_CUDA} \
-    -DHPX_WITH_CUDA=${HPX_WITH_CUDA} \
-    -DHPX_WITH_GPUBLAS=${HPX_WITH_CUDA}
-
-${CMAKE_COMMAND} --build ${DIR_BUILD} -- -j${PARALLEL_BUILD} VERBOSE=1
-${CMAKE_COMMAND} --build ${DIR_BUILD} --target install
-cp ${DIR_BUILD}/compile_commands.json ${DIR_SRC}/compile_commands.json
+# clone git repository
+git clone -c feature.manyFiles=true https://github.com/spack/spack.git
+# configure spack (add this to your .bashrc file)
+source spack/share/spack/setup-env.sh
+# find external software
+spack external find
+# install hpx and all its dependencies
+spack install hpx@1.9.1
+# on pcsgs02-05 use
+# spack install hpx@1.9.1%gcc@9.4.0

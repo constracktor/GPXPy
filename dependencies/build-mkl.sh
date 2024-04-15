@@ -1,10 +1,12 @@
-#!/bin/bash
-: ${SOURCE_ROOT:?} ${INSTALL_ROOT:?} ${MKL_VERSION:?}
-
-DIR_SRC=${SOURCE_ROOT}/mkl
-DIR_INSTALL=${INSTALL_ROOT}/mkl
-
-DOWNLOAD_URL="https://registrationcenter-download.intel.com/akdlm/irc_nas/19138/l_onemkl_p_${MKL_VERSION}.25398_offline.sh"
+#!/usr/bin/env bash
+# This script installs MKL
+export MKL_VERSION=2023.0.0
+# structure
+export ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd )/mkl"
+export DIR_SRC="$ROOT/src"
+export DIR_INSTALL="$ROOT/install"
+# get files
+export DOWNLOAD_URL="https://registrationcenter-download.intel.com/akdlm/irc_nas/19138/l_onemkl_p_${MKL_VERSION}.25398_offline.sh"
 
 if [[ ! -d ${DIR_SRC} ]]; then
     (

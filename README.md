@@ -33,9 +33,4 @@ Install HPX manually:
 ## Compile and Run Benchmark
 
 Benchmark Script:  
-`cd && cd hpx_project && git pull --rebase && ./run_benchmarks.sh cpu/gpu/blas`  
-
-## Git Commands for Developing
-
-`git add . && git commit -m "comment" && git push`  
-`git add . && git commit --amend --no-edit && git push -f`
+`cd && cd hpx_project && git pull --rebase && ./run_benchmarks.sh` 
