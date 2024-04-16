@@ -1,13 +1,11 @@
 cmake_minimum_required(VERSION 3.18)
 project(hpx_project CXX)
 find_package(HPX REQUIRED)
-find_package(MKL CONFIG REQUIRED)
+#find_package(MKL CONFIG REQUIRED)
 
-set(HEADER_FILES src/headers/ublas_adapter.hpp 
-                 src/headers/cublas_adapter.hpp
-                 src/headers/mkl_adapter.hpp 
-                 src/headers/tiled_algorithms_cpu.hpp 
-                 src/headers/tiled_algorithms_gpu.hpp 
+set(HEADER_FILES src/headers/ublas_adapter.hpp
+                 #src/headers/mkl_adapter.hpp 
+                 src/headers/tiled_algorithms_cpu.hpp
                  src/headers/gp_functions.hpp)
 
 
@@ -16,8 +14,8 @@ target_link_libraries(hpx_cholesky
                       HPX::hpx 
                       HPX::wrap_main 
                       HPX::iostreams_component
-                      MKL::mkl_intel_lp64
-                      MKL::mkl_core
-                      MKL::MKL
-                      MKL::mkl_sequential
+                    #   MKL::mkl_intel_lp64
+                    #   MKL::mkl_core
+                    #   MKL::MKL
+                    #   MKL::mkl_sequential
                       )
