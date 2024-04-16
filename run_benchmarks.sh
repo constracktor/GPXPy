@@ -12,7 +12,7 @@ export CMAKE_COMMAND=cmake
 ###
 # TODO
 export HPX_DIR=/path/to/hpx/lib
-export MKL_DIR=/path/to/mkl/mkl/2023.0.0/lib
+export MKL_DIR=/path/to/hpx_project/dependencies/mkl/install/mkl/2024.1/lib
 ###
 
 # Configure MKL
