@@ -16,8 +16,8 @@ The building blocks of GP regression will feature futurized, task-based parallel
 As a GP application a basic non-linear system identification problem is chosen.
 
 ## Initial Implementations
-HPX: https://hpx-docs.stellar-group.org/latest/html/index.html
-MKL: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+- HPX: https://hpx-docs.stellar-group.org/latest/html/index.html
+- MKL: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
 
 Both libraries can be installed by executing [build-hpx.sh](dependencies/build-hpx.sh) and [build-mkl.sh](dependencies/build-mkl.sh).
 

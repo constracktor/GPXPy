@@ -14,6 +14,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   // declare data structures
   // tiled future data structures
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> K_tiles;
+  std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> prior_K_tiles;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> alpha_tiles;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> cross_covariance_tiles;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> prediction_tiles;
@@ -140,6 +141,15 @@ int hpx_main(hpx::program_options::variables_map& vm)
   for (std::size_t i = 0; i < n_tiles; i++)
   {
     alpha_tiles[i] = hpx::async(hpx::annotated_function(&gen_tile_output<CALC_TYPE>, "assemble_tiled"), i, n_tile_size, training_output);
+  }
+  // Assemble prior covariance matrix vector
+  prior_K_tiles.resize(m_tiles * m_tiles);
+  for (std::size_t i = 0; i < m_tiles; i++)
+  {
+     for (std::size_t j = i; j <= i; j++)
+     {
+      prior_K_tiles[i * m_tiles + j] = hpx::async(hpx::annotated_function(&gen_tile_covariance<CALC_TYPE>, "assemble_tiled"), i, j, m_tile_size, n_regressors, hyperparameters, test_input);
+     }
   }
   // Assemble transposed cross-covariance matrix vector
   cross_covariance_tiles.resize(m_tiles * n_tiles);
