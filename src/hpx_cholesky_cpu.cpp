@@ -7,7 +7,7 @@
 #include "headers/tiled_algorithms_cpu.hpp"
 
 #include <iostream>
-#include <hpx/local/init.hpp>
+#include <hpx/init.hpp>
 
 int hpx_main(hpx::program_options::variables_map& vm)
 {
@@ -169,8 +169,8 @@ int hpx_main(hpx::program_options::variables_map& vm)
   }
   else // set to "right" per default
   {
-    right_looking_cholesky_tiled(K_tiles, n_tile_size, n_tiles);
-    //right_looking_cholesky_tiled_mkl(K_tiles, n_tile_size, n_tiles);
+    //right_looking_cholesky_tiled(K_tiles, n_tile_size, n_tiles);
+    right_looking_cholesky_tiled_mkl(K_tiles, n_tile_size, n_tiles);
   }
   // Triangular solve
   forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);

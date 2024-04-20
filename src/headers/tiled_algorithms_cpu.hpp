@@ -1,38 +1,38 @@
 #ifndef TILED_ALGORITHMS_CPU_H_INCLUDED
 #define TILED_ALGORITHMS_CPU_H_INCLUDED
 
-#include <hpx/local/future.hpp>
+#include <hpx/future.hpp>
 #include "ublas_adapter.hpp"
-//#include "mkl_adapter.hpp"
+#include "mkl_adapter.hpp"
 ////////////////////////////////////////////////////////////////////////////////
 // Tiled Cholesky Algorithms
-// template <typename T>
-// void right_looking_cholesky_tiled_mkl(std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
-//                                   std::size_t N,
-//                                   std::size_t n_tiles)
+template <typename T>
+void right_looking_cholesky_tiled_mkl(std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
+                                  std::size_t N,
+                                  std::size_t n_tiles)
 
-// {
-//   for (std::size_t k = 0; k < n_tiles; k++)
-//   {
-//     // POTRF
-//     ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_potrf<T>), "cholesky_tiled"), ft_tiles[k * n_tiles + k], N);
-//     for (std::size_t m = k + 1; m < n_tiles; m++)
-//     {
-//       // TRSM
-//       ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_trsm<T>), "cholesky_tiled"), ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
-//     }
-//     for (std::size_t m = k + 1; m < n_tiles; m++)
-//     {
-//       // SYRK
-//       ft_tiles[m * n_tiles + m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_syrk<T>), "cholesky_tiled"), ft_tiles[m * n_tiles + m], ft_tiles[m * n_tiles + k], N);
-//       for (std::size_t n = k + 1; n < m; n++)
-//       {
-//         // GEMM
-//         ft_tiles[m * n_tiles + n] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm<T>), "cholesky_tiled"), ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
-//       }
-//     }
-//   }
-// }
+{
+  for (std::size_t k = 0; k < n_tiles; k++)
+  {
+    // POTRF
+    ft_tiles[k * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_potrf<T>), "cholesky_tiled"), ft_tiles[k * n_tiles + k], N);
+    for (std::size_t m = k + 1; m < n_tiles; m++)
+    {
+      // TRSM
+      ft_tiles[m * n_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_trsm<T>), "cholesky_tiled"), ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
+    }
+    for (std::size_t m = k + 1; m < n_tiles; m++)
+    {
+      // SYRK
+      ft_tiles[m * n_tiles + m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_syrk<T>), "cholesky_tiled"), ft_tiles[m * n_tiles + m], ft_tiles[m * n_tiles + k], N);
+      for (std::size_t n = k + 1; n < m; n++)
+      {
+        // GEMM
+        ft_tiles[m * n_tiles + n] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm<T>), "cholesky_tiled"), ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
+      }
+    }
+  }
+}
 
 template <typename T>
 void right_looking_cholesky_tiled(std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
