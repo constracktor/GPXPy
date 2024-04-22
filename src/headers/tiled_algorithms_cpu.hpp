@@ -167,17 +167,38 @@ void forward_solve_tiled_matrix(std::vector<hpx::shared_future<std::vector<T>>> 
     for (std::size_t k = 0; k < n_tiles; k++)
     {
       // TRSM
-      ft_rhs[k * m_tiles + c] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_trsm_matrix<T>), "triangular_solve_tiled_matrix"), ft_tiles[k * n_tiles + k], ft_rhs[k * m_tiles + c], N, M);
+      ft_rhs[k * m_tiles + c] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_trsm_l_matrix<T>), "triangular_solve_tiled_matrix"), ft_tiles[k * n_tiles + k], ft_rhs[k * m_tiles + c], N, M);
       for (std::size_t m = k + 1; m < n_tiles; m++)
       {
         // GEMV
-        ft_rhs[m * m_tiles + c] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_matrix<T>), "triangular_solve_tiled_matrix"), ft_tiles[m * n_tiles + k], ft_rhs[k * m_tiles + c], ft_rhs[m * m_tiles + c], N, M);
+        ft_rhs[m * m_tiles + c] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_l_matrix<T>), "triangular_solve_tiled_matrix"), ft_tiles[m * n_tiles + k], ft_rhs[k * m_tiles + c], ft_rhs[m * m_tiles + c], N, M);
       }
     }
   }
 }
 
-
+template <typename T>
+void backward_solve_tiled_matrix(std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
+                          std::vector<hpx::shared_future<std::vector<T>>> &ft_rhs,
+                          std::size_t N,
+                          std::size_t M,
+                          std::size_t n_tiles,
+                          std::size_t m_tiles)
+{
+  for (int c = 0; c < m_tiles; c++)
+  {
+    for (int k = n_tiles - 1; k >= 0; k--) // int instead of std::size_t for last comparison
+    {
+      // TRSM
+      ft_rhs[k * m_tiles + c] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_trsm_u_matrix<T>), "triangular_solve_tiled_matrix"), ft_tiles[k * n_tiles + k], ft_rhs[k * m_tiles + c], N, M);
+      for (int m = k - 1; m >= 0; m--) // int instead of std::size_t for last comparison
+      {
+        // GEMV
+        ft_rhs[m * m_tiles + c] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_u_matrix<T>), "triangular_solve_tiled_matrix"), ft_tiles[k * n_tiles + m], ft_rhs[k * m_tiles + c], ft_rhs[m * m_tiles + c], N, M);
+      }
+    }
+  }
+}
 ////////////////////////////////////////////////////////////////////////////////
 // Tiled Prediction
 template <typename T>
