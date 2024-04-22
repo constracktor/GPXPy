@@ -17,7 +17,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> prior_K_tiles;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> alpha_tiles;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> cross_covariance_tiles;
-  std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> transposed_cross_covariance_tiles;
+  std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> t_cross_covariance_tiles;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> prediction_tiles;
   // future data structures
   hpx::shared_future<CALC_TYPE> ft_error;
@@ -162,12 +162,12 @@ int hpx_main(hpx::program_options::variables_map& vm)
      }
   }
   // Assemble NxM (transpose) cross-covariance matrix vector 
-  transposed_cross_covariance_tiles.resize(n_tiles * m_tiles);
+  t_cross_covariance_tiles.resize(n_tiles * m_tiles);
   for (std::size_t i = 0; i < n_tiles; i++)
   {
      for (std::size_t j = 0; j < m_tiles; j++)
      {
-        transposed_cross_covariance_tiles[i * m_tiles + j] = hpx::dataflow(hpx::annotated_function(&gen_tile_cross_covariance<CALC_TYPE>, "assemble_tiled"), i, j, n_tile_size, m_tile_size, n_regressors, hyperparameters, training_input, test_input);
+        t_cross_covariance_tiles[i * m_tiles + j] = hpx::dataflow(hpx::annotated_function(&gen_tile_cross_covariance<CALC_TYPE>, "assemble_tiled"), i, j, n_tile_size, m_tile_size, n_regressors, hyperparameters, training_input, test_input);
      }
   }
   // Assemble zero prediction
@@ -192,9 +192,11 @@ int hpx_main(hpx::program_options::variables_map& vm)
     //right_looking_cholesky_tiled(K_tiles, n_tile_size, n_tiles);
     right_looking_cholesky_tiled_mkl(K_tiles, n_tile_size, n_tiles);
   }
-  // Triangular solve
+  // Triangular solve K_NxN * alpha = y
   forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
   backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
+  // Triangular solve K_N,N * A_NxM = K_NxM
+  forward_solve_tiled_matrix(K_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
   //////////////////////////////////////////////////////////////////////////////
   // PART 3: PREDICTION
   prediction_tiled(cross_covariance_tiles, alpha_tiles, prediction_tiles, m_tile_size, n_tile_size, n_tiles, m_tiles);
