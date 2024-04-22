@@ -48,7 +48,7 @@ std::vector<T> mkl_trsm_u_matrix(std::vector<T> L,
   // TRSM constants
   const T alpha = 1.0f; 
   // TRSM kernel - caution with dtrsm
-  cblas_strsm(CblasRowMajor, CblasLeft, CblasUpper, CblasTrans, CblasNonUnit, N, M, alpha, L.data(), N, A.data(), M);
+  cblas_strsm(CblasRowMajor, CblasLeft, CblasLower, CblasTrans, CblasNonUnit, N, M, alpha, L.data(), N, A.data(), M);
   // return vector
   return A;
 }
