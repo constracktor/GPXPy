@@ -34,3 +34,5 @@
 # Datafiles
 /benchmark_scripts/data_hpx_right.txt
 /build
+forward_substitution.py
+backward_substitution.py
