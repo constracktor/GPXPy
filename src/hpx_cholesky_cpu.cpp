@@ -148,10 +148,7 @@ int hpx_main(hpx::program_options::variables_map &vm)
   prior_K_tiles.resize(m_tiles * m_tiles);
   for (std::size_t i = 0; i < m_tiles; i++)
   {
-    for (std::size_t j = i; j <= i; j++)
-    {
-      prior_K_tiles[i * m_tiles + j] = hpx::async(hpx::annotated_function(&gen_tile_covariance<CALC_TYPE>, "assemble_tiled"), i, j, m_tile_size, n_regressors, hyperparameters, test_input);
-    }
+    prior_K_tiles[i * m_tiles + i] = hpx::async(hpx::annotated_function(&gen_tile_covariance<CALC_TYPE>, "assemble_tiled"), i, i, m_tile_size, n_regressors, hyperparameters, test_input);
   }
   // Assemble MxN cross-covariance matrix vector
   cross_covariance_tiles.resize(m_tiles * n_tiles);
@@ -168,7 +165,7 @@ int hpx_main(hpx::program_options::variables_map &vm)
   {
     for (std::size_t j = 0; j < m_tiles; j++)
     {
-      t_cross_covariance_tiles[i * m_tiles + j] = hpx::dataflow(hpx::annotated_function(&gen_tile_cross_covariance<CALC_TYPE>, "assemble_tiled"), i, j, n_tile_size, m_tile_size, n_regressors, hyperparameters, training_input, test_input);
+      t_cross_covariance_tiles[i * m_tiles + j] = hpx::async(hpx::annotated_function(&gen_tile_cross_covariance<CALC_TYPE>, "assemble_tiled"), i, j, n_tile_size, m_tile_size, n_regressors, hyperparameters, training_input, test_input);
     }
   }
   // Assemble zero prediction
@@ -208,8 +205,9 @@ int hpx_main(hpx::program_options::variables_map &vm)
   //////////////////////////////////////////////////////////////////////////////
   // PART 3: PREDICTION
   prediction_tiled(cross_covariance_tiles, alpha_tiles, prediction_tiles, m_tile_size, n_tile_size, n_tiles, m_tiles);
-  // predicition uncertainty
+  // posterior covariance matrix
   posterior_covariance_tiled(prior_K_tiles, cross_covariance_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
+  // predicition uncertainty
   prediction_uncertainty_tiled(prior_K_tiles, prediction_uncertainty_tiles, m_tile_size, m_tiles);
   //  compute error
   ft_error = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&compute_error_norm<CALC_TYPE>), "prediction_tiled"), m_tiles, m_tile_size, test_output, prediction_tiles);
@@ -229,11 +227,11 @@ int main(int argc, char *argv[])
   // Setup input arguments
   desc_commandline.add_options()("n_train", hpx::program_options::value<std::size_t>()->default_value(1 * 1000),
                                  "Number of training samples (max 100 000)")("n_test", hpx::program_options::value<std::size_t>()->default_value(1 * 1000),
-                                                                             "Number of test samples (max 5 000)")("n_regressors", hpx::program_options::value<std::size_t>()->default_value(100),
-                                                                                                                   "Number of delayed input regressors")("n_tiles", hpx::program_options::value<std::size_t>()->default_value(0),
-                                                                                                                                                         "Number of tiles per dimension -> n_tiles * n_tiles total")("tile_size", hpx::program_options::value<std::size_t>()->default_value(0),
-                                                                                                                                                                                                                     "Tile size per dimension -> tile_size * tile_size total entries")("cholesky", hpx::program_options::value<std::string>()->default_value("right"),
-                                                                                                                                                                                                                                                                                       "Choose between right- left- or top-looking tiled Cholesky decomposition");
+                                 "Number of test samples (max 5 000)")("n_regressors", hpx::program_options::value<std::size_t>()->default_value(100),
+                                 "Number of delayed input regressors")("n_tiles", hpx::program_options::value<std::size_t>()->default_value(0),
+                                 "Number of tiles per dimension -> n_tiles * n_tiles total")("tile_size", hpx::program_options::value<std::size_t>()->default_value(0),
+                                 "Tile size per dimension -> tile_size * tile_size total entries")("cholesky", hpx::program_options::value<std::string>()->default_value("right"),
+                                 "Choose between right- left- or top-looking tiled Cholesky decomposition");
   // Run HPX main
   init_args.desc_cmdline = desc_commandline;
   return hpx::local::init(hpx_main, argc, argv, init_args);
