@@ -243,10 +243,23 @@ void posterior_covariance_tiled(std::vector<hpx::shared_future<std::vector<T>>> 
     { // outer two loops used for diagonal tiles of prior K
       for (int m = 0; m < n_tiles; ++m)
       { // Compute inner product to obtain diagonal elements of (K_MxN * (K^-1_NxN * K_NxM))
-        ft_K_tiles[i * m_tiles + j] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_uncertainty_matrix<T>), "uncertainty_tiled"), ft_CC_tiles[i * n_tiles + m],
+        ft_K_tiles[i * m_tiles + j] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_uncertainty_matrix<T>), "posterior_tiled"), ft_CC_tiles[i * n_tiles + m],
                                                     ft_tCC_tiles[m * m_tiles + i], ft_K_tiles[i * m_tiles + j], N, M);
       }
     }
+  }
+}
+
+// Tiled Prediction Uncertainty
+template <typename T>
+void prediction_uncertainty_tiled(std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
+                                  std::vector<hpx::shared_future<std::vector<T>>> &ft_vector,
+                                  std::size_t M,
+                                  std::size_t m_tiles)
+{
+  for (std::size_t i = 0; i < m_tiles; i++)
+  {
+    ft_vector[i] = hpx::async(hpx::annotated_function(hpx::unwrapping(&diag<T>), "uncertainty_tiled"), ft_tiles[i * m_tiles + i], M);
   }
 }
 #endif
