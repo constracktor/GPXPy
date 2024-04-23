@@ -2,6 +2,9 @@
 #include "mkl_cblas.h"
 #include "mkl_lapacke.h"
 
+#include <cmath>
+#include <vector>
+
 ////////////////////////////////////////////////////////////////////////////////
 // BLAS operations for tiled cholkesy
 // in-place solve L * X = A where L lower triangular
@@ -70,14 +73,13 @@ std::vector<T> mkl_gemm_u_matrix(std::vector<T> A,
   return C;
 }
 
-
 // C = C - A * B
 template <typename T>
 std::vector<T> mkl_gemm_uncertainty_matrix(std::vector<T> A,
-                                 std::vector<T> B,
-                                 std::vector<T> C,
-                                 std::size_t N,
-                                 std::size_t M)
+                                           std::vector<T> B,
+                                           std::vector<T> C,
+                                           std::size_t N,
+                                           std::size_t M)
 {
   // GEMM constants
   const T alpha = -1.0f;
@@ -87,4 +89,21 @@ std::vector<T> mkl_gemm_uncertainty_matrix(std::vector<T> A,
               M, M, N, alpha, A.data(), N, B.data(), M, beta, C.data(), M);
   // return vector
   return C;
+}
+
+// retrieve diagonal elements of posterior covariance matrix
+template <typename T>
+std::vector<T> diag(std::vector<T> A,
+                    std::size_t M)
+{
+  // Initialize tile
+  std::vector<T> tile;
+  tile.reserve(M);
+
+  for (std::size_t i = 0; i < M; ++i)
+  {
+    tile.push_back(A[i * M + i]);
+  }
+
+  return std::move(tile);
 }
