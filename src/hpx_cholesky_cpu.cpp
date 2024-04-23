@@ -19,6 +19,7 @@ int hpx_main(hpx::program_options::variables_map &vm)
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> cross_covariance_tiles;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> t_cross_covariance_tiles;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> prediction_tiles;
+  std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> prediction_uncertainty_tiles;
   // future data structures
   hpx::shared_future<CALC_TYPE> ft_error;
   // data holders for assembly
@@ -176,6 +177,12 @@ int hpx_main(hpx::program_options::variables_map &vm)
   {
     prediction_tiles[i] = hpx::async(hpx::annotated_function(&gen_tile_zeros<CALC_TYPE>, "assemble_tiled"), m_tile_size);
   }
+  // Assemble zero prediction
+  prediction_uncertainty_tiles.resize(m_tiles);
+  for (std::size_t i = 0; i < m_tiles; i++)
+  {
+    prediction_uncertainty_tiles[i] = hpx::async(hpx::annotated_function(&gen_tile_zeros<CALC_TYPE>, "assemble_tiled"), m_tile_size);
+  }
   //////////////////////////////////////////////////////////////////////////////
   // PART 2: CHOLESKY SOLVE
   // Cholesky decomposition
@@ -203,7 +210,7 @@ int hpx_main(hpx::program_options::variables_map &vm)
   prediction_tiled(cross_covariance_tiles, alpha_tiles, prediction_tiles, m_tile_size, n_tile_size, n_tiles, m_tiles);
   // predicition uncertainty
   substraction_tiled(prior_K_tiles, cross_covariance_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
-  // compute error
+  //  compute error
   ft_error = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&compute_error_norm<CALC_TYPE>), "prediction_tiled"), m_tiles, m_tile_size, test_output, prediction_tiles);
   ////////////////////////////////////////////////////////////////////////////
   // write error to file
