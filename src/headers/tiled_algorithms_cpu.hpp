@@ -227,15 +227,15 @@ void prediction_tiled(std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
   }
 }
 
-// Tiled Prediction Uncertainty
+// Tiled Diagonal of Posterior Covariance Matrix
 template <typename T>
-void substraction_tiled(std::vector<hpx::shared_future<std::vector<T>>> &ft_CC_tiles,
-                        std::vector<hpx::shared_future<std::vector<T>>> &ft_tCC_tiles,
-                        std::vector<hpx::shared_future<std::vector<T>>> &ft_K_tiles,
-                        std::size_t N,
-                        std::size_t M,
-                        std::size_t n_tiles,
-                        std::size_t m_tiles)
+void posterior_covariance_tiled(std::vector<hpx::shared_future<std::vector<T>>> &ft_CC_tiles,
+                                std::vector<hpx::shared_future<std::vector<T>>> &ft_tCC_tiles,
+                                std::vector<hpx::shared_future<std::vector<T>>> &ft_K_tiles,
+                                std::size_t N,
+                                std::size_t M,
+                                std::size_t n_tiles,
+                                std::size_t m_tiles)
 {
   for (int i = 0; i < m_tiles; ++i)
   {
