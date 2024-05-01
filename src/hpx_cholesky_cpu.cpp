@@ -148,7 +148,7 @@ int hpx_main(hpx::program_options::variables_map &vm)
   prior_K_tiles.resize(m_tiles * m_tiles);
   for (std::size_t i = 0; i < m_tiles; i++)
   {
-    prior_K_tiles[i * m_tiles + i] = hpx::async(hpx::annotated_function(&gen_tile_covariance<CALC_TYPE>, "assemble_tiled"), i, i, m_tile_size, n_regressors, hyperparameters, test_input);
+    prior_K_tiles[i * m_tiles + i] = hpx::async(hpx::annotated_function(&gen_tile_prior_covariance<CALC_TYPE>, "assemble_tiled"), i, i, m_tile_size, n_regressors, hyperparameters, test_input);
   }
   // Assemble MxN cross-covariance matrix vector
   cross_covariance_tiles.resize(m_tiles * n_tiles);
@@ -206,7 +206,7 @@ int hpx_main(hpx::program_options::variables_map &vm)
   // PART 3: PREDICTION
   prediction_tiled(cross_covariance_tiles, alpha_tiles, prediction_tiles, m_tile_size, n_tile_size, n_tiles, m_tiles);
   // posterior covariance matrix
-  posterior_covariance_tiled(prior_K_tiles, cross_covariance_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
+  posterior_covariance_tiled(cross_covariance_tiles, t_cross_covariance_tiles, prior_K_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
   // predicition uncertainty
   prediction_uncertainty_tiled(prior_K_tiles, prediction_uncertainty_tiles, m_tile_size, m_tiles);
   //  compute error
