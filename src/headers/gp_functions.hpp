@@ -70,6 +70,34 @@ std::vector<T> gen_tile_covariance(std::size_t row,
   return std::move(tile);
 }
 
+// generate a tile of the prior covariance matrix
+template <typename T>
+std::vector<T> gen_tile_prior_covariance(std::size_t row,
+                                   std::size_t col,
+                                   std::size_t N,
+                                   std::size_t n_regressors,
+                                   T *hyperparameters,
+                                   const std::vector<T> &input)
+{
+  std::size_t i_global, j_global;
+  T covariance_function;
+  // Initialize tile
+  std::vector<T> tile;
+  tile.resize(N * N);
+  for (std::size_t i = 0; i < N; i++)
+  {
+    i_global = N * row + i;
+    for (std::size_t j = 0; j < N; j++)
+    {
+      j_global = N * col + j;
+      // compute covariance function
+      covariance_function = compute_covariance_function(i_global, j_global, n_regressors, hyperparameters, input, input);
+      tile[i * N + j] = covariance_function;
+    }
+  }
+  return std::move(tile);
+}
+
 // generate a tile of the cross-covariance matrix
 template <typename T>
 std::vector<T> gen_tile_cross_covariance(std::size_t row,
