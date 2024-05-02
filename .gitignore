@@ -194,3 +194,4 @@ cython_debug/
 forward_substitution.py
 backward_substitution.py
 /gpflow_parallel/output.csv
+/gpytorch_parallel/output.csv

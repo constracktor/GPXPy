@@ -3,7 +3,6 @@ import logging
 from csv import writer
 import torch
 import gpytorch
-import numpy as np
 
 from config import get_config
 from gpytorch_logger import setup_logging
@@ -14,7 +13,15 @@ log_filename = "./gpytorch_logs.log"
 
 
 def gpytorch_run(config, output_csv_obj, size_train, l):
+    """
+    Run the Gaussian process regression pipeline.
 
+    Args:
+        config (dict): Configuration parameters for the pipeline.
+        output_csv_obj (csv.writer): CSV writer object for writing output data.
+        size_train (int): Size of the training dataset.
+        l (int): Loop index.
+    """
     total_t = time.time()
     
     X_train, Y_train, X_test, Y_test = load_data(
@@ -43,7 +50,6 @@ def gpytorch_run(config, output_csv_obj, size_train, l):
 
     pred_t = time.time()
     f_pred, f_var, y_pred, y_var = predict(model, likelihood, X_test)
-    print(f_var)
     pred_t = time.time() - pred_t
     logger.info("Finished making predictions.") 
     
@@ -51,7 +57,7 @@ def gpytorch_run(config, output_csv_obj, size_train, l):
     INIT_TIME = init_t
     TRAIN_TIME = train_t
     PREDICTION_TIME = pred_t
-    ERROR = calculate_error(Y_test, f_pred)
+    ERROR = calculate_error(Y_test, y_pred)
     
     row_data = [config["N_CORES"], size_train, config["N_TEST"], config["N_REG"], 
                 TOTAL_TIME, INIT_TIME, TRAIN_TIME, PREDICTION_TIME, ERROR, l]
@@ -59,8 +65,6 @@ def gpytorch_run(config, output_csv_obj, size_train, l):
     
     logger.info("Completed iteration.")
     
-    return f_pred, f_var, y_pred, y_var
-
 
 def execute():
     """
