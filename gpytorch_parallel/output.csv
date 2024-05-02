@@ -1,0 +1,15 @@
+Cores,N_train,N_test,N_regressor,Total_time,Train_time,Optimization_Time,Predict_time,Error,N_loop
+Cores,N_train,N_test,N_regressor,Total_time,Train_time,Optimization_Time,Predict_time,Error,N_loop
+Cores,N_train,N_test,N_regressor,Total_time,Train_time,Optimization_Time,Predict_time,Error,N_loop
+Cores,N_train,N_test,N_regressor,Total_time,Train_time,Optimization_Time,Predict_time,Error,N_loop
+2,100,1000,5,0.3648722171783447,0.23732423782348633,1.1920928955078125e-06,0.07548236846923828,"tensor(16.5299, dtype=torch.float64)",0
+Cores,N_train,N_test,N_regressor,Total_time,Train_time,Optimization_Time,Predict_time,Error,N_loop
+2,10,100,5,0.35990428924560547,0.31014490127563477,1.430511474609375e-06,0.016143798828125,"tensor(18.8796, dtype=torch.float64)",0
+Cores,N_train,N_test,N_regressor,Total_time,Train_time,Optimization_Time,Predict_time,Error,N_loop
+2,10,100,5,0.2741684913635254,0.23476600646972656,9.5367431640625e-07,0.0064280033111572266,"tensor(18.8796, dtype=torch.float64)",0
+Cores,N_train,N_test,N_regressor,Total_time,Train_time,Optimization_Time,Predict_time,Error,N_loop
+2,10,100,10,0.27175045013427734,0.23900127410888672,7.152557373046875e-07,0.006911754608154297,"tensor(29.7375, dtype=torch.float64)",0
+Cores,N_train,N_test,N_regressor,Total_time,Train_time,Optimization_Time,Predict_time,Error,N_loop
+2,10,100,10,0.2931685447692871,0.2622854709625244,9.5367431640625e-07,0.007050752639770508,"tensor(29.7375, dtype=torch.float64)",0
+Cores,N_train,N_test,N_regressor,Total_time,Train_time,Optimization_Time,Predict_time,Error,N_loop
+2,10,100,10,0.27678346633911133,0.239271879196167,7.152557373046875e-07,0.0071887969970703125,"tensor(29.7375, dtype=torch.float64)",0
