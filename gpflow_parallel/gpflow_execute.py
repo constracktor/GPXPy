@@ -117,10 +117,10 @@ def predict(model, X_test):
 
 if __name__ == "__main__":
 
-    train_in_file = "src/data/training/training_input.txt"
-    train_out_file = "src/data/training/training_output.txt"
-    test_in_file = "src/data/test/test_input.txt"
-    test_out_file = "src/data/test/test_output.txt"
+    train_in_file = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/training/training_input.txt"
+    train_out_file = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/training/training_output.txt"
+    test_in_file = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/test/test_input.txt"
+    test_out_file = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/test/test_output.txt"
 
     size_train = 10
     size_test = 100
