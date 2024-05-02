@@ -1,9 +1,17 @@
 import numpy as np
-import gpytorch
 import torch
+import gpytorch
 
 
 class ExactGPModel(gpytorch.models.ExactGP):
+    """
+    This class defines the exact Gaussian Process model for regression.
+    
+    Args:
+    - train_x (torch.Tensor): The training input data.
+    - train_y (torch.Tensor): The training target data.
+    - likelihood: The likelihood function for the model.
+    """
     def __init__(self, train_x, train_y, likelihood):
         super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
         self.mean_module = gpytorch.means.ConstantMean()
@@ -13,20 +21,31 @@ class ExactGPModel(gpytorch.models.ExactGP):
         self.covar_module.outputscale = 1.0
     
     def forward(self, x):
+        """
+        Forward pass through the model.
+        
+        Args:
+        - x (torch.Tensor): Input data.
+        
+        Returns:
+        - gpytorch.distributions.MultivariateNormal: Multivariate normal distribution over the output.
+        """
         mean_x = self.mean_module(x)
         covar_x = self.covar_module(x)
         return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
 def generate_regressor(x_original, n_regressors):
-    """Pad X with zeros from left for #regressors-1 for each data point
-    roll over X where window size equals #regressors
+    """
+    Generate regressor matrix by padding the original input array with zeros 
+    from the left for (n_regressors - 1) positions, and rolling over the input
+    array where the window size equals n_regressors.
 
     Args:
-        x_original (_type_): _description_
-        n_regressors (_type_): _description_
+        x_original (array-like): The original input array.
+        n_regressors (int): The number of regressors.
 
     Returns:
-        _type_: _description_
+        array-like: The regressor matrix.
     """
     X = []
     x_padded = np.pad(
@@ -40,9 +59,7 @@ def generate_regressor(x_original, n_regressors):
         X.append(x_padded[:n_regressors])
         x_padded = np.roll(x_padded, -1)
 
-    X = np.array(X)
-
-    return X
+    return np.array(X)
 
 
 def load_data(
@@ -54,20 +71,24 @@ def load_data(
     size_test: int,
     n_regressors: int,
 ):
-    """_summary_
+    """
+    Load data from specified paths, preprocess, and generate regressor matrices.
 
     Args:
-        train_in_path (_type_): _description_
-        train_out_path (_type_): _description_
-        test_in_path (_type_): _description_
-        test_out_path (_type_): _description_
-        size (int): _description_
-        n_regressors (int): _description_
+        train_in_path (str): Path to the training input data file.
+        train_out_path (str): Path to the training output data file.
+        test_in_path (str): Path to the testing input data file.
+        test_out_path (str): Path to the testing output data file.
+        size_train (int): Size of the training dataset.
+        size_test (int): Size of the testing dataset.
+        n_regressors (int): Number of regressors.
 
     Returns:
-        _type_: _description_
+        - X_train (torch.Tensor): Regressor matrix for training data.
+        - Y_train (torch.Tensor): Target values for training data.
+        - X_test (torch.Tensor): Regressor matrix for testing data.
+        - Y_test (torch.Tensor): Target values for testing data.
     """
-
     x_train_in = np.loadtxt(train_in_path, dtype=float)[:size_train]
     x_test_in = np.loadtxt(test_in_path, dtype=float)[:size_test]
 
@@ -81,14 +102,18 @@ def load_data(
 
 
 def train(model, likelihood, X_train, Y_train, training_iter=10):
-    """_summary_
+    """
+    Train the Gaussian process regression model.
 
     Args:
-        X (_type_): _description_
-        Y (_type_): _description_
+        model (gpytorch.models.ExactGP): The Gaussian process regression model.
+        likelihood (gpytorch.likelihoods.GaussianLikelihood): The likelihood function.
+        X_train (torch.Tensor): The training input data.
+        Y_train (torch.Tensor): The training target data.
+        training_iter (int, optional): Number of training iterations.
 
     Returns:
-        _type_: _description_
+        None
     """
     # training_iter = 10
 
@@ -121,14 +146,19 @@ def train(model, likelihood, X_train, Y_train, training_iter=10):
 
 
 def predict(model, likelihood, X_test):
-    """_summary_
+    """
+    Predict the mean and variance of latent function values and observed target values.
 
     Args:
-        model (_type_): _description_
-        X_test (_type_): _description_
+        model (gpytorch.models.ExactGP): The trained Gaussian process regression model.
+        likelihood (gpytorch.likelihoods.GaussianLikelihood): The likelihood function.
+        X_test (torch.Tensor): The test input data.
 
     Returns:
-        _type_: _description_
+        - f_mean (torch.Tensor): Mean of latent function values.
+        - f_var (torch.Tensor): Variance of latent function values.
+        - y_mean (torch.Tensor): Mean of observed target values.
+        - y_var (torch.Tensor): Variance of observed target values.
     """
     model.eval()
     likelihood.eval()
@@ -153,13 +183,14 @@ def predict(model, likelihood, X_test):
 
 
 def calculate_error(Y_test, Y_pred):
-    """_summary_
+    """
+    Calculate the error between the true target values and the predicted target values.
 
     Args:
-        Y_test (_type_): _description_
-        Y_pred (_type_): _description_
+        Y_test (torch.Tensor): True target values.
+        Y_pred (torch.Tensor): Predicted target values.
 
     Returns:
-        _type_: _description_
+        torch.Tensor: The error between true and predicted target values.
     """
     return torch.norm(Y_test - Y_pred)
