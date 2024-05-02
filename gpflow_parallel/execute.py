@@ -1,4 +1,3 @@
-import sys
 import time
 import logging
 from csv import writer
@@ -15,7 +14,18 @@ log_filename = "./gpflow_logs.log"
 
 
 def gpflow_run(config, output_csv_obj, size_train, l):
+    """
+    Run the GPflow regression pipeline.
 
+    Args:
+        config (dict): Configuration parameters for the pipeline.
+        output_csv_obj (csv.writer): CSV writer object for writing output data.
+        size_train (int): Size of the training dataset.
+        l (int): Loop index.
+
+    Returns:
+        None
+    """
     total_t = time.time()
     
     X_train, Y_train, X_test, Y_test = load_data(
@@ -44,7 +54,7 @@ def gpflow_run(config, output_csv_obj, size_train, l):
     pred_t = time.time()
     f_pred, f_var, y_pred, y_var = predict(model, X_test)
     pred_t = time.time() - pred_t
-    logger.info("Finished model training.") 
+    logger.info("Finished making predictions.") 
     
     TOTAL_TIME = time.time() - total_t
     TRAIN_TIME = train_t
@@ -57,14 +67,18 @@ def gpflow_run(config, output_csv_obj, size_train, l):
     output_csv_obj.writerow(row_data)
     
     logger.info("Completed iteration.")
-    
-    return f_pred, f_var, y_pred, y_var
 
 
 def execute():
     """
-    This function creates instance of active label class.
-    Waits till the required amount of datasets collected in candidate pool.
+    Execute the main process:
+        - Set up logging.
+        - Load configuration file.
+        - Initialize output CSV file.
+        - Write header to the output CSV file.
+        - Set up TensorFlow and GPflow configurations based on the loaded config.
+        - Iterate through different training sizes and for each training size
+        loop for a specified amount of times while executing `gpflow_run` function.
     """
     setup_logging(log_filename, True, logger)
     logger.info("\n")
