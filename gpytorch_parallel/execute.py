@@ -57,7 +57,7 @@ def gpytorch_run(config, output_csv_obj, size_train, l):
     INIT_TIME = init_t
     TRAIN_TIME = train_t
     PREDICTION_TIME = pred_t
-    ERROR = calculate_error(Y_test, y_pred)
+    ERROR = calculate_error(Y_test, y_pred).detach().cpu().numpy()
     
     row_data = [config["N_CORES"], size_train, config["N_TEST"], config["N_REG"], 
                 TOTAL_TIME, INIT_TIME, TRAIN_TIME, PREDICTION_TIME, ERROR, l]
