@@ -3,15 +3,17 @@ import gpflow
 
 
 def generate_regressor(x_original, n_regressors):
-    """Pad X with zeros from left for #regressors-1 for each data point
-    roll over X where window size equals #regressors
+    """
+    Generate regressor matrix by padding the original input array with zeros 
+    from the left for (n_regressors - 1) positions, and rolling over the input
+    array where the window size equals n_regressors.
 
     Args:
-        x_original (_type_): _description_
-        n_regressors (_type_): _description_
+        x_original (array-like): The original input array.
+        n_regressors (int): The number of regressors.
 
     Returns:
-        _type_: _description_
+        array-like: The regressor matrix.
     """
     X = []
     x_padded = np.pad(
@@ -39,20 +41,25 @@ def load_data(
     size_test: int,
     n_regressors: int,
 ):
-    """_summary_
+    """
+    Load and preprocess data for Gaussian process regression.
 
     Args:
-        train_in_path (_type_): _description_
-        train_out_path (_type_): _description_
-        test_in_path (_type_): _description_
-        test_out_path (_type_): _description_
-        size (int): _description_
-        n_regressors (int): _description_
+        train_in_path (str): Path to the training input data file.
+        train_out_path (str): Path to the training output data file.
+        test_in_path (str): Path to the testing input data file.
+        test_out_path (str): Path to the testing output data file.
+        size_train (int): Size of the training dataset.
+        size_test (int): Size of the testing dataset.
+        n_regressors (int): Number of regressors.
 
     Returns:
-        _type_: _description_
+        tuple: A tuple containing:
+            - X_train (numpy.ndarray): Regressor matrix for training data.
+            - Y_train (numpy.ndarray): Target values for training data.
+            - X_test (numpy.ndarray): Regressor matrix for testing data.
+            - Y_test (numpy.ndarray): Target values for testing data.
     """
-
     x_train_in = np.loadtxt(train_in_path, dtype="f")[:size_train]
     x_test_in = np.loadtxt(test_in_path, dtype="f")[:size_test]
 
@@ -66,14 +73,19 @@ def load_data(
 
 
 def train(X, Y, k_var=1.0, k_lscale=1.0,  noise_var=0.1, params_summary: bool = False):
-    """_summary_
+    """
+    Train a Gaussian process regression model using GPflow.
 
     Args:
-        X (_type_): _description_
-        Y (_type_): _description_
+        X (numpy.ndarray): The input data matrix.
+        Y (numpy.ndarray): The target data vector.
+        k_var (float, optional): Variance parameter of the kernel. Defaults to 1.0.
+        k_lscale (float, optional): Lengthscale parameter of the kernel. Defaults to 1.0.
+        noise_var (float, optional): Noise variance parameter. Defaults to 0.1.
+        params_summary (bool, optional): Whether to print a summary of model parameters. Defaults to False.
 
     Returns:
-        _type_: _description_
+        gpflow.models.GPR: The trained Gaussian process regression model.
     """
     model = gpflow.models.GPR(
         (X, Y),
@@ -92,20 +104,33 @@ def train(X, Y, k_var=1.0, k_lscale=1.0,  noise_var=0.1, params_summary: bool = 
 
 
 def optimize_model(model):
+    """
+    Optimize the parameters of the given GPflow model.
+
+    Args:
+        model (gpflow.models.GPModel): The GPflow model to be optimized.
+
+    Returns:
+        None
+    """
     # opt = gpflow.optimizers.Scipy()
     # opt.minimize(model.training_loss, model.trainable_variables)
     return None
 
 
 def predict(model, X_test):
-    """_summary_
+    """
+    Predict latent function values and observed target values for the given test data.
 
     Args:
-        model (_type_): _description_
-        X_test (_type_): _description_
+        model (gpflow.models.GPModel): The trained GPflow model.
+        X_test (numpy.ndarray): The test input data.
 
     Returns:
-        _type_: _description_
+        f_pred (numpy.ndarray): Mean of latent function values for test data.
+        f_var (numpy.ndarray): Variance of latent function values for test data.
+        y_pred (numpy.ndarray): Mean of observed target values for test data.
+        y_var (numpy.ndarray): Variance of observed target values for test data.
     """
     f_pred, f_var = model.predict_f(X_test)
     y_pred, y_var = model.predict_y(X_test)
@@ -114,13 +139,14 @@ def predict(model, X_test):
 
 
 def calculate_error(Y_test, Y_pred):
-    """_summary_
+    """
+    Calculate the error between the true target values and the predicted target values.
 
     Args:
-        Y_test (_type_): _description_
-        Y_pred (_type_): _description_
+        Y_test (numpy.ndarray): True target values.
+        Y_pred (numpy.ndarray): Predicted target values.
 
     Returns:
-        _type_: _description_
+        float: The error between true and predicted target values.
     """
     return np.linalg.norm(Y_test - Y_pred)
