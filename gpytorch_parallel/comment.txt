@@ -12,4 +12,4 @@ General Parameters -
     "N_TEST": Number of test samples,
     "N_REG": Number of regressors,
     "LOOP": Number of iterations to be performed for each number of training samples,
-    "PRECISION": Set floating-point type used by gpflow
+    "PRECISION": Set floating-point type used by gpytorch
