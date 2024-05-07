@@ -9,6 +9,9 @@
 #include <iostream>
 #include <hpx/init.hpp>
 
+#include <fstream>
+#include <iterator>
+
 int hpx_main(hpx::program_options::variables_map &vm)
 {
   // declare data structures
@@ -41,11 +44,12 @@ int hpx_main(hpx::program_options::variables_map &vm)
   std::size_t n_test = vm["n_test"].as<std::size_t>();   // max 5*1000
   // GP parameters
   std::size_t n_regressors = vm["n_regressors"].as<std::size_t>();
-  CALC_TYPE hyperparameters[3];
+  CALC_TYPE hyperparameters[4];
   // initalize hyperparameters to empirical moments of the data
   hyperparameters[0] = 1.0; // lengthscale = variance of training_output
   hyperparameters[1] = 1.0; // vertical_lengthscale = standard deviation of training_input
   hyperparameters[2] = 0.1; // noise_variance = small value
+  hyperparameters[3] = 0.0001; // learning rate
   // tile parameters
   std::size_t n_tile_size = vm["tile_size"].as<std::size_t>();
   std::size_t n_tiles = vm["n_tiles"].as<std::size_t>();
@@ -150,6 +154,17 @@ int hpx_main(hpx::program_options::variables_map &vm)
   {
     prior_K_tiles[i * m_tiles + i] = hpx::async(hpx::annotated_function(&gen_tile_prior_covariance<CALC_TYPE>, "assemble_tiled"), i, i, m_tile_size, n_regressors, hyperparameters, test_input);
   }
+  
+  std::ofstream k_file("./covariance.txt");
+  std::ostream_iterator<CALC_TYPE> k_iterator(k_file, "\n");  
+  for (std::size_t i = 0; i < m_tiles; i++)
+  {
+      std::vector<float> k_ = prior_K_tiles[i * m_tiles + i].get(); // Get the vector from the shared_future
+      std::copy(k_.begin(), k_.end(), k_iterator);
+      // std::vector<float> nuller = {0.0, 0.0, 0.0}; // Get the vector from the shared_future
+      // std::copy(nuller.begin(), nuller.end(), k_iterator);
+
+  }
   // Assemble MxN cross-covariance matrix vector
   cross_covariance_tiles.resize(m_tiles * n_tiles);
   for (std::size_t i = 0; i < m_tiles; i++)
@@ -213,6 +228,13 @@ int hpx_main(hpx::program_options::variables_map &vm)
   ft_error = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&compute_error_norm<CALC_TYPE>), "prediction_tiled"), m_tiles, m_tile_size, test_output, prediction_tiles);
   ////////////////////////////////////////////////////////////////////////////
   // write error to file
+  std::ofstream output_file("./predictions.txt");
+  for (std::size_t k = 0; k < m_tiles; k++)
+  {
+    std::ostream_iterator<CALC_TYPE> output_iterator(output_file, "\n");
+    std::vector<float> result = prediction_uncertainty_tiles[k].get(); // Get the vector from the shared_future
+    std::copy(result.begin(), result.end(), output_iterator);
+  }
   CALC_TYPE average_error = ft_error.get() / n_test;
   error_file = fopen("error.csv", "w");
   fprintf(error_file, "\"error\",%lf\n", average_error);
