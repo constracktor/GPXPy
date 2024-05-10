@@ -62,3 +62,18 @@ std::vector<T> mkl_gemm(std::vector<T> A,
   // return vector
   return C;
 }
+
+// A = y*beta^T + A
+template <typename T>
+std::vector<T> mkl_sger(std::vector<T> A,
+                        std::vector<T> x,
+                        std::vector<T> y,
+                        std::size_t N)
+{
+  // GER constants
+  const T alpha = 1.0f;
+  // GER kernel
+  cblas_sger(CblasRowMajor, N, N, alpha, x.data(), 1, y.data(), 1, A.data(), N);
+  // return A
+  return A;
+}
