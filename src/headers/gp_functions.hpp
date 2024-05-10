@@ -1,8 +1,10 @@
 #ifndef GP_FUNCTIONS_H_INCLUDED
 #define GP_FUNCTIONS_H_INCLUDED
+// #define _USE_MATH_DEFINES
 
 #include <cmath>
 #include <vector>
+#include <numeric>
 
 // compute the squared exponential kernel of two feature vectors
 template <typename T>
@@ -73,11 +75,11 @@ std::vector<T> gen_tile_covariance(std::size_t row,
 // generate a tile of the prior covariance matrix
 template <typename T>
 std::vector<T> gen_tile_prior_covariance(std::size_t row,
-                                   std::size_t col,
-                                   std::size_t N,
-                                   std::size_t n_regressors,
-                                   T *hyperparameters,
-                                   const std::vector<T> &input)
+                                         std::size_t col,
+                                         std::size_t N,
+                                         std::size_t n_regressors,
+                                         T *hyperparameters,
+                                         const std::vector<T> &input)
 {
   std::size_t i_global, j_global;
   T covariance_function;
@@ -164,8 +166,6 @@ T compute_error_norm(std::size_t n_tiles,
                      const std::vector<T> &b,
                      const std::vector<std::vector<T>> &tiles)
 {
-  std::vector<T> vector;
-  vector.resize(n_tiles);
   T error = 0.0;
   for (std::size_t k = 0; k < n_tiles; k++)
   {
@@ -177,6 +177,6 @@ T compute_error_norm(std::size_t n_tiles,
       error += (b[i_global] - a[i]) * (b[i_global] - a[i]);
     }
   }
-  return sqrt(error);
+  return std::move(sqrt(error));
 }
 #endif
