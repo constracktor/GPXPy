@@ -5,6 +5,7 @@
 #include "ublas_adapter.hpp"
 #include "mkl_adapter.hpp"
 #include "uncertainty.hpp"
+
 ////////////////////////////////////////////////////////////////////////////////
 // Tiled Cholesky Algorithms
 template <typename T>
@@ -157,56 +158,56 @@ void backward_solve_tiled(std::vector<hpx::shared_future<std::vector<T>>> &ft_ti
     }
   }
 }
-// Tiled Triangular Solve Algorithms for Mtrices (K * X = B)
-template <typename T>
-void forward_solve_tiled_matrix(std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
-                                std::vector<hpx::shared_future<std::vector<T>>> &ft_rhs,
-                                std::size_t N,
-                                std::size_t M,
-                                std::size_t n_tiles,
-                                std::size_t m_tiles)
-{
-  for (std::size_t c = 0; c < m_tiles; c++)
-  {
-    for (std::size_t k = 0; k < n_tiles; k++)
-    {
-      // TRSM
-      ft_rhs[k * m_tiles + c] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_trsm_l_matrix<T>), "triangular_solve_tiled_matrix"), ft_tiles[k * n_tiles + k],
-                                              ft_rhs[k * m_tiles + c], N, M);
-      for (std::size_t m = k + 1; m < n_tiles; m++)
-      {
-        // GEMV
-        ft_rhs[m * m_tiles + c] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_l_matrix<T>), "triangular_solve_tiled_matrix"), ft_tiles[m * n_tiles + k],
-                                                ft_rhs[k * m_tiles + c], ft_rhs[m * m_tiles + c], N, M);
-      }
-    }
-  }
-}
+// // Tiled Triangular Solve Algorithms for Mtrices (K * X = B)
+// template <typename T>
+// void forward_solve_tiled_matrix(std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
+//                                 std::vector<hpx::shared_future<std::vector<T>>> &ft_rhs,
+//                                 std::size_t N,
+//                                 std::size_t M,
+//                                 std::size_t n_tiles,
+//                                 std::size_t m_tiles)
+// {
+//   for (std::size_t c = 0; c < m_tiles; c++)
+//   {
+//     for (std::size_t k = 0; k < n_tiles; k++)
+//     {
+//       // TRSM
+//       ft_rhs[k * m_tiles + c] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_trsm_l_matrix<T>), "triangular_solve_tiled_matrix"), ft_tiles[k * n_tiles + k],
+//                                               ft_rhs[k * m_tiles + c], N, M);
+//       for (std::size_t m = k + 1; m < n_tiles; m++)
+//       {
+//         // GEMV
+//         ft_rhs[m * m_tiles + c] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_l_matrix<T>), "triangular_solve_tiled_matrix"), ft_tiles[m * n_tiles + k],
+//                                                 ft_rhs[k * m_tiles + c], ft_rhs[m * m_tiles + c], N, M);
+//       }
+//     }
+//   }
+// }
 
-template <typename T>
-void backward_solve_tiled_matrix(std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
-                                 std::vector<hpx::shared_future<std::vector<T>>> &ft_rhs,
-                                 std::size_t N,
-                                 std::size_t M,
-                                 std::size_t n_tiles,
-                                 std::size_t m_tiles)
-{
-  for (int c = 0; c < m_tiles; c++)
-  {
-    for (int k = n_tiles - 1; k >= 0; k--) // int instead of std::size_t for last comparison
-    {
-      // TRSM
-      ft_rhs[k * m_tiles + c] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_trsm_u_matrix<T>), "triangular_solve_tiled_matrix"), ft_tiles[k * n_tiles + k],
-                                              ft_rhs[k * m_tiles + c], N, M);
-      for (int m = k - 1; m >= 0; m--) // int instead of std::size_t for last comparison
-      {
-        // GEMV
-        ft_rhs[m * m_tiles + c] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_u_matrix<T>), "triangular_solve_tiled_matrix"), ft_tiles[k * n_tiles + m],
-                                                ft_rhs[k * m_tiles + c], ft_rhs[m * m_tiles + c], N, M);
-      }
-    }
-  }
-}
+// template <typename T>
+// void backward_solve_tiled_matrix(std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
+//                                  std::vector<hpx::shared_future<std::vector<T>>> &ft_rhs,
+//                                  std::size_t N,
+//                                  std::size_t M,
+//                                  std::size_t n_tiles,
+//                                  std::size_t m_tiles)
+// {
+//   for (int c = 0; c < m_tiles; c++)
+//   {
+//     for (int k = n_tiles - 1; k >= 0; k--) // int instead of std::size_t for last comparison
+//     {
+//       // TRSM
+//       ft_rhs[k * m_tiles + c] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_trsm_u_matrix<T>), "triangular_solve_tiled_matrix"), ft_tiles[k * n_tiles + k],
+//                                               ft_rhs[k * m_tiles + c], N, M);
+//       for (int m = k - 1; m >= 0; m--) // int instead of std::size_t for last comparison
+//       {
+//         // GEMV
+//         ft_rhs[m * m_tiles + c] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_u_matrix<T>), "triangular_solve_tiled_matrix"), ft_tiles[k * n_tiles + m],
+//                                                 ft_rhs[k * m_tiles + c], ft_rhs[m * m_tiles + c], N, M);
+//       }
+//     }
+//   }
+// }
 ////////////////////////////////////////////////////////////////////////////////
 // Tiled Prediction
 template <typename T>
@@ -227,39 +228,58 @@ void prediction_tiled(std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
   }
 }
 
-// Tiled Diagonal of Posterior Covariance Matrix
-template <typename T>
-void posterior_covariance_tiled(std::vector<hpx::shared_future<std::vector<T>>> &ft_CC_tiles,
-                                std::vector<hpx::shared_future<std::vector<T>>> &ft_tCC_tiles,
-                                std::vector<hpx::shared_future<std::vector<T>>> &ft_K_tiles,
-                                std::size_t N,
-                                std::size_t M,
-                                std::size_t n_tiles,
-                                std::size_t m_tiles)
-{
-  for (int i = 0; i < m_tiles; ++i)
-  {
-    for (int j = i; j < i + 1; ++j)
-    { // outer two loops used for diagonal tiles of prior K
-      for (int m = 0; m < n_tiles; ++m)
-      { // Compute inner product to obtain diagonal elements of (K_MxN * (K^-1_NxN * K_NxM))
-        ft_K_tiles[i * m_tiles + j] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_uncertainty_matrix<T>), "posterior_tiled"), ft_CC_tiles[i * n_tiles + m],
-                                                    ft_tCC_tiles[m * m_tiles + i], ft_K_tiles[i * m_tiles + j], N, M);
-      }
-    }
-  }
-}
+// // Tiled Diagonal of Posterior Covariance Matrix
+// template <typename T>
+// void posterior_covariance_tiled(std::vector<hpx::shared_future<std::vector<T>>> &ft_CC_tiles,
+//                                 std::vector<hpx::shared_future<std::vector<T>>> &ft_tCC_tiles,
+//                                 std::vector<hpx::shared_future<std::vector<T>>> &ft_K_tiles,
+//                                 std::size_t N,
+//                                 std::size_t M,
+//                                 std::size_t n_tiles,
+//                                 std::size_t m_tiles)
+// {
+//   for (int i = 0; i < m_tiles; ++i)
+//   {
+//     for (int j = i; j < i + 1; ++j)
+//     { // outer two loops used for diagonal tiles of prior K
+//       for (int m = 0; m < n_tiles; ++m)
+//       { // Compute inner product to obtain diagonal elements of (K_MxN * (K^-1_NxN * K_NxM))
+//         ft_K_tiles[i * m_tiles + j] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_uncertainty_matrix<T>), "posterior_tiled"), ft_CC_tiles[i * n_tiles + m],
+//                                                     ft_tCC_tiles[m * m_tiles + i], ft_K_tiles[i * m_tiles + j], N, M);
+//       }
+//     }
+//   }
+// }
 
-// Tiled Prediction Uncertainty
+// // Tiled Prediction Uncertainty
+// template <typename T>
+// void prediction_uncertainty_tiled(std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
+//                                   std::vector<hpx::shared_future<std::vector<T>>> &ft_vector,
+//                                   std::size_t M,
+//                                   std::size_t m_tiles)
+// {
+//   for (std::size_t i = 0; i < m_tiles; i++)
+//   {
+//     ft_vector[i] = hpx::async(hpx::annotated_function(hpx::unwrapping(&diag<T>), "uncertainty_tiled"), ft_tiles[i * m_tiles + i], M);
+//   }
+// }
+
+////////////////////////////////////////////////////////////////////////////////
+// Fill y*y^T*inv(K)-I Cholesky Algorithms
 template <typename T>
-void prediction_uncertainty_tiled(std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
-                                  std::vector<hpx::shared_future<std::vector<T>>> &ft_vector,
-                                  std::size_t M,
-                                  std::size_t m_tiles)
+void update_grad_K_tiled_mkl(std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
+                             const std::vector<hpx::shared_future<std::vector<T>>> &ft_v1,
+                             const std::vector<hpx::shared_future<std::vector<T>>> &ft_v2,
+                             std::size_t N,
+                             std::size_t n_tiles)
+
 {
-  for (std::size_t i = 0; i < m_tiles; i++)
+  for (std::size_t i = 0; i < n_tiles; i++)
   {
-    ft_vector[i] = hpx::async(hpx::annotated_function(hpx::unwrapping(&diag<T>), "uncertainty_tiled"), ft_tiles[i * m_tiles + i], M);
+    for (std::size_t j = 0; j < n_tiles; j++)
+    {
+      ft_tiles[i * n_tiles + j] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_sger<T>), "gradient_tiled"), ft_tiles[i * n_tiles + j], ft_v1[i], ft_v2[j], N);
+    }
   }
 }
 #endif
