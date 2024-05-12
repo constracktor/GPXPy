@@ -93,7 +93,7 @@ std::vector<T> mkl_gemm_uncertainty_matrix(std::vector<T> A,
 
 // retrieve diagonal elements of posterior covariance matrix
 template <typename T>
-std::vector<T> diag(std::vector<T> A,
+std::vector<T> diag(std::vector<T> &A,
                     std::size_t M)
 {
   // Initialize tile
