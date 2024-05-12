@@ -29,7 +29,7 @@ int hpx_main(hpx::program_options::variables_map &vm)
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> prediction_tiles;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> prediction_uncertainty_tiles;
   // future data structures
-  hpx::shared_future<CALC_TYPE> loss;
+  hpx::shared_future<CALC_TYPE> loss_value;
   hpx::shared_future<CALC_TYPE> ft_error;
   // data holders for assembly
   std::vector<CALC_TYPE> training_input;
@@ -255,12 +255,17 @@ int hpx_main(hpx::program_options::variables_map &vm)
   // Triangular solve K_NxN * alpha = y
   forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
   backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
-  loss = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&compute_loss<CALC_TYPE>), "loss_tiled"), K_tiles, alpha_tiles, n_tile_size, n_tiles);
+  // Compute loss
+  compute_loss_tiled(K_tiles, alpha_tiles, y_tiles, loss_value, n_tile_size, n_tiles);
   
   update_grad_K_tiled_mkl(grad_K_tiles, y_tiles, alpha_tiles, n_tile_size, n_tiles);
 
-  forward_solve_tiled_grad(K_tiles, grad_K_tiles, n_tile_size, n_tiles);
-  backward_solve_tiled_grad(K_tiles, grad_K_tiles, n_tile_size, n_tiles);
+  forward_solve_tiled_matrix(K_tiles, grad_K_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
+  backward_solve_tiled_matrix(K_tiles, grad_K_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
+
+  updata_hyperparameter(grad_K_tiles, grad_v_tiles, hyperparameters, n_tile_size, n_tiles, 0);
+  updata_hyperparameter(grad_K_tiles, grad_v_tiles, hyperparameters, n_tile_size, n_tiles, 1);
+  updata_noise_variance(grad_K_tiles, hyperparameters, n_tile_size, n_tiles);
   // Triangular solve K_N,N * A_NxM = K_NxM -> A_NxM = K^-1_NxN * K_NxM
   // forward_solve_tiled_matrix(K_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
   // backward_solve_tiled_matrix(K_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
@@ -275,16 +280,26 @@ int hpx_main(hpx::program_options::variables_map &vm)
   ft_error = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&compute_error_norm<CALC_TYPE>), "prediction_tiled"), m_tiles, m_tile_size, test_output, prediction_tiles);
   ////////////////////////////////////////////////////////////////////////////
   // write error to file
-  std::ofstream output_file("./predictions.txt");
-  for (std::size_t k = 0; k < m_tiles; k++)
-  {
-    std::ostream_iterator<CALC_TYPE> output_iterator(output_file, "\n");
-    std::vector<float> result = prediction_tiles[k].get(); // Get the vector from the shared_future
-    std::copy(result.begin(), result.end(), output_iterator);
-  }
+  // std::ofstream output_file("./predictions.txt");
+  // for (std::size_t k = 0; k < m_tiles; k++)
+  // {
+  //   std::ostream_iterator<CALC_TYPE> output_iterator(output_file, "\n");
+  //   std::vector<float> result = prediction_tiles[k].get(); // Get the vector from the shared_future
+  //   std::copy(result.begin(), result.end(), output_iterator);
+  // }
+
+  // FILE *loss_file;
+  // CALC_TYPE l = loss_value.get() / 1;
+  // loss_file = fopen("./loss_f.txt", "w");
+  // fprintf(loss_file, "\"loss\",%lf\n", l);
+  // fclose(loss_file);
+
+  printf("loss: %lf\n", loss_value.get());
   CALC_TYPE average_error = ft_error.get() / n_test;
+  CALC_TYPE average_ = loss_value.get();
   error_file = fopen("error.csv", "w");
   fprintf(error_file, "\"error\",%lf\n", average_error);
+  fprintf(error_file, "%lf\n", average_);
   fclose(error_file);
   return hpx::local::finalize(); // Handles HPX shutdown
 }
@@ -296,11 +311,11 @@ int main(int argc, char *argv[])
   // Setup input arguments
   desc_commandline.add_options()("n_train", hpx::program_options::value<std::size_t>()->default_value(1 * 1000),
                                  "Number of training samples (max 100 000)")("n_test", hpx::program_options::value<std::size_t>()->default_value(1 * 1000),
-                                                                             "Number of test samples (max 5 000)")("n_regressors", hpx::program_options::value<std::size_t>()->default_value(100),
-                                                                                                                   "Number of delayed input regressors")("n_tiles", hpx::program_options::value<std::size_t>()->default_value(0),
-                                                                                                                                                         "Number of tiles per dimension -> n_tiles * n_tiles total")("tile_size", hpx::program_options::value<std::size_t>()->default_value(0),
-                                                                                                                                                                                                                     "Tile size per dimension -> tile_size * tile_size total entries")("cholesky", hpx::program_options::value<std::string>()->default_value("right"),
-                                                                                                                                                                                                                                                                                       "Choose between right- left- or top-looking tiled Cholesky decomposition");
+                                 "Number of test samples (max 5 000)")("n_regressors", hpx::program_options::value<std::size_t>()->default_value(100),
+                                 "Number of delayed input regressors")("n_tiles", hpx::program_options::value<std::size_t>()->default_value(0),
+                                 "Number of tiles per dimension -> n_tiles * n_tiles total")("tile_size", hpx::program_options::value<std::size_t>()->default_value(0),
+                                 "Tile size per dimension -> tile_size * tile_size total entries")("cholesky", hpx::program_options::value<std::string>()->default_value("right"),
+                                 "Choose between right- left- or top-looking tiled Cholesky decomposition");
   // Run HPX main
   init_args.desc_cmdline = desc_commandline;
   return hpx::local::init(hpx_main, argc, argv, init_args);
