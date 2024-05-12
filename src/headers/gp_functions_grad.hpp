@@ -36,11 +36,10 @@ T compute_covariance_dist_func(std::size_t i_global,
     distance += pow(z_ik - z_jk, 2);
   }
 
-  return -1.0 / (2.0 * hyperparameters[0]) * distance;
+  return -1.0 / (2.0 * hyperparameters[0] * hyperparameters[0]) * distance;
 }
 
-// compute the squared exponential kernel of two feature vectors and
-// additionally return the derivatives w.r.t. lengthscale and vertical_lengthscale
+// compute derivative w.r.t. vertical_lengthscale
 template <typename T>
 std::vector<T> gen_tile_grad_v(std::size_t row,
                                std::size_t col,
@@ -62,13 +61,13 @@ std::vector<T> gen_tile_grad_v(std::size_t row,
       j_global = N * col + j;
       // compute covariance function
       cov_dist = compute_covariance_dist_func(i_global, j_global, n_regressors, hyperparameters, input, input);
-      tile[i * N + j] = exp(cov_dist);
+      tile[i * N + j] = 2 * hyperparameters[1] * exp(cov_dist);
     }
   }
   return std::move(tile);
 }
 
-// generate a tile of the covariance matrix
+// compute derivative w.r.t. lengthscale
 template <typename T>
 std::vector<T> gen_tile_grad_l(std::size_t row,
                                std::size_t col,
@@ -90,7 +89,7 @@ std::vector<T> gen_tile_grad_l(std::size_t row,
       j_global = N * col + j;
       // compute covariance function
       cov_dist = compute_covariance_dist_func(i_global, j_global, n_regressors, hyperparameters, input, input);
-      tile[i * N + j] = -(hyperparameters[1] / hyperparameters[0]) * cov_dist * exp(cov_dist);
+      tile[i * N + j] = -2 * (hyperparameters[1] * hyperparameters[1] / hyperparameters[0]) * cov_dist * exp(cov_dist);
     }
   }
   return std::move(tile);
@@ -115,32 +114,95 @@ std::vector<T> gen_tile_identity(std::size_t row,
       j_global = N * col + j;
       if (i_global == j_global)
       {
-        tile[i * N + j] = -1.0;
+        tile[i * N + j] = 1.0;
       }
     }
   }
   return std::move(tile);
 }
 
-// compute negative-log likelihood
+// generate a empty tile NxN
 template <typename T>
-T compute_loss(const std::vector<std::vector<T>> &ft_tiles,
-               const std::vector<std::vector<T>> &ft_rhs,
-               std::size_t N,
-               std::size_t n_tiles)
+std::vector<T> gen_tile_zeros_diag(std::size_t N)
 {
-  T loss = 0.0;
-  for (std::size_t k = 0; k < n_tiles; k++)
+  // Initialize tile
+  std::vector<T> tile;
+  tile.resize(N * N);
+  std::fill(tile.begin(), tile.end(), 0.0);
+  return std::move(tile);
+}
+
+// compute negative-log likelihood tiled
+template <typename T>
+T compute_loss(const std::vector<T> &K_diag_tile,
+               const std::vector<T> &alpha_tile,
+               const std::vector<T> &y_tile,
+               std::size_t N)
+{
+  T l = 0.0;
+  for (std::size_t i = 0; i < N; i++)
   {
-    auto L = ft_tiles[k * n_tiles + k];
-    auto beta = ft_rhs[k];
-    for (std::size_t l = 0; l < N; l++)
-    {
-      loss += log(pow(L[l * N + l], 2)) + pow(beta[l], 2);
-    }
+    // Add the squared difference to the error
+    l += log(K_diag_tile[i * N + i] * K_diag_tile[i * N + i]) + y_tile[i] * alpha_tile[i];
   }
 
-  loss += (N * n_tiles) * log(2 * M_PI);
-  return -0.5 * loss;
+  return l;
+}
+
+// compute negative-log likelihood
+template <typename T>
+T add_losses(const std::vector<T> &losses,
+             std::size_t N,
+             std::size_t n)
+{
+  T l = 0.0;
+  for (std::size_t i = 0; i < n; i++)
+  {
+    // Add the squared difference to the error
+    l += losses[i];
+  }
+  l += N * n * log(2 * M_PI);
+  return 0.5 * l / (N * n);
+}
+
+// compute trace
+template <typename T>
+T compute_trace(const std::vector<std::vector<T>> &diag_tiles,
+                std::size_t N,
+                std::size_t n_tiles)
+{
+  // Initialize tile
+  T trace = 0.0;
+  for (std::size_t d = 0; d < n_tiles; d++)
+  {
+    auto tile = diag_tiles[d];
+    for (std::size_t i = 0; i < N; ++i)
+    {
+      trace += tile[i * N + i];
+    }
+  }
+  return std::move(trace);
+}
+
+// compute trace for noise variance
+// Same function as compute_trace with the only difference
+// that we need to retrieve the diag tiles
+template <typename T>
+T compute_trace_noise(const std::vector<std::vector<T>> &ft_tiles,
+                      T *hyperparameters,
+                      std::size_t N,
+                      std::size_t n_tiles)
+{
+  // Initialize tile
+  T trace = 0.0;
+  for (std::size_t d = 0; d < n_tiles; d++)
+  {
+    auto tile = ft_tiles[d * n_tiles + d];
+    for (std::size_t i = 0; i < N; ++i)
+    {
+      trace += (tile[i * N + i] * 2 * hyperparameters[2]);
+    }
+  }
+  return std::move(trace);
 }
 #endif
