@@ -59,7 +59,7 @@ def generate_regressor(x_original, n_regressors):
         X.append(x_padded[:n_regressors])
         x_padded = np.roll(x_padded, -1)
 
-    return np.array(X)
+    return np.array(X, dtype='f')
 
 
 def load_data(
@@ -89,14 +89,14 @@ def load_data(
         - X_test (torch.Tensor): Regressor matrix for testing data.
         - Y_test (torch.Tensor): Target values for testing data.
     """
-    x_train_in = np.loadtxt(train_in_path, dtype=float)[:size_train]
-    x_test_in = np.loadtxt(test_in_path, dtype=float)[:size_test]
+    x_train_in = np.loadtxt(train_in_path, dtype='f')[:size_train]
+    x_test_in = np.loadtxt(test_in_path, dtype='f')[:size_test]
 
     X_train = torch.from_numpy(generate_regressor(x_train_in, n_regressors))
     X_test = torch.from_numpy(generate_regressor(x_test_in, n_regressors))
 
-    Y_train = torch.from_numpy(np.loadtxt(train_out_path, dtype=float)[:size_train])
-    Y_test = torch.from_numpy(np.loadtxt(test_out_path, dtype=float)[:size_test])
+    Y_train = torch.from_numpy(np.loadtxt(train_out_path, dtype='f')[:size_train])
+    Y_test = torch.from_numpy(np.loadtxt(test_out_path, dtype='f')[:size_test])
 
     return X_train, Y_train, X_test, Y_test
 
