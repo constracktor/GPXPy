@@ -36,7 +36,7 @@ T compute_covariance_function(std::size_t i_global,
     }
     distance += pow(z_ik - z_jk, 2);
   }
-  return (hyperparameters[1] * hyperparameters[1]) * exp(-1.0 / (2.0 * hyperparameters[0] * hyperparameters[0]) * distance);
+  return hyperparameters[1] * exp(-1.0 / (2.0 * hyperparameters[0]) * distance);
 }
 
 // generate a tile of the covariance matrix
@@ -64,7 +64,7 @@ std::vector<T> gen_tile_covariance(std::size_t row,
       if (i_global == j_global)
       {
         // noise variance on diagonal
-        covariance_function += (hyperparameters[2] * hyperparameters[2]);
+        covariance_function += (hyperparameters[2]);
       }
       tile[i * N + j] = covariance_function;
     }
