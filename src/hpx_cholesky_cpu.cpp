@@ -55,7 +55,7 @@ int hpx_main(hpx::program_options::variables_map &vm)
   hyperparameters[0] = 1.0;    // lengthscale = variance of training_output
   hyperparameters[1] = 1.0;    // vertical_lengthscale = standard deviation of training_input
   hyperparameters[2] = 0.1;    // noise_variance = small value
-  hyperparameters[3] = 0.0001; // learning rate
+  hyperparameters[3] = 0.001; // learning rate
   // tile parameters
   std::size_t n_tile_size = vm["tile_size"].as<std::size_t>();
   std::size_t n_tiles = vm["n_tiles"].as<std::size_t>();
@@ -175,19 +175,19 @@ int hpx_main(hpx::program_options::variables_map &vm)
       grad_K_tiles[i * n_tiles + j] = hpx::async(hpx::annotated_function(&gen_tile_identity<CALC_TYPE>, "assemble_tiled"), i, j, n_tile_size);
     }
   }
-  
-  std::ofstream k_file("./covariance.txt");
-  std::ostream_iterator<CALC_TYPE> k_iterator(k_file, "\n");
-  for (std::size_t i = 0; i < n_tiles; i++)
-  {
-    for (std::size_t j = 0; j < n_tiles; j++)
-    {
-      std::vector<float> k_ = grad_K_tiles[i * n_tiles + j].get(); // Get the vector from the shared_future
-      std::copy(k_.begin(), k_.end(), k_iterator);
-      // std::vector<float> nuller = {0.0, 0.0, 0.0}; // Get the vector from the shared_future
-      // std::copy(nuller.begin(), nuller.end(), k_iterator);
-    }
-  }
+
+  // std::ofstream k_file("./covariance.txt");
+  // std::ostream_iterator<CALC_TYPE> k_iterator(k_file, "\n");
+  // for (std::size_t i = 0; i < n_tiles; i++)
+  // {
+  //   for (std::size_t j = 0; j < n_tiles; j++)
+  //   {
+  //     std::vector<float> k_ = grad_K_tiles[i * n_tiles + j].get(); // Get the vector from the shared_future
+  //     std::copy(k_.begin(), k_.end(), k_iterator);
+  //     // std::vector<float> nuller = {0.0, 0.0, 0.0}; // Get the vector from the shared_future
+  //     // std::copy(nuller.begin(), nuller.end(), k_iterator);
+  //   }
+  // }
   // Assemble alpha
   alpha_tiles.resize(n_tiles);
   for (std::size_t i = 0; i < n_tiles; i++)
@@ -255,17 +255,22 @@ int hpx_main(hpx::program_options::variables_map &vm)
   // Triangular solve K_NxN * alpha = y
   forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
   backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
+
+
+
+
+
   // Compute loss
   compute_loss_tiled(K_tiles, alpha_tiles, y_tiles, loss_value, n_tile_size, n_tiles);
-  
+
   update_grad_K_tiled_mkl(grad_K_tiles, y_tiles, alpha_tiles, n_tile_size, n_tiles);
 
   forward_solve_tiled_matrix(K_tiles, grad_K_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
   backward_solve_tiled_matrix(K_tiles, grad_K_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
 
-  updata_hyperparameter(grad_K_tiles, grad_v_tiles, hyperparameters, n_tile_size, n_tiles, 0);
-  updata_hyperparameter(grad_K_tiles, grad_v_tiles, hyperparameters, n_tile_size, n_tiles, 1);
-  updata_noise_variance(grad_K_tiles, hyperparameters, n_tile_size, n_tiles);
+  update_hyperparameter(grad_K_tiles, grad_l_tiles, hyperparameters, n_tile_size, n_tiles, 0);
+  update_hyperparameter(grad_K_tiles, grad_v_tiles, hyperparameters, n_tile_size, n_tiles, 1);
+  update_noise_variance(grad_K_tiles, hyperparameters, n_tile_size, n_tiles);
   // Triangular solve K_N,N * A_NxM = K_NxM -> A_NxM = K^-1_NxN * K_NxM
   // forward_solve_tiled_matrix(K_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
   // backward_solve_tiled_matrix(K_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
@@ -287,6 +292,13 @@ int hpx_main(hpx::program_options::variables_map &vm)
   //   std::vector<float> result = prediction_tiles[k].get(); // Get the vector from the shared_future
   //   std::copy(result.begin(), result.end(), output_iterator);
   // }
+
+  std::ofstream myfile("hyper.txt");
+  for (int count = 0; count < 3; count++)
+  {
+    myfile << hyperparameters[count] << " ";
+  }
+  myfile.close();
 
   // FILE *loss_file;
   // CALC_TYPE l = loss_value.get() / 1;
@@ -311,11 +323,11 @@ int main(int argc, char *argv[])
   // Setup input arguments
   desc_commandline.add_options()("n_train", hpx::program_options::value<std::size_t>()->default_value(1 * 1000),
                                  "Number of training samples (max 100 000)")("n_test", hpx::program_options::value<std::size_t>()->default_value(1 * 1000),
-                                 "Number of test samples (max 5 000)")("n_regressors", hpx::program_options::value<std::size_t>()->default_value(100),
-                                 "Number of delayed input regressors")("n_tiles", hpx::program_options::value<std::size_t>()->default_value(0),
-                                 "Number of tiles per dimension -> n_tiles * n_tiles total")("tile_size", hpx::program_options::value<std::size_t>()->default_value(0),
-                                 "Tile size per dimension -> tile_size * tile_size total entries")("cholesky", hpx::program_options::value<std::string>()->default_value("right"),
-                                 "Choose between right- left- or top-looking tiled Cholesky decomposition");
+                                                                             "Number of test samples (max 5 000)")("n_regressors", hpx::program_options::value<std::size_t>()->default_value(100),
+                                                                                                                   "Number of delayed input regressors")("n_tiles", hpx::program_options::value<std::size_t>()->default_value(0),
+                                                                                                                                                         "Number of tiles per dimension -> n_tiles * n_tiles total")("tile_size", hpx::program_options::value<std::size_t>()->default_value(0),
+                                                                                                                                                                                                                     "Tile size per dimension -> tile_size * tile_size total entries")("cholesky", hpx::program_options::value<std::string>()->default_value("right"),
+                                                                                                                                                                                                                                                                                       "Choose between right- left- or top-looking tiled Cholesky decomposition");
   // Run HPX main
   init_args.desc_cmdline = desc_commandline;
   return hpx::local::init(hpx_main, argc, argv, init_args);
