@@ -315,7 +315,7 @@ void update_grad_K_tiled_mkl(std::vector<hpx::shared_future<std::vector<T>>> &ft
 
 // Perform a gradient scent step for selected hyperparameter
 template <typename T>
-void updata_hyperparameter(const std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
+void update_hyperparameter(const std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
                            const std::vector<hpx::shared_future<std::vector<T>>> &ft_rhs,
                            T *hyperparameters,
                            std::size_t N,
@@ -355,7 +355,7 @@ void updata_hyperparameter(const std::vector<hpx::shared_future<std::vector<T>>>
 
 // Update noise variance using gradient decent
 template <typename T>
-void updata_noise_variance(const std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
+void update_noise_variance(const std::vector<hpx::shared_future<std::vector<T>>> &ft_tiles,
                            T *hyperparameters,
                            std::size_t N,
                            std::size_t n_tiles)
