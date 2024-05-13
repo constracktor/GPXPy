@@ -36,7 +36,7 @@ T compute_covariance_dist_func(std::size_t i_global,
     distance += pow(z_ik - z_jk, 2);
   }
 
-  return -1.0 / (2.0 * hyperparameters[0] * hyperparameters[0]) * distance;
+  return -1.0 / (2.0 * hyperparameters[0]) * distance;
 }
 
 // compute derivative w.r.t. vertical_lengthscale
@@ -61,7 +61,7 @@ std::vector<T> gen_tile_grad_v(std::size_t row,
       j_global = N * col + j;
       // compute covariance function
       cov_dist = compute_covariance_dist_func(i_global, j_global, n_regressors, hyperparameters, input, input);
-      tile[i * N + j] = 2 * hyperparameters[1] * exp(cov_dist);
+      tile[i * N + j] = 2 * sqrt(hyperparameters[1]) * exp(cov_dist);
     }
   }
   return std::move(tile);
@@ -89,7 +89,7 @@ std::vector<T> gen_tile_grad_l(std::size_t row,
       j_global = N * col + j;
       // compute covariance function
       cov_dist = compute_covariance_dist_func(i_global, j_global, n_regressors, hyperparameters, input, input);
-      tile[i * N + j] = -2 * (hyperparameters[1] * hyperparameters[1] / hyperparameters[0]) * cov_dist * exp(cov_dist);
+      tile[i * N + j] = -2 * (hyperparameters[1] / sqrt(hyperparameters[0])) * cov_dist * exp(cov_dist);
     }
   }
   return std::move(tile);
@@ -181,6 +181,7 @@ T compute_trace(const std::vector<std::vector<T>> &diag_tiles,
       trace += tile[i * N + i];
     }
   }
+  trace = 1 / (2 * N * n_tiles) * trace;
   return std::move(trace);
 }
 
@@ -200,9 +201,10 @@ T compute_trace_noise(const std::vector<std::vector<T>> &ft_tiles,
     auto tile = ft_tiles[d * n_tiles + d];
     for (std::size_t i = 0; i < N; ++i)
     {
-      trace += (tile[i * N + i] * 2 * hyperparameters[2]);
+      trace += (tile[i * N + i] * 2 * sqrt(hyperparameters[2]));
     }
   }
+  trace = 1 / (2 * N * n_tiles) * trace;
   return std::move(trace);
 }
 #endif
