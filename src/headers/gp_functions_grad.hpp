@@ -207,4 +207,23 @@ T compute_trace_noise(const std::vector<std::vector<T>> &ft_tiles,
   trace = 1 / (2 * N * n_tiles) * trace;
   return std::move(trace);
 }
+
+// transform hyperparameter to enforce constraints using softplus
+template <template T>
+T to_constraint(T *hyperparameters,
+                int parameter_idx)
+
+{
+  return log(1.0 + exp(hyperparameters[parameter_idx]));
+}
+
+// transform hyperparmeter to entire real line using inverse
+// of sofplus. Optimizer, such as gradient decent or Adam,
+//  work better with unconstrained parameters
+template <template T>
+T to_unconstraint(T *hyperparameters,
+                  int parameter_idx)
+{
+  return log(exp(hyperparameters[parameter_idx]) - 1.0);
+}
 #endif
