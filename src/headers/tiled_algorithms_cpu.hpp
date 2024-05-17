@@ -228,15 +228,6 @@ void compute_loss_tiled(std::vector<hpx::shared_future<std::vector<T>>> &ft_tile
   }
 
   loss = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&add_losses<T>), "loss_tiled"), loss_tiled, N, n_tiles);
-  // for (std::size_t k = 0; k < n_tiles; k++)
-  // {
-  // loss += hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&compute_loss<T>), "loss_tiled"), ft_tiles[k * n_tiles + k], ft_rhs[k], N);
-  // }
-  // loss += (N * n_tiles) * log(2 * M_PI);
-  // loss = -0.5 * loss;
-  // T l = 1.0;
-  // loss = hpx::make_ready_future(l);
-  // loss = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&compute_loss<T>), "loss_tiled"), N);
 }
 
 // Tiled Prediction
@@ -343,8 +334,12 @@ void update_hyperparameter(const std::vector<hpx::shared_future<std::vector<T>>>
     }
     // compute trace of diag_tiles
     hpx::shared_future<T> trace = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&compute_trace<T>), "gradient_tiled"), diag_tiles, N, n_tiles);
+    // transform hyperparameter to unconstrained form
+    hpx::shared_future<T> unconstrained_hyperparam = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&to_unconstrained<T>), "gradient_tiled"), hyperparameters[parameter_idx]);
     // update hyperparameter
-    hyperparameters[parameter_idx] = hyperparameters[parameter_idx] - hyperparameters[3] * trace.get();
+    hpx::shared_future<T> updated_hyperparam = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&update_param<T>), "gradient_tiled"), unconstrained_hyperparam, hyperparameters, trace);
+    // transform hyperparameter to constrained form
+    hyperparameters[parameter_idx] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&to_constrained<T>), "gradient_tiled"), updated_hyperparam).get();
   }
   else
   {
