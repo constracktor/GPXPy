@@ -28,6 +28,12 @@ int hpx_main(hpx::program_options::variables_map &vm)
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> t_cross_covariance_tiles;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> prediction_tiles;
   std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> prediction_uncertainty_tiles;
+  // data holders for adam
+  std::vector<hpx::shared_future<CALC_TYPE>> m_T;
+  std::vector<hpx::shared_future<CALC_TYPE>> v_T;
+  // std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> beta1_T;
+  std::vector<hpx::shared_future<CALC_TYPE>> beta1_T;
+  std::vector<hpx::shared_future<CALC_TYPE>> beta2_T;
   // future data structures
   hpx::shared_future<CALC_TYPE> loss_value;
   hpx::shared_future<CALC_TYPE> ft_error;
@@ -50,12 +56,16 @@ int hpx_main(hpx::program_options::variables_map &vm)
   std::size_t n_test = vm["n_test"].as<std::size_t>();   // max 5*1000
   // GP parameters
   std::size_t n_regressors = vm["n_regressors"].as<std::size_t>();
-  CALC_TYPE hyperparameters[4];
+  CALC_TYPE hyperparameters[6];
   // initalize hyperparameters to empirical moments of the data
-  hyperparameters[0] = 1.0;    // lengthscale = variance of training_output
-  hyperparameters[1] = 1.0;    // vertical_lengthscale = standard deviation of training_input
-  hyperparameters[2] = 0.1;    // noise_variance = small value
+  hyperparameters[0] = 1.0;   // lengthscale = variance of training_output
+  hyperparameters[1] = 1.0;   // vertical_lengthscale = standard deviation of training_input
+  hyperparameters[2] = 0.5;   // noise_variance = small value
   hyperparameters[3] = 0.001; // learning rate
+  hyperparameters[4] = 0.9;   // beta1
+  hyperparameters[5] = 0.999; // beta2
+  hyperparameters[6] = 1e-8;  // epsilon
+  int opt_iter = 1;           // # optimisation steps --> move to vm["iter"]
   // tile parameters
   std::size_t n_tile_size = vm["tile_size"].as<std::size_t>();
   std::size_t n_tiles = vm["n_tiles"].as<std::size_t>();
@@ -175,7 +185,14 @@ int hpx_main(hpx::program_options::variables_map &vm)
       grad_K_tiles[i * n_tiles + j] = hpx::async(hpx::annotated_function(&gen_tile_identity<CALC_TYPE>, "assemble_tiled"), i, j, n_tile_size);
     }
   }
-
+  // Assemble first and second momemnt vectors: m_T and v_T
+  m_T.resize(3);
+  v_T.resize(3);
+  for (int i = 0; i < 3; i++)
+  {
+    m_T[i] = hpx::async(hpx::annotated_function(&gen_zero<CALC_TYPE>, "assemble_tiled"));
+    v_T[i] = hpx::async(hpx::annotated_function(&gen_zero<CALC_TYPE>, "assemble_tiled"));
+  }
   // std::ofstream k_file("./covariance.txt");
   // std::ostream_iterator<CALC_TYPE> k_iterator(k_file, "\n");
   // for (std::size_t i = 0; i < n_tiles; i++)
@@ -236,6 +253,26 @@ int hpx_main(hpx::program_options::variables_map &vm)
   // {
   //   prediction_uncertainty_tiles[i] = hpx::async(hpx::annotated_function(&gen_tile_zeros<CALC_TYPE>, "assemble_tiled"), m_tile_size);
   // }
+  // Assemble beta1_t and beta2_t
+
+  beta1_T.resize(opt_iter);
+  for (int i = 0; i < opt_iter; i++)
+  {
+    beta1_T[i] = hpx::async(hpx::annotated_function(&gen_beta_t<CALC_TYPE>, "assemble_tiled"), i + 1, hyperparameters, 4);
+  }
+  beta2_T.resize(opt_iter);
+  for (int i = 0; i < opt_iter; i++)
+  {
+    beta2_T[i] = hpx::async(hpx::annotated_function(&gen_beta_t<CALC_TYPE>, "assemble_tiled"), i + 1, hyperparameters, 5);
+  }
+
+  // // Accessing and printing the result
+  // for (std::size_t k = 0; k < beta1_T.size(); ++k)
+  // {
+  //   CALC_TYPE result = beta1_T[k].get(); // Correctly get the CALC_TYPE (float) from the shared_future
+  //   printf("beta1 res: %lf\n", result);
+  // }
+
   //////////////////////////////////////////////////////////////////////////////
   // PART 2: CHOLESKY SOLVE
   // Cholesky decomposition
@@ -256,10 +293,6 @@ int hpx_main(hpx::program_options::variables_map &vm)
   forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
   backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
 
-
-
-
-
   // Compute loss
   compute_loss_tiled(K_tiles, alpha_tiles, y_tiles, loss_value, n_tile_size, n_tiles);
 
@@ -268,9 +301,18 @@ int hpx_main(hpx::program_options::variables_map &vm)
   forward_solve_tiled_matrix(K_tiles, grad_K_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
   backward_solve_tiled_matrix(K_tiles, grad_K_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
 
-  update_hyperparameter(grad_K_tiles, grad_l_tiles, hyperparameters, n_tile_size, n_tiles, 0);
-  update_hyperparameter(grad_K_tiles, grad_v_tiles, hyperparameters, n_tile_size, n_tiles, 1);
-  update_noise_variance(grad_K_tiles, hyperparameters, n_tile_size, n_tiles);
+  // update_hyperparameter(grad_K_tiles, grad_l_tiles, hyperparameters, n_tile_size, n_tiles, 0);
+  update_hyperparameter(grad_K_tiles, grad_l_tiles, hyperparameters, n_tile_size, n_tiles, m_T, v_T, beta1_T, beta2_T, 1, 0);
+  update_hyperparameter(grad_K_tiles, grad_v_tiles, hyperparameters, n_tile_size, n_tiles, m_T, v_T, beta1_T, beta2_T, 1, 1);
+  update_noise_variance(grad_K_tiles, hyperparameters, n_tile_size, n_tiles, m_T, v_T, beta1_T, beta2_T, 1);
+
+  // Accessing and printing the result
+  for (std::size_t k = 0; k < m_T.size(); ++k)
+  {
+    CALC_TYPE result = m_T[k].get(); // Correctly get the CALC_TYPE (float) from the shared_future
+    printf("beta1 res: %lf\n", result);
+  }
+
   // Triangular solve K_N,N * A_NxM = K_NxM -> A_NxM = K^-1_NxN * K_NxM
   // forward_solve_tiled_matrix(K_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
   // backward_solve_tiled_matrix(K_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
