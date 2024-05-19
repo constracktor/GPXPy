@@ -3,7 +3,9 @@
 
 #include <cmath>
 #include <vector>
+#include <numeric>
 #include <tuple>
+#include <iostream>
 
 // compute the distance devided by the lengthscale
 template <typename T>
@@ -132,6 +134,14 @@ std::vector<T> gen_tile_zeros_diag(std::size_t N)
   return std::move(tile);
 }
 
+// return zero - used to initialize moment vectors
+template <typename T>
+T gen_zero()
+{
+  T z = 0.0;
+  return z;
+}
+
 // compute negative-log likelihood tiled
 template <typename T>
 T compute_loss(const std::vector<T> &K_diag_tile,
@@ -208,30 +218,80 @@ T compute_trace_noise(const std::vector<std::vector<T>> &ft_tiles,
   return std::move(trace);
 }
 
+// update first moment
+template <typename T>
+T update_fist_moment(const T &gradient,
+                     T m_T,
+                     const std::vector<T> &beta1_T,
+                     int iter)
+{
+  return beta1_T[iter] * m_T + (1 - beta1_T[iter]) * gradient;
+}
+
+// update first moment
+template <typename T>
+T update_second_moment(const T &gradient,
+                       T v_T,
+                       const std::vector<T> &beta2_T,
+                       int iter)
+{
+  return beta2_T[iter] * v_T + (1 - beta2_T[iter]) * gradient * gradient;
+}
+
 // update hyperparameter using gradient decent
 template <typename T>
 T update_param(const T &unconstrained_hyperparam,
                T *hyperparameters,
-               const T &trace)
-
+               const T &gradient,
+               T m_T,
+               T v_T,
+               const std::vector<T> &beta1_T,
+               const std::vector<T> &beta2_T,
+               int iter)
 {
-  return unconstrained_hyperparam - hyperparameters[3] * trace;
+  T alpha_T = hyperparameters[3] * sqrt(1.0 - beta2_T[iter]) / (1.0 - beta1_T[iter]);
+  return unconstrained_hyperparam - alpha_T * m_T / (v_T + hyperparameters[6]);
 }
 
 // transform hyperparameter to enforce constraints using softplus
 template <typename T>
-T to_constrained(const T &parameter)
+T to_constrained(const T &parameter,
+                 bool noise)
 
 {
-  return logf(1.0 + expf(parameter));
+  if (noise)
+  {
+    return log(1.0 + exp(parameter)) + 1e-6;
+  }
+  else
+  {
+    return log(1.0 + exp(parameter));
+  }
 }
 
 // transform hyperparmeter to entire real line using inverse
 // of sofplus. Optimizer, such as gradient decent or Adam,
 //  work better with unconstrained parameters
 template <typename T>
-T to_unconstrained(const T &parameter)
+T to_unconstrained(const T &parameter,
+                   bool noise)
 {
-  return logf(expf(parameter) - 1.0);
+  if (noise)
+  {
+    return log(exp(parameter - 1e-6) - 1.0);
+  }
+  else
+  {
+    return log(exp(parameter) - 1.0);
+  }
+}
+
+// compute hyper-parameter beta_1 or beta_2 to power t
+template <typename T>
+T gen_beta_t(int t,
+             T *hyperparameters,
+             int param_idx)
+{
+  return pow(hyperparameters[param_idx], t);
 }
 #endif
