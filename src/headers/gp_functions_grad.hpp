@@ -63,7 +63,7 @@ std::vector<T> gen_tile_grad_v(std::size_t row,
       j_global = N * col + j;
       // compute covariance function
       cov_dist = compute_covariance_dist_func(i_global, j_global, n_regressors, hyperparameters, input, input);
-      tile[i * N + j] = 2 * sqrt(hyperparameters[1]) * exp(cov_dist);
+      tile[i * N + j] = 2.0 * sqrt(hyperparameters[1]) * exp(cov_dist);
     }
   }
   return std::move(tile);
@@ -91,7 +91,7 @@ std::vector<T> gen_tile_grad_l(std::size_t row,
       j_global = N * col + j;
       // compute covariance function
       cov_dist = compute_covariance_dist_func(i_global, j_global, n_regressors, hyperparameters, input, input);
-      tile[i * N + j] = -2 * (hyperparameters[1] / sqrt(hyperparameters[0])) * cov_dist * exp(cov_dist);
+      tile[i * N + j] = -2.0 * (hyperparameters[1] / sqrt(hyperparameters[0])) * cov_dist * exp(cov_dist);
     }
   }
   return std::move(tile);
@@ -171,7 +171,7 @@ T add_losses(const std::vector<T> &losses,
     // Add the squared difference to the error
     l += losses[i];
   }
-  l += N * n * log(2 * M_PI);
+  l += N * n * log(2.0 * M_PI);
   return 0.5 * l / (N * n);
 }
 
@@ -191,7 +191,7 @@ T compute_trace(const std::vector<std::vector<T>> &diag_tiles,
       trace += tile[i * N + i];
     }
   }
-  trace = 1 / (2 * N * n_tiles) * trace;
+  trace = 1.0 / (2.0 * N * n_tiles) * trace;
   return std::move(trace);
 }
 
@@ -211,10 +211,10 @@ T compute_trace_noise(const std::vector<std::vector<T>> &ft_tiles,
     auto tile = ft_tiles[d * n_tiles + d];
     for (std::size_t i = 0; i < N; ++i)
     {
-      trace += (tile[i * N + i] * 2 * sqrt(hyperparameters[2]));
+      trace += (tile[i * N + i] * 2.0 * sqrt(hyperparameters[2]));
     }
   }
-  trace = 1 / (2 * N * n_tiles) * trace;
+  trace = 1.0 / (2.0 * N * n_tiles) * trace;
   return std::move(trace);
 }
 
@@ -225,7 +225,7 @@ T update_fist_moment(const T &gradient,
                      const std::vector<T> &beta1_T,
                      int iter)
 {
-  return beta1_T[iter] * m_T + (1 - beta1_T[iter]) * gradient;
+  return beta1_T[iter] * m_T + (1.0 - beta1_T[iter]) * gradient;
 }
 
 // update first moment
@@ -235,7 +235,7 @@ T update_second_moment(const T &gradient,
                        const std::vector<T> &beta2_T,
                        int iter)
 {
-  return beta2_T[iter] * v_T + (1 - beta2_T[iter]) * gradient * gradient;
+  return beta2_T[iter] * v_T + (1.0 - beta2_T[iter]) * gradient * gradient;
 }
 
 // update hyperparameter using gradient decent
@@ -250,7 +250,10 @@ T update_param(const T &unconstrained_hyperparam,
                int iter)
 {
   T alpha_T = hyperparameters[3] * sqrt(1.0 - beta2_T[iter]) / (1.0 - beta1_T[iter]);
-  return unconstrained_hyperparam - alpha_T * m_T / (v_T + hyperparameters[6]);
+  // T mhat = m_T / (1.0 - beta1_T[iter]);
+  // T vhat = v_T / (1.0 - beta2_T[iter]);
+  // return unconstrained_hyperparam - hyperparameters[3] * mhat / (sqrt(vhat) + hyperparameters[6]));
+  return unconstrained_hyperparam - alpha_T * m_T / (sqrt(v_T) + hyperparameters[6]);
 }
 
 // transform hyperparameter to enforce constraints using softplus
