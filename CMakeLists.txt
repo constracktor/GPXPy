@@ -3,11 +3,11 @@ project(hpx_project CXX)
 find_package(HPX REQUIRED)
 find_package(MKL CONFIG REQUIRED)
 
-set(HEADER_FILES src/headers/ublas_adapter.hpp
-                 src/headers/mkl_adapter.hpp 
+set(HEADER_FILES src/headers/mkl_adapter.hpp 
                  src/headers/tiled_algorithms_cpu.hpp
                  src/headers/gp_functions.hpp
-                 src/headers/gp_functions_grad.hpp)
+                 src/headers/gp_functions_grad.hpp
+                 src/headers/test.hpp)
 
 
 add_executable(hpx_cholesky src/hpx_cholesky_cpu.cpp ${HEADER_FILES})

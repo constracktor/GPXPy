@@ -115,15 +115,14 @@ std::vector<T> gemm(std::vector<T> A,
 ////////////////////////////////////////////////////////////////////////////////
 // BLAS operations for tiled triangular solve
 // in-place solve L * x = a where L lower triangular
-template <typename T>
-std::vector<T> trsm_l(std::vector<T> L,
-                      std::vector<T> a,
-                      std::size_t N)
+std::vector<float> trsm_l(std::vector<float> L,
+                          std::vector<float> a,
+                          std::size_t N)
 {
   // convert to boost matrices
-  ublas::matrix<T, ublas::row_major, std::vector<T>> L_blas(N, N);
+  ublas::matrix<float, ublas::row_major, std::vector<float>> L_blas(N, N);
   L_blas.data() = L;
-  ublas::vector<T, std::vector<T>> a_blas(N);
+  ublas::vector<float, std::vector<float>> a_blas(N);
   a_blas.data() = a;
   // TRSM
   ublas::inplace_solve(L_blas, a_blas, ublas::lower_tag());
@@ -133,15 +132,14 @@ std::vector<T> trsm_l(std::vector<T> L,
 }
 
 // in-place solve L^T * x = a where L lower triangular
-template <typename T>
-std::vector<T> trsm_u(std::vector<T> L,
-                      std::vector<T> a,
-                      std::size_t N)
+std::vector<float> trsm_u(std::vector<float> L,
+                          std::vector<float> a,
+                          std::size_t N)
 {
   // convert to boost matrices
-  ublas::matrix<T, ublas::row_major, std::vector<T>> L_blas(N, N);
+  ublas::matrix<float, ublas::row_major, std::vector<float>> L_blas(N, N);
   L_blas.data() = L;
-  ublas::vector<T, std::vector<T>> a_blas(N);
+  ublas::vector<float, std::vector<float>> a_blas(N);
   a_blas.data() = a;
   // TRSM
   ublas::inplace_solve(ublas::trans(L_blas), a_blas, ublas::upper_tag());
@@ -151,18 +149,17 @@ std::vector<T> trsm_u(std::vector<T> L,
 }
 
 // b = b - A * a
-template <typename T>
-std::vector<T> gemv_l(std::vector<T> A,
-                      std::vector<T> a,
-                      std::vector<T> b,
-                      std::size_t N)
+std::vector<float> gemv_l(std::vector<float> A,
+                          std::vector<float> a,
+                          std::vector<float> b,
+                          std::size_t N)
 {
   // convert to boost matrix and vectors
-  ublas::matrix<T, ublas::row_major, std::vector<T>> A_blas(N, N);
+  ublas::matrix<float, ublas::row_major, std::vector<float>> A_blas(N, N);
   A_blas.data() = A;
-  ublas::vector<T, std::vector<T>> a_blas(N);
+  ublas::vector<float, std::vector<float>> a_blas(N);
   a_blas.data() = a;
-  ublas::vector<T, std::vector<T>> b_blas(N);
+  ublas::vector<float, std::vector<float>> b_blas(N);
   b_blas.data() = b;
   // GEMM
   b_blas = b_blas - ublas::prod(A_blas, a_blas);
@@ -172,18 +169,17 @@ std::vector<T> gemv_l(std::vector<T> A,
 }
 
 // b = b - A^T * a
-template <typename T>
-std::vector<T> gemv_u(std::vector<T> A,
-                      std::vector<T> a,
-                      std::vector<T> b,
-                      std::size_t N)
+std::vector<float> gemv_u(std::vector<float> A,
+                          std::vector<float> a,
+                          std::vector<float> b,
+                          std::size_t N)
 {
   // convert to boost matrix and vectors
-  ublas::matrix<T, ublas::row_major, std::vector<T>> A_blas(N, N);
+  ublas::matrix<float, ublas::row_major, std::vector<float>> A_blas(N, N);
   A_blas.data() = A;
-  ublas::vector<T, std::vector<T>> a_blas(N);
+  ublas::vector<float, std::vector<float>> a_blas(N);
   a_blas.data() = a;
-  ublas::vector<T, std::vector<T>> b_blas(N);
+  ublas::vector<float, std::vector<float>> b_blas(N);
   b_blas.data() = b;
   // GEMM
   b_blas = b_blas - ublas::prod(ublas::trans(A_blas), a_blas);
@@ -195,19 +191,18 @@ std::vector<T> gemv_u(std::vector<T> A,
 ////////////////////////////////////////////////////////////////////////////////
 // BLAS operations for tiled prediction
 // b = b + A * a where A(N_row, N_col), a(N_col) and b(N_row)
-template <typename T>
-std::vector<T> gemv_p(std::vector<T> A,
-                      std::vector<T> a,
-                      std::vector<T> b,
-                      std::size_t N_row,
-                      std::size_t N_col)
+std::vector<float> gemv_p(std::vector<float> A,
+                          std::vector<float> a,
+                          std::vector<float> b,
+                          std::size_t N_row,
+                          std::size_t N_col)
 {
   // convert to boost matrix and vectors
-  ublas::matrix<T, ublas::row_major, std::vector<T>> A_blas(N_row, N_col);
+  ublas::matrix<float, ublas::row_major, std::vector<float>> A_blas(N_row, N_col);
   A_blas.data() = A;
-  ublas::vector<T, std::vector<T>> a_blas(N_col);
+  ublas::vector<float, std::vector<float>> a_blas(N_col);
   a_blas.data() = a;
-  ublas::vector<T, std::vector<T>> b_blas(N_row);
+  ublas::vector<float, std::vector<float>> b_blas(N_row);
   b_blas.data() = b;
   // GEMM
   b_blas = b_blas + ublas::prod(A_blas, a_blas);
