@@ -125,9 +125,9 @@ float add_losses(const std::vector<float> &losses,
 }
 
 // compute trace
-float compute_trace(const std::vector<std::vector<float>> &diag_tiles,
-                    std::size_t N,
-                    std::size_t n_tiles)
+float compute_gradient(const std::vector<std::vector<float>> &diag_tiles,
+                       std::size_t N,
+                       std::size_t n_tiles)
 {
   // Initialize tile
   float trace = 0.0;
@@ -146,14 +146,13 @@ float compute_trace(const std::vector<std::vector<float>> &diag_tiles,
 // compute trace for noise variance
 // Same function as compute_trace with the only difference
 // that we need to retrieve the diag tiles
-template <typename T>
-T compute_trace_noise(const std::vector<std::vector<T>> &ft_tiles,
-                      T *hyperparameters,
-                      std::size_t N,
-                      std::size_t n_tiles)
+float compute_gradient_noise(const std::vector<std::vector<float>> &ft_tiles,
+                             float *hyperparameters,
+                             std::size_t N,
+                             std::size_t n_tiles)
 {
   // Initialize tile
-  T trace = 0.0;
+  float trace = 0.0;
   for (std::size_t d = 0; d < n_tiles; d++)
   {
     auto tile = ft_tiles[d * n_tiles + d];
@@ -365,14 +364,15 @@ double add_losses(const std::vector<double> &losses,
     // Add the squared difference to the error
     l += losses[i];
   }
+  // printf("l: %.12lf\n", l);
   l += N * n * log(2.0 * M_PI);
   return 0.5 * l / (N * n);
 }
 
 // compute trace
-double compute_trace(const std::vector<std::vector<double>> &diag_tiles,
-                     std::size_t N,
-                     std::size_t n_tiles)
+double compute_gradient(const std::vector<std::vector<double>> &diag_tiles,
+                        std::size_t N,
+                        std::size_t n_tiles)
 {
   // Initialize tile
   double trace = 0.0;
@@ -382,6 +382,29 @@ double compute_trace(const std::vector<std::vector<double>> &diag_tiles,
     for (std::size_t i = 0; i < N; ++i)
     {
       trace += tile[i * N + i];
+    }
+  }
+  trace = 1.0 / (2.0 * N * n_tiles) * trace;
+  printf("gradient: %.12lf\n", trace);
+  return std::move(trace);
+}
+
+// compute trace for noise variance
+// Same function as compute_trace with the only difference
+// that we need to retrieve the diag tiles
+double compute_gradient_noise(const std::vector<std::vector<double>> &ft_tiles,
+                              double *hyperparameters,
+                              std::size_t N,
+                              std::size_t n_tiles)
+{
+  // Initialize tile
+  double trace = 0.0;
+  for (std::size_t d = 0; d < n_tiles; d++)
+  {
+    auto tile = ft_tiles[d * n_tiles + d];
+    for (std::size_t i = 0; i < N; ++i)
+    {
+      trace += (tile[i * N + i] * 2.0 * sqrt(hyperparameters[2]));
     }
   }
   trace = 1.0 / (2.0 * N * n_tiles) * trace;
