@@ -7,42 +7,42 @@
 #include <tuple>
 #include <iostream>
 
-// compute the distance devided by the lengthscale
-float compute_covariance_dist_func(std::size_t i_global,
-                                   std::size_t j_global,
-                                   std::size_t n_regressors,
-                                   float *hyperparameters,
-                                   const std::vector<float> &i_input,
-                                   const std::vector<float> &j_input)
-{
-  // C(z_i,z_j) = vertical_lengthscale * exp(-0.5*lengthscale*(z_i-z_j)^2)
-  float z_ik = 0.0;
-  float z_jk = 0.0;
-  float distance = 0.0;
-  for (std::size_t k = 0; k < n_regressors; k++)
-  {
-    //
-    int offset = -n_regressors + 1 + k;
-    int i_local = i_global + offset;
-    int j_local = j_global + offset;
-    //
-    if (i_local >= 0)
-    {
-      z_ik = i_input[i_local];
-    }
-    if (j_local >= 0)
-    {
-      z_jk = j_input[j_local];
-    }
-    distance += pow(z_ik - z_jk, 2);
-  }
+// transform hyperparameter to enforce constraints using softplus
+double to_constrained(const double &parameter,
+                      bool noise)
 
-  return -1.0 / (2.0 * hyperparameters[0]) * distance;
+{
+  if (noise)
+  {
+    return log(1.0 + exp(parameter)) + 1e-6;
+  }
+  else
+  {
+    return log(1.0 + exp(parameter));
+  }
 }
 
-//////////////////////////////////////////////////////////
-/////////  functions with double precision  //////////////
-//////////////////////////////////////////////////////////
+// transform hyperparmeter to entire real line using inverse
+// of sofplus. Optimizer, such as gradient decent or Adam,
+//  work better with unconstrained parameters
+double to_unconstrained(const double &parameter,
+                        bool noise)
+{
+  if (noise)
+  {
+    return log(exp(parameter - 1e-6) - 1.0);
+  }
+  else
+  {
+    return log(exp(parameter) - 1.0);
+  }
+}
+
+// evaluate sigmoid function for given value
+double compute_sigmoid(const double &parameter)
+{
+  return 1.0 / (1.0 + exp(-parameter));
+}
 
 // compute the distance devided by the lengthscale
 double compute_covariance_dist_func(std::size_t i_global,
@@ -74,7 +74,7 @@ double compute_covariance_dist_func(std::size_t i_global,
     distance += pow(z_ik - z_jk, 2);
   }
 
-  return -1.0 / (2.0 * hyperparameters[0]) * distance;
+  return -1.0 / (2.0 * pow(hyperparameters[0], 2.0)) * distance;
 }
 
 // compute derivative w.r.t. vertical_lengthscale
@@ -98,7 +98,7 @@ std::vector<double> gen_tile_grad_v(std::size_t row,
       j_global = N * col + j;
       // compute covariance function
       cov_dist = compute_covariance_dist_func(i_global, j_global, n_regressors, hyperparameters, input, input);
-      tile[i * N + j] = 2.0 * sqrt(hyperparameters[1]) * exp(cov_dist);
+      tile[i * N + j] = exp(cov_dist) * compute_sigmoid(to_unconstrained(hyperparameters[1], false));
     }
   }
   return std::move(tile);
@@ -125,16 +125,14 @@ std::vector<double> gen_tile_grad_l(std::size_t row,
       j_global = N * col + j;
       // compute covariance function
       cov_dist = compute_covariance_dist_func(i_global, j_global, n_regressors, hyperparameters, input, input);
-      tile[i * N + j] = -2.0 * (hyperparameters[1] / sqrt(hyperparameters[0])) * cov_dist * exp(cov_dist);
+      tile[i * N + j] = -2.0 * (hyperparameters[1] / hyperparameters[0]) * cov_dist * exp(cov_dist) * compute_sigmoid(to_unconstrained(hyperparameters[0], false));
     }
   }
   return std::move(tile);
 }
 
 // compute hyper-parameter beta_1 or beta_2 to power t
-double gen_beta_T(int t,
-                  double *hyperparameters,
-                  int param_idx)
+double gen_beta_T(int t, double *hyperparameters, int param_idx)
 {
   return pow(hyperparameters[param_idx], t);
 }
@@ -165,7 +163,6 @@ double add_losses(const std::vector<double> &losses,
     // Add the squared difference to the error
     l += losses[i];
   }
-  // printf("l: %.12lf\n", l);
   l += N * n * log(2.0 * M_PI);
   return 0.5 * l / (N * n);
 }
@@ -186,7 +183,7 @@ double compute_gradient(const std::vector<std::vector<double>> &diag_tiles,
     }
   }
   trace = 1.0 / (2.0 * N * n_tiles) * trace;
-  printf("gradient: %.12lf\n", trace);
+  // printf("gradient: %.12lf\n", trace);
   return std::move(trace);
 }
 
@@ -205,42 +202,11 @@ double compute_gradient_noise(const std::vector<std::vector<double>> &ft_tiles,
     auto tile = ft_tiles[d * n_tiles + d];
     for (std::size_t i = 0; i < N; ++i)
     {
-      trace += (tile[i * N + i] * 2.0 * sqrt(hyperparameters[2]));
+      trace += (tile[i * N + i] * compute_sigmoid(to_unconstrained(hyperparameters[2], true)));
     }
   }
   trace = 1.0 / (2.0 * N * n_tiles) * trace;
   return std::move(trace);
-}
-
-// transform hyperparameter to enforce constraints using softplus
-double to_constrained(const double &parameter,
-                      bool noise)
-
-{
-  if (noise)
-  {
-    return log(1.0 + exp(parameter)) + 1e-6;
-  }
-  else
-  {
-    return log(1.0 + exp(parameter));
-  }
-}
-
-// transform hyperparmeter to entire real line using inverse
-// of sofplus. Optimizer, such as gradient decent or Adam,
-//  work better with unconstrained parameters
-double to_unconstrained(const double &parameter,
-                        bool noise)
-{
-  if (noise)
-  {
-    return log(exp(parameter - 1e-6) - 1.0);
-  }
-  else
-  {
-    return log(exp(parameter) - 1.0);
-  }
 }
 
 // update first moment
