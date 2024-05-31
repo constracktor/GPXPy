@@ -263,18 +263,18 @@ void update_hyperparameter(const std::vector<hpx::shared_future<std::vector<T>>>
     }
     // compute trace of diag_tiles
     using trace_type = T(const std::vector<std::vector<T>> &, std::size_t, std::size_t);
-    hpx::shared_future<T> trace = hpx::dataflow(hpx::annotated_function(hpx::unwrapping<trace_type>(&compute_trace), "gradient_tiled"), diag_tiles, N, n_tiles);
+    hpx::shared_future<T> gradient = hpx::dataflow(hpx::annotated_function(hpx::unwrapping<trace_type>(&compute_gradient), "gradient_tiled"), diag_tiles, N, n_tiles);
     // transform hyperparameter to unconstrained form
     using unconstrained_type = T(const T &, bool);
     hpx::shared_future<T> unconstrained_param = hpx::dataflow(hpx::annotated_function(hpx::unwrapping<unconstrained_type>(&to_unconstrained), "gradient_tiled"), hyperparameters[param_idx], false);
     // update moments
     using moment_type = T(const T &, T, const std::vector<T> &, int);
-    m_T[param_idx] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping<moment_type>(&update_fist_moment), "gradient_tiled"), trace, m_T[param_idx], beta1_T, iter);
-    v_T[param_idx] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping<moment_type>(&update_second_moment), "gradient_tiled"), trace, v_T[param_idx], beta2_T, iter);
+    m_T[param_idx] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping<moment_type>(&update_fist_moment), "gradient_tiled"), gradient, m_T[param_idx], beta1_T, iter);
+    v_T[param_idx] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping<moment_type>(&update_second_moment), "gradient_tiled"), gradient, v_T[param_idx], beta2_T, iter);
     // update parameter
     using updated_param_type = T(const T &, T *, const T &, T, T, const std::vector<T> &, const std::vector<T> &, int);
     hpx::shared_future<T> updated_param = hpx::dataflow(hpx::annotated_function(hpx::unwrapping<updated_param_type>(&update_param), "gradient_tiled"), unconstrained_param,
-                                                        hyperparameters, trace, m_T[param_idx], v_T[param_idx], beta1_T, beta2_T, iter);
+                                                        hyperparameters, gradient, m_T[param_idx], v_T[param_idx], beta1_T, beta2_T, iter);
     // transform hyperparameter to constrained form
     using constrained_type = T(const T &, bool);
     hyperparameters[param_idx] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping<constrained_type>(&to_constrained), "gradient_tiled"), updated_param, false).get();
@@ -299,7 +299,8 @@ void update_noise_variance(const std::vector<hpx::shared_future<std::vector<T>>>
                            int iter)
 {
   // compute gradient ^= trace of diag_tiles
-  hpx::shared_future<T> gradient = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&compute_trace_noise<T>), "gradient_tiled"), ft_tiles, hyperparameters, N, n_tiles);
+  using gradient_type = T(const std::vector<std::vector<T>> &, T *, std::size_t, std::size_t);
+  hpx::shared_future<T> gradient = hpx::dataflow(hpx::annotated_function(hpx::unwrapping<gradient_type>(&compute_gradient_noise), "gradient_tiled"), ft_tiles, hyperparameters, N, n_tiles);
 
   // transform hyperparameter to unconstrained form
   using unconstrained_type = T(const T &, bool);
