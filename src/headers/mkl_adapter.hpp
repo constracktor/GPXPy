@@ -132,7 +132,7 @@ std::vector<double> mkl_ger(std::vector<double> A,
   return A;
 }
 
-// C = C - A * B^T
+// C = C + A * B^T
 std::vector<double> mkl_gemm_diag(std::vector<double> A,
                                   std::vector<double> B,
                                   std::vector<double> C,
