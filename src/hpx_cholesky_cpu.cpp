@@ -316,10 +316,10 @@ int hpx_main(hpx::program_options::variables_map &vm)
   }
   printf("l: %.12lf, v: %.12lf, n: %.12lf\n", hyperparameters[0], hyperparameters[1], hyperparameters[2]);
   // Assemble prior covariance matrix vector
-  prior_K_tiles.resize(m_tiles * m_tiles);
+  prior_K_tiles.resize(m_tiles);
   for (std::size_t i = 0; i < m_tiles; i++)
   {
-    prior_K_tiles[i * m_tiles + i] = hpx::async(hpx::annotated_function(&gen_tile_prior_covariance, "assemble_tiled"), i, i,
+    prior_K_tiles[i] = hpx::async(hpx::annotated_function(&gen_tile_prior_covariance, "assemble_tiled"), i,
                                                 m_tile_size, n_regressors, hyperparameters, test_input);
   }
   // Assemble MxN cross-covariance matrix vector
