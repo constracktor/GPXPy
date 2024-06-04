@@ -14,6 +14,7 @@ double to_constrained(const double &parameter,
 {
   if (noise)
   {
+    // printf("before constr : %.15lf\n", parameter);
     return log(1.0 + exp(parameter)) + 1e-6;
   }
   else
@@ -206,6 +207,7 @@ double compute_gradient_noise(const std::vector<std::vector<double>> &ft_tiles,
     }
   }
   trace = 1.0 / (2.0 * N * n_tiles) * trace;
+  printf("gradient: %.12lf\n", trace);
   return std::move(trace);
 }
 
@@ -238,10 +240,23 @@ double update_param(const double &unconstrained_hyperparam,
                     int iter)
 {
   double alpha_T = hyperparameters[3] * sqrt(1.0 - beta2_T[iter]) / (1.0 - beta1_T[iter]);
-  // T mhat = m_T / (1.0 - beta1_T[iter]);
-  // T vhat = v_T / (1.0 - beta2_T[iter]);
-  // return unconstrained_hyperparam - hyperparameters[3] * mhat / (sqrt(vhat) + hyperparameters[6]));
+  // printf("m_T: %.12lf\n", m_T);
+  // printf("v_T: %.12lf\n", v_T);
+  // printf("alpha_T: %.12lf\n", alpha_T);
+  // printf("unconstrained_hyperparam: %.15lf\n", unconstrained_hyperparam);
+  
+  // double mhat = m_T / (1.0 - beta1_T[iter]);
+  // double vhat = v_T / (1.0 - beta2_T[iter]);
+  
+  // printf("back 1: %.19lf\n", - hyperparameters[3] * mhat );
+  // printf("back 2: %.19lf\n", (sqrt(vhat) + hyperparameters[6]));
+  // printf("back part: %.19lf\n", - hyperparameters[3] * mhat / (sqrt(vhat) + hyperparameters[6]));
+  // return unconstrained_hyperparam - hyperparameters[3] * mhat / (sqrt(vhat) + hyperparameters[6]);
   return unconstrained_hyperparam - alpha_T * m_T / (sqrt(v_T) + hyperparameters[6]);
+
+  // double updated_param = unconstrained_hyperparam - alpha_T * m_T / (sqrt(v_T) + hyperparameters[6]);
+  // printf("updated_param: %.12lf\n", updated_param);
+  // return updated_param;
 }
 
 // generate an identity tile if i==j
