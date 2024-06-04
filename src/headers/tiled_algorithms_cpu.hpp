@@ -122,6 +122,56 @@ void backward_solve_tiled_matrix(std::vector<hpx::shared_future<std::vector<doub
   }
 }
 
+//////// Triangular solve A_M,N * K_NxN = K_MxN -> A_MxN = K_MxN * K^-1_NxN
+// Tiled Triangular Solve Algorithms for Mtrices (K * X = B)
+void forward_solve_KK_tiled(std::vector<hpx::shared_future<std::vector<double>>> &ft_tiles,
+                            std::vector<hpx::shared_future<std::vector<double>>> &ft_rhs,
+                            std::size_t N,
+                            std::size_t M,
+                            std::size_t n_tiles,
+                            std::size_t m_tiles)
+{
+  for (std::size_t r = 0; r < m_tiles; r++)
+  {
+    for (std::size_t c = 0; c < n_tiles; c++)
+    {
+      // TRSM
+      ft_rhs[r * n_tiles + c] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_trsm_u_KK), "triangular_solve_tiled_matrix"), ft_tiles[c * n_tiles + c],
+                                              ft_rhs[r * n_tiles + c], N, M);
+      for (std::size_t m = c + 1; m < n_tiles; m++)
+      {
+        // GEMV
+        ft_rhs[r * n_tiles + m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_u_KK), "triangular_solve_tiled_matrix"), ft_tiles[m * n_tiles + c],
+                                                ft_rhs[r * n_tiles + c], ft_rhs[r * n_tiles + m], N, M);
+      }
+    }
+  }
+}
+
+void backward_solve_KK_tiled(std::vector<hpx::shared_future<std::vector<double>>> &K_tiles,
+                             std::vector<hpx::shared_future<std::vector<double>>> &CrossK_tiles,
+                             std::size_t N,
+                             std::size_t M,
+                             std::size_t n_tiles,
+                             std::size_t m_tiles)
+{
+  for (int r = 0; r < m_tiles; r++)
+  {
+    for (int c = n_tiles - 1; c >= 0; c--) // int instead of std::size_t for last comparison
+    {
+      // TRSM
+      CrossK_tiles[r * n_tiles + c] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_trsm_l_KK), "triangular_solve_tiled_matrix"), K_tiles[c * n_tiles + c],
+                                                    CrossK_tiles[r * n_tiles + c], N, M);
+      for (int m = c - 1; m >= 0; m--) // int instead of std::size_t for last comparison
+      {
+        // GEMV
+        CrossK_tiles[r * n_tiles + m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_l_KK), "triangular_solve_tiled_matrix"), K_tiles[c * n_tiles + m],
+                                                      CrossK_tiles[r * n_tiles + c], CrossK_tiles[r * n_tiles + m], N, M);
+      }
+    }
+  }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Tiled Loss
 void compute_loss_tiled(std::vector<hpx::shared_future<std::vector<double>>> &ft_tiles,
