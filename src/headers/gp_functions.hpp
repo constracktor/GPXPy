@@ -72,12 +72,13 @@ std::vector<double> gen_tile_covariance(std::size_t row,
 
 // generate a tile of the prior covariance matrix
 std::vector<double> gen_tile_prior_covariance(std::size_t row,
+                                              std::size_t col,
                                               std::size_t N,
                                               std::size_t n_regressors,
                                               double *hyperparameters,
                                               const std::vector<double> &input)
 {
-  std::size_t i_global;
+  std::size_t i_global, j_global;
   double covariance_function;
   // Initialize tile
   std::vector<double> tile;
@@ -85,9 +86,13 @@ std::vector<double> gen_tile_prior_covariance(std::size_t row,
   for (std::size_t i = 0; i < N; i++)
   {
     i_global = N * row + i;
-    // compute covariance function
-    covariance_function = compute_covariance_function(i_global, i_global, n_regressors, hyperparameters, input, input);
-    tile[i] = covariance_function;
+    for (std::size_t j = 0; j < N; j++)
+    {
+      j_global = N * col + j;
+      // compute covariance function
+      covariance_function = compute_covariance_function(i_global, j_global, n_regressors, hyperparameters, input, input);
+      tile[i * N + j] = covariance_function;
+    }
   }
   return std::move(tile);
 }
