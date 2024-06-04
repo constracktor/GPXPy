@@ -17,7 +17,7 @@ std::vector<double> mkl_potrf(std::vector<double> A,
   return A;
 }
 
-// in-place solve L * X = A^T where L triangular
+// in-place solve X * L^T = A where L lower triangular
 std::vector<double> mkl_trsm(std::vector<double> L,
                              std::vector<double> A,
                              std::size_t N)
