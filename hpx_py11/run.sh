@@ -1,0 +1,26 @@
+#!/bin/bash
+################################################################################
+set -e  # Exit immediately if a command exits with a non-zero status.
+set -x  # Print each command before executing it.
+
+################################################################################
+# Ensure CMAKE_COMMAND is set
+################################################################################
+export CMAKE_COMMAND=$(which cmake)
+
+if [ -z "$CMAKE_COMMAND" ]; then
+  echo "Error: CMAKE_COMMAND environment variable is not set."
+  exit 1
+fi
+
+export HPX_DIR=/home/maksim/spack/opt/spack/linux-ubuntu22.04-skylake/gcc-11.4.0/hpx-1.9.1-geexjwq4h5szdenwju6rug26fad627bb/lib
+
+################################################################################
+# Compile code
+################################################################################
+rm -rf build && mkdir build && cd build
+# $CMAKE_COMMAND .. -DCMAKE_BUILD_TYPE=Release -DPYTHON_LIBRARY_DIR="/usr/local/lib/python3.10/dist-packages" -DPYTHON_EXECUTABLE="/usr/bin/python3" -Dpybind11_DIR="/home/maksim/.local/lib/python3.10/site-packages/pybind11/share/cmake/pybind11" # Configure the project
+
+$CMAKE_COMMAND .. -DCMAKE_BUILD_TYPE=Release -DPYTHON_LIBRARY_DIR="/usr/local/lib/python3.10/dist-packages" -DPYTHON_EXECUTABLE="/usr/bin/python3" -DCMAKE_PREFIX_PATH="${HPX_DIR}/cmake/HPX" -DHPX_WITH_DYNAMIC_HPX_MAIN=ON # Configure the project
+
+make -j4 all           # Build the project

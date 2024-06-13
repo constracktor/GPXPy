@@ -1,0 +1,6 @@
+#ifndef AUTOMOBILE_LIBRARY_H
+#define AUTOMOBILE_LIBRARY_H
+
+#include "/home/maksim/simtech/thesis/GPPPy_hpx/hpx_py11/cpp_code/include/automobile_bits/motorcycle.hpp"
+
+#endif
