@@ -23,6 +23,32 @@ namespace gpppy
     /// Function to load data from a file into data
     std::vector<double> load_data(const std::string &file_path, int n_samples);
 
+    struct Kernel_Params
+    {
+        double lengthscale;
+        double vertical_lengthscale;
+        double noise_variance;
+        int n_regressors;
+
+        Kernel_Params(double l = 1.0, double v = 1.0, double n = 0.1, int n_r = 100);
+
+        std::string repr() const;
+
+    };
+
+    struct Hyperparameters
+    {
+        double learning_rate;
+        double beta1;
+        double beta2;
+        double epsilon;
+        int opt_iter;
+
+        Hyperparameters(double lr = 0.001, double b1 = 0.9, double b2 = 0.999, double eps = 1e-8, int opt_i = 0);
+
+        std::string repr() const;
+    };
+
     class GP
     {
 

@@ -40,6 +40,14 @@ int main(int argc, char *argv[])
     int new_argc = static_cast<int>(cstr_args.size());
     char **new_argv = cstr_args.data();
 
+    gpppy::Kernel_Params kpar;
+    std::cout << "lengthscale: " << kpar.lengthscale << std::endl;
+    std::cout << kpar.repr() << std::endl;
+
+    gpppy::Hyperparameters hpar;
+    std::cout << "lr: " << hpar.learning_rate << std::endl;
+    std::cout << hpar.repr() << std::endl;
+
     vehicles::Motorcycle m("Yamaha");
     university::Student s("M123");
 
