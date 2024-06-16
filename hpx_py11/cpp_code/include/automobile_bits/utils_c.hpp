@@ -20,6 +20,9 @@ namespace utils
     std::pair<int, int> compute_test_tiles(int m_samples, int n_tiles, int n_tile_size);
 
     void print(const std::vector<double> &vec, int start = 0, int end = -1, const std::string &separator = " ");
+    
+    /// Function to load data from a file
+    std::vector<double> load_data(const std::string &file_path, int n_samples);
 
     // void print(const std::vector<double> &vec, int start = 0, int end = -1, const std::string &separator = " ");
 
