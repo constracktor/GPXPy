@@ -13,6 +13,7 @@ if [ -z "$CMAKE_COMMAND" ]; then
   exit 1
 fi
 
+export APEX_SCREEN_OUTPUT=1
 export HPX_DIR=/home/maksim/spack/opt/spack/linux-ubuntu22.04-skylake/gcc-11.4.0/hpx-1.9.1-geexjwq4h5szdenwju6rug26fad627bb/lib
 
 ################################################################################
@@ -24,3 +25,6 @@ rm -rf build && mkdir build && cd build
 $CMAKE_COMMAND .. -DCMAKE_BUILD_TYPE=Release -DPYTHON_LIBRARY_DIR="/usr/local/lib/python3.10/dist-packages" -DPYTHON_EXECUTABLE="/usr/bin/python3" -DCMAKE_PREFIX_PATH="${HPX_DIR}/cmake/HPX" -DHPX_WITH_DYNAMIC_HPX_MAIN=ON # Configure the project
 
 make -j4 all           # Build the project
+
+cd ../test
+python3 test_py.py

@@ -5,8 +5,12 @@
 namespace py = pybind11;
 
 
-void start_hpx_wrapper(university::Student& student, std::vector<std::string> args)
+void start_hpx_wrapper(university::Student& student, std::vector<std::string> args, int n_cores)
 {
+    // Add the --hpx:threads argument to the args vector
+    args.push_back("--hpx:threads=" + std::to_string(n_cores));
+
+    // Convert std::vector<std::string> to char* array
     std::vector<char*> argv;
     for (auto& arg : args)
         argv.push_back(&arg[0]);
@@ -23,6 +27,6 @@ void init_universtiy(py::module &m)
         .def("do_fut", &university::Student::do_fut)
         .def("add", &university::Student::add, py::arg("i"), py::arg("j"))
         // .def("start_hpx",&university::Student::start_hpx, py::arg("argc"), py::arg("argv"))
-        .def("start_hpx", &start_hpx_wrapper, py::arg("args")) // Using the wrapper function
+        .def("start_hpx", &start_hpx_wrapper, py::arg("args"), py::arg("n_cores")) // Using the wrapper function
         .def("stop_hpx",&university::Student::stop_hpx);
 }

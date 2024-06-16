@@ -1,4 +1,4 @@
-#include "/home/maksim/simtech/thesis/GPPPy_hpx/hpx_py11/cpp_code/include/automobile_bits/motorcycle.hpp"
+#include "../include/automobile_bits/motorcycle.hpp"
 
 #include <iostream>
 #include <hpx/hpx.hpp>

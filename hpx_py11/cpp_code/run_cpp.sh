@@ -16,10 +16,12 @@ export HPX_DIR=/home/maksim/spack/opt/spack/linux-ubuntu22.04-skylake/gcc-11.4.0
 ################################################################################
 # Compile code
 ################################################################################
-rm -rf build && mkdir build && cd build && $CMAKE_COMMAND .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${HPX_DIR}/cmake/HPX" -DHPX_WITH_DYNAMIC_HPX_MAIN=ON && make all
+rm -rf build && mkdir build && cd build && $CMAKE_COMMAND .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${HPX_DIR}/cmake/HPX" -DHPX_WITH_DYNAMIC_HPX_MAIN=ON
+make all
+make install
 ################################################################################
 # Run benchmark script
 ################################################################################
 cd ..
 
-./test_cpp
+

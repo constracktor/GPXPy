@@ -23,7 +23,12 @@ set(PROJECT_INCLUDE_DIR "include/automobile_bits")
 # Source files
 set(SOURCE_FILES
     ${PROJECT_INCLUDE_DIR}/motorcycle.hpp
+    ${PROJECT_INCLUDE_DIR}/gpppy_c.hpp
+    ${PROJECT_INCLUDE_DIR}/utils_c.hpp
     ${PROJECT_SOURCE_DIR}/motorcycle.cpp
+    ${PROJECT_SOURCE_DIR}/gpppy_c.cpp
+    ${PROJECT_SOURCE_DIR}/utils_c.cpp
+
 )
 
 # Set up such that XCode organizes the files correctly
@@ -44,7 +49,11 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif()
 
 # Install
-install(TARGETS automobile DESTINATION lib)
+install(TARGETS automobile) 
+#        LIBRARY DESTINATION lib
+#        ARCHIVE DESTINATION lib
+#        RUNTIME DESTINATION bin
+#        )
 
 # Install the headers
 install(FILES include/automobile DESTINATION include)
