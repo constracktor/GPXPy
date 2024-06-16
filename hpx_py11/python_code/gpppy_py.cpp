@@ -8,9 +8,9 @@ void init_gpppy(py::module &m)
 {
     py::class_<gpppy::GP_data>(m, "GP_data")
         .def(py::init<std::string, int>(), py::arg("file_path"), py::arg("n_samples"))
-        .def_readonly("data", &gpppy::GP_data::data)
+        .def_readonly("n_samples", &gpppy::GP_data::n_samples)
         .def_readonly("file_path", &gpppy::GP_data::file_path)
-        .def_readonly("n_samples", &gpppy::GP_data::n_samples);
+        .def_readonly("data", &gpppy::GP_data::data);
 
     py::class_<gpppy::Kernel_Params>(m, "Kernel_Params")
         .def(py::init<double, double, double, int>(),
@@ -36,5 +36,11 @@ void init_gpppy(py::module &m)
         .def_readwrite("beta2", &gpppy::Hyperparameters::beta2)
         .def_readwrite("epsilon", &gpppy::Hyperparameters::epsilon)
         .def_readwrite("opt_iter", &gpppy::Hyperparameters::opt_iter)
-        .def("__repr__", &gpppy::Hyperparameters::repr);;
+        .def("__repr__", &gpppy::Hyperparameters::repr);
+    ;
+
+    py::class_<gpppy::GP>(m, "GP")
+        .def(py::init<std::vector<double>, std::vector<double>>(), py::arg("input_data"), py::arg("output_data"))
+        .def("get_input_data", &gpppy::GP::get_training_input)
+        .def("get_output_data", &gpppy::GP::get_training_output);
 }
