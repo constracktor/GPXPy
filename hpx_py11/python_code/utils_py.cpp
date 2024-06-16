@@ -16,6 +16,20 @@ int compute_train_tiles_wrap(int n_samples, int n_tile_size)
     }
 }
 
+void start_hpx_wrapper(std::vector<std::string> args, int n_cores)
+{
+    // Add the --hpx:threads argument to the args vector
+    args.push_back("--hpx:threads=" + std::to_string(n_cores));
+
+    // Convert std::vector<std::string> to char* array
+    std::vector<char *> argv;
+    for (auto &arg : args)
+        argv.push_back(&arg[0]);
+    argv.push_back(nullptr);
+    int argc = args.size();
+    utils::start_hpx_runtime(argc, argv.data());
+}
+
 // void print_slice(const std::vector<double>& vec, py::slice slice, const std::string& separator = " ") {
 
 //     py::str slice_str = py::str(slice);
@@ -74,6 +88,9 @@ void init_utils(py::module &m)
           py::arg("end") = -1,
           py::arg("separator") = " ",
           "Print elements of a vector with optional start, end, and separator parameters");
+
+    m.def("start_hpx", &start_hpx_wrapper, py::arg("args"), py::arg("n_cores")); // Using the wrapper function
+    m.def("stop_hpx", &utils::stop_hpx_runtime);
 
     //  m.def("print_slice", &print_slice,
     //       py::arg("vec"), py::arg("slice"), py::arg("separator") = " ",
