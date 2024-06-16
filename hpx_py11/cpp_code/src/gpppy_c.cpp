@@ -1,5 +1,5 @@
 #include "../include/automobile_bits/gpppy_c.hpp"
-
+#include "../include/automobile_bits/utils_c.hpp"
 #include <stdexcept>
 #include <cstdio>
 #include <sstream>
@@ -11,7 +11,7 @@ namespace gpppy
     {
         n_samples = n;
         file_path = f_path;
-        data = load_data(f_path, n);
+        data = utils::load_data(f_path, n);
     }
 
     Kernel_Params::Kernel_Params(double l, double v, double n, int n_r)
@@ -41,36 +41,19 @@ namespace gpppy
         return oss.str();
     }
 
-    std::vector<double> load_data(const std::string &file_path, int n_samples)
+    GP::GP(std::vector<double> input, std::vector<double> output)
     {
-        std::vector<double> _data;
-        _data.resize(n_samples);
+        _training_input = input;
+        _training_output = output;
+    }
 
-        FILE *input_file = fopen(file_path.c_str(), "r");
-        if (input_file == NULL)
-        {
-            throw std::runtime_error("Error: File not found: " + file_path);
-        }
+    std::vector<double> GP::get_training_input() const
+    {
+        return _training_input;
+    }
 
-        // load data
-        std::size_t scanned_elements = 0;
-        for (int i = 0; i < n_samples; i++)
-        {
-            // if (fscanf(input_file, "%lf", &data[i]) != 1)
-            // {
-            //     fclose(training_input_file);
-            //     throw std::runtime_error("Error: Failed to read data element at index " + std::to_string(i));
-            // }
-            scanned_elements += fscanf(input_file, "%lf", &_data[i]); // scanned_elements++;
-        }
-
-        fclose(input_file);
-
-        if (scanned_elements != n_samples)
-        {
-            throw std::runtime_error("Error: Data not correctly read. Expected " + std::to_string(n_samples) + " elements, but read " + std::to_string(scanned_elements));
-        }
-
-        return std::move(_data);
+    std::vector<double> GP::get_training_output() const
+    {
+        return _training_output;
     }
 }

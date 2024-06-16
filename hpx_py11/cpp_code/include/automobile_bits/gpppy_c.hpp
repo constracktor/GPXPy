@@ -20,9 +20,6 @@ namespace gpppy
         GP_data(const std::string &f_path, int n);
     };
 
-    /// Function to load data from a file into data
-    std::vector<double> load_data(const std::string &file_path, int n_samples);
-
     struct Kernel_Params
     {
         double lengthscale;
@@ -33,7 +30,6 @@ namespace gpppy
         Kernel_Params(double l = 1.0, double v = 1.0, double n = 0.1, int n_r = 100);
 
         std::string repr() const;
-
     };
 
     struct Hyperparameters
@@ -53,10 +49,8 @@ namespace gpppy
     {
 
     private:
-        std::vector<double> training_input;
-        // std::vector<double> training_output;
-        // std::vector<double> test_input;
-        // std::vector<double> test_output;
+        std::vector<double> _training_input;
+        std::vector<double> _training_output;
 
         // std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> K_tiles;
         // std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> grad_v_tiles;
@@ -70,9 +64,13 @@ namespace gpppy
         // std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> prediction_tiles;
         // std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> prediction_uncertainty_tiles;
 
-        // public:
-        //     /// Constructor
-        //     GP();
+    public:
+        /// Constructor
+        GP(std::vector<double> input, std::vector<double> output);
+
+        std::vector<double> get_training_input() const;
+
+        std::vector<double> get_training_output() const;
 
         //     void start_hpx_runtime(int argc, char** argv);
 
