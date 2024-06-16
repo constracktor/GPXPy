@@ -46,11 +46,11 @@ int main(int argc, char *argv[])
 
     std::string file_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/training/training_input.txt";
     gpppy::GP_data training_data(file_path, n_train);
-    gpppy::print(training_data.data, 0, 2, ", ");
+    utils::print(training_data.data, 0, 2, ", ");
 
     std::string out_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/training/training_output.txt";
     gpppy::GP_data training_output(out_path, n_train);
-    gpppy::print(training_output.data, 0, 2, ", ");
+    utils::print(training_output.data, 0, 2, ", ");
 
     std::cout << "Made a car called: " << m.get_name() << std::endl;
     std::cout << "Created student M123: " << s.get_stud_id() << std::endl;

@@ -195,3 +195,6 @@ forward_substitution.py
 backward_substitution.py
 /gpflow_parallel/output.csv
 /gpytorch_parallel/output.csv
+/.vscode
+/gpflow_parallel/logs/
+hpx_py11/cmake_cpp/

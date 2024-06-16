@@ -1,6 +1,6 @@
 #include <vector>
 #include <string>
-#include <iostream>
+// #include <iostream>
 
 // #include <hpx/hpx_init.hpp>
 // #include <hpx/future.hpp>
@@ -22,8 +22,6 @@ namespace gpppy
 
     /// Function to load data from a file into data
     std::vector<double> load_data(const std::string &file_path, int n_samples);
-
-    void print(const std::vector<double> &vec, int start = 0, int end = -1, const std::string &separator = " ");
 
     class GP
     {
