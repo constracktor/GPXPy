@@ -48,39 +48,6 @@ namespace utils
         return {static_cast<int>(m_tiles), static_cast<int>(m_tile_size)};
     }
 
-    void print(const std::vector<double> &vec, int start, int end, const std::string &separator)
-    {
-        // Convert negative indices to positive
-        if (start < 0)
-            start += vec.size();
-        if (end < 0)
-            end += vec.size() + 1;
-
-        // Ensure the indices are within bounds
-        if (start < 0)
-            start = 0;
-        if (end > vec.size())
-            end = vec.size();
-
-        std::cout << vec.size() << std::endl;
-        // Validate the range
-        if (start >= vec.size() || start >= end)
-        {
-            std::cerr << "Invalid range" << std::endl;
-            return;
-        }
-
-        for (int i = start; i < end; i++)
-        {
-            std::cout << vec[i];
-            if (i < end - 1)
-            {
-                std::cout << separator;
-            }
-        }
-        std::cout << std::endl;
-    }
-
     std::vector<double> load_data(const std::string &file_path, int n_samples)
     {
         std::vector<double> _data;
@@ -112,5 +79,49 @@ namespace utils
         }
 
         return std::move(_data);
+    }
+
+    void print(const std::vector<double> &vec, int start, int end, const std::string &separator)
+    {
+        // Convert negative indices to positive
+        if (start < 0)
+            start += vec.size();
+        if (end < 0)
+            end += vec.size() + 1;
+
+        // Ensure the indices are within bounds
+        if (start < 0)
+            start = 0;
+        if (end > vec.size())
+            end = vec.size();
+
+        // Validate the range
+        if (start >= vec.size() || start >= end)
+        {
+            std::cerr << "Invalid range" << std::endl;
+            return;
+        }
+
+        for (int i = start; i < end; i++)
+        {
+            std::cout << vec[i];
+            if (i < end - 1)
+            {
+                std::cout << separator;
+            }
+        }
+        std::cout << std::endl;
+    }
+
+    void start_hpx_runtime(int argc, char **argv)
+    {
+        hpx::start(nullptr, argc, argv);
+    }
+
+    void stop_hpx_runtime()
+    {
+        hpx::post([]()
+                  { hpx::finalize(); });
+        hpx::stop();
     }
 }

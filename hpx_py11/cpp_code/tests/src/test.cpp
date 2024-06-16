@@ -53,8 +53,8 @@ int main(int argc, char *argv[])
 
 
     std::string file_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/training/training_input.txt";
-    gpppy::GP_data training_data(file_path, n_train);
-    utils::print(training_data.data, 0, 2, ", ");
+    gpppy::GP_data training_input(file_path, n_train);
+    utils::print(training_input.data, 0, 2, ", ");
 
     std::string out_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/training/training_output.txt";
     gpppy::GP_data training_output(out_path, n_train);
@@ -65,9 +65,13 @@ int main(int argc, char *argv[])
 
     m.ride("Start Mullholland");
 
-    // Initialize HPX with the new arguments
-    s.start_hpx(new_argc, new_argv);
 
+    gpppy::GP gp(training_input.data, training_output.data);
+    std::vector<double> training_data = gp.get_training_output();
+    utils::print(training_data, 0, 2, ", ");
+
+    // Initialize HPX with the new arguments
+    utils::start_hpx_runtime(new_argc, new_argv);
 
     // vehicles::Motorcycle m("Yamaha");
     // university::Student s("M123");
@@ -105,7 +109,7 @@ int main(int argc, char *argv[])
     // std::cout << add_res123 << std::endl;
 
     // hpx::stop();
-    s.stop_hpx();
+    utils::stop_hpx_runtime();
 
     m.ride("Ende Mullholland");
 

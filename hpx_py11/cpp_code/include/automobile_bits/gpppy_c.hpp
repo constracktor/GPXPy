@@ -1,5 +1,6 @@
 #include <vector>
 #include <string>
+
 // #include <iostream>
 
 // #include <hpx/hpx_init.hpp>
@@ -71,10 +72,6 @@ namespace gpppy
         std::vector<double> get_training_input() const;
 
         std::vector<double> get_training_output() const;
-
-        //     void start_hpx_runtime(int argc, char** argv);
-
-        //     void stop_hpx_runtime();
 
         //     void set(int s);
 

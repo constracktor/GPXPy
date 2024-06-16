@@ -56,4 +56,5 @@ namespace gpppy
     {
         return _training_output;
     }
+
 }
