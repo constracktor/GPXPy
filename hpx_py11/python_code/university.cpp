@@ -5,19 +5,19 @@
 namespace py = pybind11;
 
 
-void start_hpx_wrapper(university::Student& student, std::vector<std::string> args, int n_cores)
-{
-    // Add the --hpx:threads argument to the args vector
-    args.push_back("--hpx:threads=" + std::to_string(n_cores));
+// void start_hpx_wrapper(university::Student& student, std::vector<std::string> args, int n_cores)
+// {
+//     // Add the --hpx:threads argument to the args vector
+//     args.push_back("--hpx:threads=" + std::to_string(n_cores));
 
-    // Convert std::vector<std::string> to char* array
-    std::vector<char*> argv;
-    for (auto& arg : args)
-        argv.push_back(&arg[0]);
-    argv.push_back(nullptr);
-    int argc = args.size();
-    student.start_hpx(argc, argv.data());
-}
+//     // Convert std::vector<std::string> to char* array
+//     std::vector<char*> argv;
+//     for (auto& arg : args)
+//         argv.push_back(&arg[0]);
+//     argv.push_back(nullptr);
+//     int argc = args.size();
+//     student.start_hpx(argc, argv.data());
+// }
 
 void init_universtiy(py::module &m)
 {
@@ -25,8 +25,8 @@ void init_universtiy(py::module &m)
         .def(py::init<std::string>(), py::arg("stud_id"))
         .def("get_stud_id", &university::Student::get_stud_id)
         .def("do_fut", &university::Student::do_fut)
-        .def("add", &university::Student::add, py::arg("i"), py::arg("j"))
+        .def("add", &university::Student::add, py::arg("i"), py::arg("j"));
         // .def("start_hpx",&university::Student::start_hpx, py::arg("argc"), py::arg("argv"))
-        .def("start_hpx", &start_hpx_wrapper, py::arg("args"), py::arg("n_cores")) // Using the wrapper function
-        .def("stop_hpx",&university::Student::stop_hpx);
+        // .def("start_hpx", &start_hpx_wrapper, py::arg("args"), py::arg("n_cores")) // Using the wrapper function
+        // .def("stop_hpx",&university::Student::stop_hpx);
 }

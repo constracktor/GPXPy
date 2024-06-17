@@ -59,15 +59,15 @@ namespace university
         return result;
     }
 
-    void Student::start_hpx(int argc, char **argv)
-    {
-        hpx::start(nullptr, argc, argv);
-    }
+    // void Student::start_hpx(int argc, char **argv)
+    // {
+    //     hpx::start(nullptr, argc, argv);
+    // }
 
-    void Student::stop_hpx()
-    {
-        hpx::post([]()
-                  { hpx::finalize(); });
-        hpx::stop();
-    }
+    // void Student::stop_hpx()
+    // {
+    //     hpx::post([]()
+    //               { hpx::finalize(); });
+    //     hpx::stop();
+    // }
 }

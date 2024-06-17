@@ -53,9 +53,9 @@ namespace university
 
         int add(int i, int j);
 
-        void start_hpx(int argc, char** argv);
+        // void start_hpx(int argc, char** argv);
 
-        void stop_hpx();
+        // void stop_hpx();
     };
 
 }

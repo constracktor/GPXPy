@@ -35,10 +35,12 @@ endif ()
 
 project(automobile)
 find_package(HPX REQUIRED)
+find_package(MKL CONFIG REQUIRED)
 
 include_directories("${CMAKE_SOURCE_DIR}/cpp_code/include/automobile_bits")
 include_directories("${CMAKE_SOURCE_DIR}/python_code")
 include_directories(${HPX_INCLUDE_DIRS})
+include_directories(${MKL_INCLUDE_DIRS})
 
 file (GLOB SOURCE_FILES "cpp_code/src/*.cpp")
 file (GLOB HEADER_FILES "cpp_code/include/automobile_bits/*.hpp")
@@ -71,6 +73,10 @@ target_link_libraries(automobile PUBLIC
                       HPX::hpx 
                       HPX::wrap_main 
                       HPX::iostreams_component
+                      MKL::mkl_intel_lp64
+                      MKL::mkl_core
+                      MKL::MKL
+                      MKL::mkl_sequential
                       )
 
 install(TARGETS automobile

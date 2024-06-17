@@ -1,13 +1,10 @@
+#ifndef GPPPY_C_H
+#define GPPPY_C_H
+
 #include <vector>
 #include <string>
 
-// #include <iostream>
-
 // #include <hpx/hpx_init.hpp>
-// #include <hpx/future.hpp>
-
-#ifndef GPPPY_C_H
-#define GPPPY_C_H
 
 namespace gpppy
 {
@@ -52,26 +49,25 @@ namespace gpppy
     private:
         std::vector<double> _training_input;
         std::vector<double> _training_output;
-
-        // std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> K_tiles;
-        // std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> grad_v_tiles;
-        // std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> grad_l_tiles;
-        // std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> grad_K_tiles;
-        // std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> prior_K_tiles;
-        // std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> alpha_tiles;
-        // std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> y_tiles;
-        // std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> cross_covariance_tiles;
-        // std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> t_cross_covariance_tiles;
-        // std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> prediction_tiles;
-        // std::vector<hpx::shared_future<std::vector<CALC_TYPE>>> prediction_uncertainty_tiles;
+        int _n_tiles;
+        int _n_tile_size;
 
     public:
+        double lengthscale;
+        double vertical_lengthscale;
+        double noise_variance;
+        int n_regressors;
+
         /// Constructor
-        GP(std::vector<double> input, std::vector<double> output);
+        GP(std::vector<double> input, std::vector<double> output, int n_tiles, int n_tile_size, double l, double v, double n, int n_r);
+
+        std::string repr() const;
 
         std::vector<double> get_training_input() const;
 
         std::vector<double> get_training_output() const;
+
+        std::vector<std::vector<double>> predict(const std::vector<double> &test_data, int m_tiles, int m_tile_size);
 
         //     void set(int s);
 

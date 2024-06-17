@@ -9,9 +9,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Find HPX
 find_package(HPX REQUIRED)
+find_package(MKL CONFIG REQUIRED)
 
 # Include directories
 include_directories(${HPX_INCLUDE_DIR})
+include_directories(${MKL_INCLUDE_DIRS})
 include_directories(/home/maksim/simtech/thesis/GPPPy_hpx/hpx_py11/cmake_cpp/include) # Add any additional include directories if needed
 
 # Set the output directory for executables
@@ -28,4 +30,9 @@ target_link_libraries(test_cpp PUBLIC
                       ${AUTOMOBILE_LIB}
                       HPX::hpx 
                       HPX::wrap_main 
-                      HPX::iostreams_component)
+                      HPX::iostreams_component
+                      MKL::mkl_intel_lp64
+                      MKL::mkl_core
+                      MKL::MKL
+                      MKL::mkl_sequential
+                      )

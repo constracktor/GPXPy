@@ -40,7 +40,19 @@ void init_gpppy(py::module &m)
     ;
 
     py::class_<gpppy::GP>(m, "GP")
-        .def(py::init<std::vector<double>, std::vector<double>>(), py::arg("input_data"), py::arg("output_data"))
+        .def(py::init<std::vector<double>, std::vector<double>, int, int, double, double, double, int>(),
+             py::arg("input_data"), py::arg("output_data"),
+             py::arg("n_tiles"), py::arg("n_tile_size"),
+             py::arg("lengthscale") = 1.0,
+             py::arg("v_lengthscale") = 1.0,
+             py::arg("noise_var") = 0.1,
+             py::arg("n_reg") = 100)
+        .def_readwrite("lengthscale", &gpppy::GP::lengthscale)
+        .def_readwrite("v_lengthscale", &gpppy::GP::vertical_lengthscale)
+        .def_readwrite("noise_var", &gpppy::GP::noise_variance)
+        .def_readwrite("n_reg", &gpppy::GP::n_regressors)
+        .def("__repr__", &gpppy::GP::repr)
         .def("get_input_data", &gpppy::GP::get_training_input)
-        .def("get_output_data", &gpppy::GP::get_training_output);
+        .def("get_output_data", &gpppy::GP::get_training_output)
+        .def("predict", &gpppy::GP::predict, py::arg("test_data"), py::arg("m_tiles"), py::arg("m_tile_size"));
 }
