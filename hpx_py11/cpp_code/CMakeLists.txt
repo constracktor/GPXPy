@@ -28,7 +28,7 @@ set(SOURCE_FILES
     ${PROJECT_INCLUDE_DIR}/utils_c.hpp
     ${PROJECT_INCLUDE_DIR}/gp_functions.hpp
     ${PROJECT_INCLUDE_DIR}/tiled_algorithms_cpu.hpp
-    ${PROJECT_INCLUDE_DIR}/functions.hpp
+    ${PROJECT_INCLUDE_DIR}/gp_helper_functions.hpp
     ${PROJECT_INCLUDE_DIR}/gp_functions_grad.hpp
     ${PROJECT_INCLUDE_DIR}/mkl_adapter.hpp
     ${PROJECT_INCLUDE_DIR}/uncertainty.hpp
