@@ -14,7 +14,7 @@ double to_constrained(const double &parameter,
 {
   if (noise)
   {
-    // printf("before constr : %.15lf\n", parameter);
+    printf("before constr : %.17lf\n", parameter);
     return log(1.0 + exp(parameter)) + 1e-6;
   }
   else
@@ -31,6 +31,7 @@ double to_unconstrained(const double &parameter,
 {
   if (noise)
   {
+    // printf("to_unconstrained: %.12lf\n", log(exp(parameter - 1e-6) - 1.0));
     return log(exp(parameter - 1e-6) - 1.0);
   }
   else
@@ -207,26 +208,28 @@ double compute_gradient_noise(const std::vector<std::vector<double>> &ft_tiles,
     }
   }
   trace = 1.0 / (2.0 * N * n_tiles) * trace;
-  printf("gradient: %.12lf\n", trace);
+  // printf("gradient: %.12lf\n", trace);
   return std::move(trace);
 }
 
-// update first moment
+// Update biased first raw moment estimate
 double update_fist_moment(const double &gradient,
                           double m_T,
-                          const std::vector<double> &beta1_T,
+                          const double &beta_1,
                           int iter)
 {
-  return beta1_T[iter] * m_T + (1.0 - beta1_T[iter]) * gradient;
+  // printf("m_T: %.17lf\n", parameter * m_T + (1.0 - parameter) * gradient);
+  return beta_1 * m_T + (1.0 - beta_1) * gradient;
 }
 
-// update first moment
+// Update biased second raw moment estimate
 double update_second_moment(const double &gradient,
                             double v_T,
-                            const std::vector<double> &beta2_T,
+                            const double &beta_2,
                             int iter)
 {
-  return beta2_T[iter] * v_T + (1.0 - beta2_T[iter]) * gradient * gradient;
+  // printf("v_T: %.12lf\n", beta2_T[iter] * v_T + (1.0 - beta2_T[iter]) * gradient * gradient);
+  return beta_2 * v_T + (1.0 - beta_2) * gradient * gradient;
 }
 
 // update hyperparameter using gradient decent
@@ -244,14 +247,15 @@ double update_param(const double &unconstrained_hyperparam,
   // printf("v_T: %.12lf\n", v_T);
   // printf("alpha_T: %.12lf\n", alpha_T);
   // printf("unconstrained_hyperparam: %.15lf\n", unconstrained_hyperparam);
-  
+
   // double mhat = m_T / (1.0 - beta1_T[iter]);
   // double vhat = v_T / (1.0 - beta2_T[iter]);
-  
+
   // printf("back 1: %.19lf\n", - hyperparameters[3] * mhat );
   // printf("back 2: %.19lf\n", (sqrt(vhat) + hyperparameters[6]));
-  // printf("back part: %.19lf\n", - hyperparameters[3] * mhat / (sqrt(vhat) + hyperparameters[6]));
+  // printf("back part: %.19lf\n", hyperparameters[3] * mhat / (sqrt(vhat) + hyperparameters[6]));
   // return unconstrained_hyperparam - hyperparameters[3] * mhat / (sqrt(vhat) + hyperparameters[6]);
+  // printf("return before constrained: %.19lf\n", unconstrained_hyperparam - alpha_T * m_T / (sqrt(v_T) + hyperparameters[6]));
   return unconstrained_hyperparam - alpha_T * m_T / (sqrt(v_T) + hyperparameters[6]);
 
   // double updated_param = unconstrained_hyperparam - alpha_T * m_T / (sqrt(v_T) + hyperparameters[6]);
