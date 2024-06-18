@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include "gp_functions.hpp"
 
 // #include <hpx/hpx_init.hpp>
 
@@ -30,19 +31,6 @@ namespace gpppy
         std::string repr() const;
     };
 
-    struct Hyperparameters
-    {
-        double learning_rate;
-        double beta1;
-        double beta2;
-        double epsilon;
-        int opt_iter;
-
-        Hyperparameters(double lr = 0.001, double b1 = 0.9, double b2 = 0.999, double eps = 1e-8, int opt_i = 0);
-
-        std::string repr() const;
-    };
-
     class GP
     {
 
@@ -57,9 +45,10 @@ namespace gpppy
         double vertical_lengthscale;
         double noise_variance;
         int n_regressors;
+        std::vector<bool> trainable_params;
 
         /// Constructor
-        GP(std::vector<double> input, std::vector<double> output, int n_tiles, int n_tile_size, double l, double v, double n, int n_r);
+        GP(std::vector<double> input, std::vector<double> output, int n_tiles, int n_tile_size, double l, double v, double n, int n_r, std::vector<bool> trainable_bool);
 
         std::string repr() const;
 
@@ -68,6 +57,8 @@ namespace gpppy
         std::vector<double> get_training_output() const;
 
         std::vector<std::vector<double>> predict(const std::vector<double> &test_data, int m_tiles, int m_tile_size);
+
+        std::vector<double> optimize(const gpppy_hyper::Hyperparameters &hyperparams);
 
         //     void set(int s);
 
