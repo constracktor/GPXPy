@@ -31,8 +31,6 @@ namespace utils
 
     void stop_hpx_runtime();
 
-    // void print(const std::vector<double> &vec, int start = 0, int end = -1, const std::string &separator = " ");
-
 }
 
 #endif
