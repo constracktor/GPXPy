@@ -1,4 +1,5 @@
 #include "../cpp_code/include/automobile_bits/gpppy_c.hpp"
+#include "../cpp_code/include/automobile_bits/gp_functions.hpp"
 #include <pybind11/stl.h>
 #include <pybind11/pybind11.h>
 
@@ -12,41 +13,30 @@ void init_gpppy(py::module &m)
         .def_readonly("file_path", &gpppy::GP_data::file_path)
         .def_readonly("data", &gpppy::GP_data::data);
 
-    py::class_<gpppy::Kernel_Params>(m, "Kernel_Params")
-        .def(py::init<double, double, double, int>(),
-             py::arg("lengthscale") = 1.0,
-             py::arg("v_lengthscale") = 1.0,
-             py::arg("noise_var") = 0.1,
-             py::arg("n_reg") = 100)
-        .def_readwrite("lengthscale", &gpppy::Kernel_Params::lengthscale)
-        .def_readwrite("v_lengthscale", &gpppy::Kernel_Params::vertical_lengthscale)
-        .def_readwrite("noise_var", &gpppy::Kernel_Params::noise_variance)
-        .def_readwrite("n_reg", &gpppy::Kernel_Params::n_regressors)
-        .def("__repr__", &gpppy::Kernel_Params::repr);
-
-    py::class_<gpppy::Hyperparameters>(m, "Hyperparameters")
+    py::class_<gpppy_hyper::Hyperparameters>(m, "Hyperparameters")
         .def(py::init<double, double, double, double, int>(),
              py::arg("learning_rate") = 0.001,
              py::arg("beta1") = 0.9,
              py::arg("beta2") = 0.999,
              py::arg("epsilon") = 1e-8,
              py::arg("opt_iter") = 0)
-        .def_readwrite("learning_rate", &gpppy::Hyperparameters::learning_rate)
-        .def_readwrite("beta1", &gpppy::Hyperparameters::beta1)
-        .def_readwrite("beta2", &gpppy::Hyperparameters::beta2)
-        .def_readwrite("epsilon", &gpppy::Hyperparameters::epsilon)
-        .def_readwrite("opt_iter", &gpppy::Hyperparameters::opt_iter)
-        .def("__repr__", &gpppy::Hyperparameters::repr);
+        .def_readwrite("learning_rate", &gpppy_hyper::Hyperparameters::learning_rate)
+        .def_readwrite("beta1", &gpppy_hyper::Hyperparameters::beta1)
+        .def_readwrite("beta2", &gpppy_hyper::Hyperparameters::beta2)
+        .def_readwrite("epsilon", &gpppy_hyper::Hyperparameters::epsilon)
+        .def_readwrite("opt_iter", &gpppy_hyper::Hyperparameters::opt_iter)
+        .def("__repr__", &gpppy_hyper::Hyperparameters::repr);
     ;
 
     py::class_<gpppy::GP>(m, "GP")
-        .def(py::init<std::vector<double>, std::vector<double>, int, int, double, double, double, int>(),
+        .def(py::init<std::vector<double>, std::vector<double>, int, int, double, double, double, int, std::vector<bool>>(),
              py::arg("input_data"), py::arg("output_data"),
              py::arg("n_tiles"), py::arg("n_tile_size"),
              py::arg("lengthscale") = 1.0,
              py::arg("v_lengthscale") = 1.0,
              py::arg("noise_var") = 0.1,
-             py::arg("n_reg") = 100)
+             py::arg("n_reg") = 100,
+             py::arg("trainable") = std::vector<bool>{true, true, true})
         .def_readwrite("lengthscale", &gpppy::GP::lengthscale)
         .def_readwrite("v_lengthscale", &gpppy::GP::vertical_lengthscale)
         .def_readwrite("noise_var", &gpppy::GP::noise_variance)
@@ -54,5 +44,6 @@ void init_gpppy(py::module &m)
         .def("__repr__", &gpppy::GP::repr)
         .def("get_input_data", &gpppy::GP::get_training_input)
         .def("get_output_data", &gpppy::GP::get_training_output)
-        .def("predict", &gpppy::GP::predict, py::arg("test_data"), py::arg("m_tiles"), py::arg("m_tile_size"));
+        .def("predict", &gpppy::GP::predict, py::arg("test_data"), py::arg("m_tiles"), py::arg("m_tile_size"))
+        .def("optimize", &gpppy::GP::optimize, py::arg("hyperparams"));
 }
