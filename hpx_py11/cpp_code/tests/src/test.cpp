@@ -10,10 +10,10 @@ int main(int argc, char *argv[])
 {
     /////////////////////
     /////// configuration
-    int n_train = 10;
-    int n_test = 10;
+    int n_train = 300;
+    int n_test = 700;
     const int N_CORES = 2; // Set this to the number of threads
-    const int tile_size = 10;
+    const int tile_size = 100;
     const int n_reg = 100;
 
     int n_tiles = utils::compute_train_tiles(n_train, tile_size);
@@ -41,18 +41,20 @@ int main(int argc, char *argv[])
     std::cout << "lengthscale: " << kpar.lengthscale << std::endl;
     std::cout << kpar.repr() << std::endl;
 
-    gpppy::Hyperparameters hpar;
+    gpppy_hyper::Hyperparameters hpar = {0.1, 0.9, 0.999, 1e-8, 2};
     std::cout << "lr: " << hpar.learning_rate << std::endl;
     std::cout << hpar.repr() << std::endl;
 
     /////////////////////
     ////// data loading
-    std::string file_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/training/training_input.txt";
-    gpppy::GP_data training_input(file_path, n_train);
+    std::string train_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/training/training_input.txt";
+    gpppy::GP_data training_input(train_path, n_train);
+    std::cout << "training input" << std::endl;
     utils::print(training_input.data, 0, 10, ", ");
 
     std::string out_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/training/training_output.txt";
     gpppy::GP_data training_output(out_path, n_train);
+    std::cout << "training output" << std::endl;
     utils::print(training_output.data, 0, 10, ", ");
 
     std::string test_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/test/test_input.txt";
@@ -61,9 +63,11 @@ int main(int argc, char *argv[])
 
     /////////////////////
     ///// GP
-    gpppy::GP gp(training_input.data, training_output.data, n_tiles, tile_size, 1.0, 1.0, 0.1, n_reg);
-    std::vector<double> training_data = gp.get_training_output();
-    utils::print(training_data, 0, 2, ", ");
+    std::vector<bool> trainable = {false, false, true};
+    gpppy::GP gp(training_input.data, training_output.data, n_tiles, tile_size, 1.0, 1.0, 0.1, n_reg, trainable);
+    std::vector<double> training_data = gp.get_training_input();
+    std::cout << "training input" << std::endl;
+    utils::print(training_data, 0, 5, ", ");
 
     std::cout << gp.repr() << std::endl;
 
@@ -83,15 +87,23 @@ int main(int argc, char *argv[])
     // hpx::post([]()
     //           { hpx::finalize(); });
 
+    std::vector<double> losses;
+    losses = gp.optimize(hpar);
+    std::cout << "Loss" << std::endl;
+    utils::print(losses, 0, 5);
+
     std::vector<std::vector<double>> sum;
     sum = gp.predict(test_input.data, result.first, result.second);
+    std::cout << "Prediction" << std::endl;
     utils::print(sum[0], 0, 10, ", ");
+    std::cout << "Uncertainty" << std::endl;
     utils::print(sum[1], 0, 10, ", ");
     // hpx::stop();
     utils::stop_hpx_runtime();
 
     std::cout << gp.repr() << std::endl;
 
+    std::cout << hpar.repr() << std::endl;
     std::cout << "Ende" << std::endl;
 
     return 0;
