@@ -1,7 +1,6 @@
 #ifndef AUTOMOBILE_LIBRARY_H
 #define AUTOMOBILE_LIBRARY_H
 
-#include "automobile_bits/motorcycle.hpp"
 #include "automobile_bits/gpppy_c.hpp"
 #include "automobile_bits/utils_c.hpp"
 

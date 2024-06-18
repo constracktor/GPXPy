@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.16)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,7 +24,6 @@ set(PROJECT_INCLUDE_DIR "include/automobile_bits")
 
 # Source files
 set(SOURCE_FILES
-    ${PROJECT_INCLUDE_DIR}/motorcycle.hpp
     ${PROJECT_INCLUDE_DIR}/gpppy_c.hpp
     ${PROJECT_INCLUDE_DIR}/utils_c.hpp
     ${PROJECT_INCLUDE_DIR}/gp_functions.hpp
@@ -33,7 +32,6 @@ set(SOURCE_FILES
     ${PROJECT_INCLUDE_DIR}/gp_functions_grad.hpp
     ${PROJECT_INCLUDE_DIR}/mkl_adapter.hpp
     ${PROJECT_INCLUDE_DIR}/uncertainty.hpp
-    ${PROJECT_SOURCE_DIR}/motorcycle.cpp
     ${PROJECT_SOURCE_DIR}/gpppy_c.cpp
     ${PROJECT_SOURCE_DIR}/utils_c.cpp
     ${PROJECT_SOURCE_DIR}/gp_functions.cpp

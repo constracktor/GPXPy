@@ -1,17 +1,10 @@
 #include <automobile>
 
-#include <hpx/include/run_as.hpp>
+// #include <hpx/include/run_as.hpp>
 // #include <hpx/hpx_start.hpp>
-#include <hpx/future.hpp>
+// #include <hpx/future.hpp>
 // #include <hpx/include/post.hpp>
 #include <iostream>
-
-void do_futu()
-{
-    auto f = hpx::async([]()
-                        { return 10; });
-    std::cout << "f=" << f.get() << std::endl;
-}
 
 int main(int argc, char *argv[])
 {
@@ -52,9 +45,6 @@ int main(int argc, char *argv[])
     std::cout << "lr: " << hpar.learning_rate << std::endl;
     std::cout << hpar.repr() << std::endl;
 
-    // vehicles::Motorcycle m("Yamaha");
-    // university::Student s("M123");
-
     /////////////////////
     ////// data loading
     std::string file_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/training/training_input.txt";
@@ -68,10 +58,6 @@ int main(int argc, char *argv[])
     std::string test_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/test/test_input.txt";
     gpppy::GP_data test_input(test_path, n_test);
     utils::print(test_input.data, 0, 10, ", ");
-    // std::cout << "Made a car called: " << m.get_name() << std::endl;
-    // std::cout << "Created student M123: " << s.get_stud_id() << std::endl;
-
-    // m.ride("Start Mullholland");
 
     /////////////////////
     ///// GP
@@ -93,30 +79,20 @@ int main(int argc, char *argv[])
     // hpx::threads::run_as_hpx_thread([&s]()
     //                                 { s.do_fut(); });
 
-    // m.ride("Mitte 1 Mullholland");
-
-    // int add_res;
-    // add_res = s.add(1, 1000);
-    // m.ride("Mitte 2 Mullholland");
-    // std::cout << add_res << std::endl;
-
     // hpx::finalize has to be called from the HPX runtime before hpx::stop
     // hpx::post([]()
     //           { hpx::finalize(); });
 
     std::vector<std::vector<double>> sum;
     sum = gp.predict(test_input.data, result.first, result.second);
-    // std::cout << "sum " << sum << std::endl;
     utils::print(sum[0], 0, 10, ", ");
     utils::print(sum[1], 0, 10, ", ");
     // hpx::stop();
     utils::stop_hpx_runtime();
 
     std::cout << gp.repr() << std::endl;
-    // m.ride("Ende Mullholland");
-    std::cout << "Ende" << std::endl;
 
-    // hpx::run_as_hpx_thread(&my_other_function, ...);
+    std::cout << "Ende" << std::endl;
 
     return 0;
 }
