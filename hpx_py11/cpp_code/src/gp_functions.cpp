@@ -1,6 +1,6 @@
-#include "../include/automobile_bits/gp_functions.hpp"
-#include "../include/automobile_bits/gp_helper_functions.hpp"
-#include "../include/automobile_bits/tiled_algorithms_cpu.hpp"
+#include "../include/gp_headers/gp_functions.hpp"
+#include "../include/gp_headers/gp_helper_functions.hpp"
+#include "../include/gp_headers/tiled_algorithms_cpu.hpp"
 
 #include <cmath>
 #include <vector>

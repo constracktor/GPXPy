@@ -1,4 +1,4 @@
-#include <automobile>
+#include <gaussian_process>
 
 // #include <hpx/include/run_as.hpp>
 // #include <hpx/hpx_start.hpp>
@@ -36,11 +36,7 @@ int main(int argc, char *argv[])
     char **new_argv = cstr_args.data();
 
     /////////////////////
-    ///// params
-    gpppy::Kernel_Params kpar;
-    std::cout << "lengthscale: " << kpar.lengthscale << std::endl;
-    std::cout << kpar.repr() << std::endl;
-
+    ///// hyperparams
     gpppy_hyper::Hyperparameters hpar = {0.1, 0.9, 0.999, 1e-8, 2};
     std::cout << "lr: " << hpar.learning_rate << std::endl;
     std::cout << hpar.repr() << std::endl;
@@ -71,21 +67,8 @@ int main(int argc, char *argv[])
 
     std::cout << gp.repr() << std::endl;
 
-    // Initialize HPX with the new arguments
+    // Initialize HPX with the new arguments, don't run hpx_main
     utils::start_hpx_runtime(new_argc, new_argv);
-
-    // // Initialize HPX, don't run hpx_main
-    // // hpx::start(nullptr, argc, argv);
-
-    // Schedule some functions on the HPX runtime
-    // NOTE: run_as_hpx_thread blocks until completion.
-    // hpx::threads::run_as_hpx_thread(&m.do_fut);
-    // hpx::threads::run_as_hpx_thread([&s]()
-    //                                 { s.do_fut(); });
-
-    // hpx::finalize has to be called from the HPX runtime before hpx::stop
-    // hpx::post([]()
-    //           { hpx::finalize(); });
 
     std::vector<double> losses;
     losses = gp.optimize(hpar);
@@ -98,7 +81,8 @@ int main(int argc, char *argv[])
     utils::print(sum[0], 0, 10, ", ");
     std::cout << "Uncertainty" << std::endl;
     utils::print(sum[1], 0, 10, ", ");
-    // hpx::stop();
+
+    // Stop the HPX runtime
     utils::stop_hpx_runtime();
 
     std::cout << gp.repr() << std::endl;

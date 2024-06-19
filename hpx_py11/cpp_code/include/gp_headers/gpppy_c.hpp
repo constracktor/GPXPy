@@ -5,8 +5,6 @@
 #include <string>
 #include "gp_functions.hpp"
 
-// #include <hpx/hpx_init.hpp>
-
 namespace gpppy
 {
 
@@ -17,18 +15,6 @@ namespace gpppy
         std::vector<double> data;
 
         GP_data(const std::string &f_path, int n);
-    };
-
-    struct Kernel_Params
-    {
-        double lengthscale;
-        double vertical_lengthscale;
-        double noise_variance;
-        int n_regressors;
-
-        Kernel_Params(double l = 1.0, double v = 1.0, double n = 0.1, int n_r = 100);
-
-        std::string repr() const;
     };
 
     class GP
@@ -59,16 +45,6 @@ namespace gpppy
         std::vector<std::vector<double>> predict(const std::vector<double> &test_data, int m_tiles, int m_tile_size);
 
         std::vector<double> optimize(const gpppy_hyper::Hyperparameters &hyperparams);
-
-        //     void set(int s);
-
-        //     /// Get name
-        //     /// @return Name
-        //     std::string get_stud_id() const;
-
-        //     void do_fut() const;
-
-        //     int add(int i, int j);
     };
 
 }

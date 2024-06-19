@@ -1,5 +1,5 @@
-#include "../include/automobile_bits/gpppy_c.hpp"
-#include "../include/automobile_bits/utils_c.hpp"
+#include "../include/gp_headers/gpppy_c.hpp"
+#include "../include/gp_headers/utils_c.hpp"
 
 #include <stdexcept>
 #include <iomanip>
@@ -14,19 +14,6 @@ namespace gpppy
         n_samples = n;
         file_path = f_path;
         data = utils::load_data(f_path, n);
-    }
-
-    Kernel_Params::Kernel_Params(double l, double v, double n, int n_r)
-        : lengthscale(l), vertical_lengthscale(v), noise_variance(n), n_regressors(n_r) {}
-
-    std::string Kernel_Params::repr() const
-    {
-        std::ostringstream oss;
-        oss << "Kernel_Params: [lengthscale=" << lengthscale
-            << ", vertical_lengthscale=" << vertical_lengthscale
-            << ", noise_variance=" << noise_variance
-            << ", n_regressors=" << n_regressors << "]";
-        return oss.str();
     }
 
     GP::GP(std::vector<double> input, std::vector<double> output, int n_tiles, int n_tile_size, double l, double v, double n, int n_r, std::vector<bool> trainable_bool)
@@ -59,7 +46,7 @@ namespace gpppy
         oss << "Kernel_Params: [lengthscale=" << lengthscale
             << ", vertical_lengthscale=" << vertical_lengthscale
             << ", noise_variance=" << noise_variance
-            << ", n_regressors=" << n_regressors 
+            << ", n_regressors=" << n_regressors
             << ", trainable_params l=" << trainable_params[0]
             << ", trainable_params v=" << trainable_params[1]
             << ", trainable_params n=" << trainable_params[2]
@@ -73,9 +60,6 @@ namespace gpppy
                                                                                _n_tiles, _n_tile_size, m_tiles, m_tile_size,
                                                                                lengthscale, vertical_lengthscale, noise_variance, n_regressors);
 
-        // hpx::async([input, output]()
-        //  { return add_vectors(input, output); });
-
         std::vector<std::vector<double>> result;
         hpx::threads::run_as_hpx_thread([&result, &fut]()
                                         {
@@ -87,20 +71,14 @@ namespace gpppy
     std::vector<double> GP::optimize(const gpppy_hyper::Hyperparameters &hyperparams)
     {
         hpx::shared_future<std::vector<double>> fut = optimize_hpx(_training_input, _training_output, _n_tiles, _n_tile_size,
-                                                                   lengthscale, vertical_lengthscale, noise_variance, n_regressors, 
+                                                                   lengthscale, vertical_lengthscale, noise_variance, n_regressors,
                                                                    hyperparams, trainable_params);
-
-        // hpx::async([input, output]()
-        //  { return add_vectors(input, output); });
 
         std::vector<double> losses;
         hpx::threads::run_as_hpx_thread([&losses, &fut]()
                                         {
                                             losses = fut.get(); // Wait for and get the result from the future
                                         });
-
-        // Set new hyperparams
-
         return losses;
     }
 

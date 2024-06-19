@@ -18,7 +18,11 @@ export MKL_CONFIG='-DMKL_ARCH=intel64 -DMKL_LINK=dynamic -DMKL_INTERFACE_FULL=in
 ################################################################################
 # Compile code
 ################################################################################
-rm -rf build && mkdir build && cd build && $CMAKE_COMMAND .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${HPX_DIR}/cmake/HPX" -DHPX_WITH_DYNAMIC_HPX_MAIN=ON -DMKL_DIR="${MKL_DIR}/cmake/mkl" ${MKL_CONFIG}
+rm -rf build && mkdir build && cd build
+$CMAKE_COMMAND .. -DCMAKE_BUILD_TYPE=Release \
+                  -DCMAKE_PREFIX_PATH="${HPX_DIR}/cmake/HPX" \
+                  -DHPX_WITH_DYNAMIC_HPX_MAIN=ON \
+                  -DMKL_DIR="${MKL_DIR}/cmake/mkl" ${MKL_CONFIG}
 make all
 ################################################################################
 # Run benchmark script

@@ -2,9 +2,9 @@
 #define TILED_ALGORITHMS_CPU_H_INCLUDED
 
 #include <hpx/future.hpp>
-#include "/home/maksim/simtech/thesis/GPPPy_hpx/hpx_py11/cpp_code/include/automobile_bits/mkl_adapter.hpp"
-#include "/home/maksim/simtech/thesis/GPPPy_hpx/hpx_py11/cpp_code/include/automobile_bits/uncertainty.hpp"
-#include "/home/maksim/simtech/thesis/GPPPy_hpx/hpx_py11/cpp_code/include/automobile_bits/gp_functions_grad.hpp"
+#include "mkl_adapter.hpp"
+#include "uncertainty.hpp"
+#include "gp_functions_grad.hpp"
 #include <cmath>
 
 ////////////////////////////////////////////////////////////////////////////////

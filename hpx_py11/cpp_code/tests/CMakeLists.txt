@@ -14,20 +14,28 @@ find_package(MKL CONFIG REQUIRED)
 # Include directories
 include_directories(${HPX_INCLUDE_DIR})
 include_directories(${MKL_INCLUDE_DIRS})
-include_directories(/home/maksim/simtech/thesis/GPPPy_hpx/hpx_py11/cmake_cpp/include) # Add any additional include directories if needed
+# Determine the path to the include directory relative to the current CMakeLists.txt file
+get_filename_component(DIR_ONE_ABOVE ../../ ABSOLUTE)
+message(STATUS "Current list directory: ${DIR_ONE_ABOVE}")
+get_filename_component(INCLUDE_DIR "${DIR_ONE_ABOVE}/cmake_cpp/include" ABSOLUTE)
+# Add the include directory
+include_directories(${INCLUDE_DIR})
 
 # Set the output directory for executables
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../)
 
-# Find automobile library
-find_library(AUTOMOBILE_LIB automobile HINTS /home/maksim/simtech/thesis/GPPPy_hpx/hpx_py11/cmake_cpp/lib/)
+
+# Determine the path to the library directory relative to the current CMakeLists.txt file
+get_filename_component(LIB_DIR "${DIR_ONE_ABOVE}/cmake_cpp/lib" ABSOLUTE)
+# Find the Gaussian Process library
+find_library(GAUSSIAN_PROCESS_LIB gaussian_process HINTS ${LIB_DIR})
 
 # Add the executable
 add_executable(test_cpp src/test.cpp)
 
 # Link the libraries
 target_link_libraries(test_cpp PUBLIC 
-                      ${AUTOMOBILE_LIB}
+                      ${GAUSSIAN_PROCESS_LIB}
                       HPX::hpx 
                       HPX::wrap_main 
                       HPX::iostreams_component

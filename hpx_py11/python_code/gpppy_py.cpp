@@ -1,5 +1,5 @@
-#include "../cpp_code/include/automobile_bits/gpppy_c.hpp"
-#include "../cpp_code/include/automobile_bits/gp_functions.hpp"
+#include "../cpp_code/include/gp_headers/gpppy_c.hpp"
+#include "../cpp_code/include/gp_headers/gp_functions.hpp"
 #include <pybind11/stl.h>
 #include <pybind11/pybind11.h>
 

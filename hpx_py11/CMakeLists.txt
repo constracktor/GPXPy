@@ -33,17 +33,17 @@ else ()
     message(STATUS "Installed pybind11 version ${GPPPy_pybind11_VERSION}.")
 endif ()
 
-project(automobile)
+project(gaussian_process)
 find_package(HPX REQUIRED)
 find_package(MKL CONFIG REQUIRED)
 
-include_directories("${CMAKE_SOURCE_DIR}/cpp_code/include/automobile_bits")
+include_directories("${CMAKE_SOURCE_DIR}/cpp_code/include/gp_headers")
 include_directories("${CMAKE_SOURCE_DIR}/python_code")
 include_directories(${HPX_INCLUDE_DIRS})
 include_directories(${MKL_INCLUDE_DIRS})
 
 file (GLOB SOURCE_FILES "cpp_code/src/*.cpp")
-file (GLOB HEADER_FILES "cpp_code/include/automobile_bits/*.hpp")
+file (GLOB HEADER_FILES "cpp_code/include/gp_headers/*.hpp")
 file (GLOB PYTHON_FILES "python_code/*.cpp" "python_code/*.hpp")
 
 source_group("Source Files" FILES ${SOURCE_FILES})
@@ -52,7 +52,7 @@ source_group("Python Files" FILES ${PYTHON_FILES})
 
 # find_package(pybind11 REQUIRED)
 # include(pybind11.cmake)
-pybind11_add_module(automobile 
+pybind11_add_module(gaussian_process 
 	${SOURCE_FILES}
 	${HEADER_FILES}
 	${PYTHON_FILES}
@@ -62,14 +62,14 @@ pybind11_add_module(automobile
 get_filename_component(PARENT_BINARY_DIR "${CMAKE_BINARY_DIR}" DIRECTORY)
 
 # Set the output directory for the automobile target
-set_target_properties(automobile PROPERTIES
+set_target_properties(gaussian_process PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${PARENT_BINARY_DIR}/test"
     ARCHIVE_OUTPUT_DIRECTORY "${PARENT_BINARY_DIR}/test"
     RUNTIME_OUTPUT_DIRECTORY "${PARENT_BINARY_DIR}/test"
 )
 
 
-target_link_libraries(automobile PUBLIC
+target_link_libraries(gaussian_process PUBLIC
                       HPX::hpx 
                       HPX::wrap_main 
                       HPX::iostreams_component
@@ -79,7 +79,7 @@ target_link_libraries(automobile PUBLIC
                       MKL::mkl_sequential
                       )
 
-install(TARGETS automobile
+install(TARGETS gaussian_process
   COMPONENT python
   LIBRARY DESTINATION "${PYTHON_LIBRARY_DIR}"
   )

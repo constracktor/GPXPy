@@ -1,14 +1,7 @@
-#include "../include/automobile_bits/utils_c.hpp"
+#include "../include/gp_headers/utils_c.hpp"
 
 #include <cstdio>
 #include <iostream>
-// #include <iostream>
-// #include <hpx/hpx.hpp>
-// #include <hpx/future.hpp>
-// #include <hpx/iostream.hpp>
-
-// #include <hpx/hpx_start.hpp>
-// #include <hpx/include/post.hpp>
 
 namespace utils
 {

@@ -1,3 +1,6 @@
+#ifndef MKL_ADAPTER_H
+#define MKL_ADAPTER_H
+
 // #include "mkl.h
 #include "mkl_cblas.h"
 #include "mkl_lapacke.h"
@@ -165,3 +168,5 @@ std::vector<double> mkl_gemv_p(std::vector<double> A,
   // return vector
   return b;
 }
+
+#endif
