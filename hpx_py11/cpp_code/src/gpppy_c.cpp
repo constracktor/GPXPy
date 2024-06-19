@@ -82,4 +82,21 @@ namespace gpppy
         return losses;
     }
 
+    double GP::calculate_loss()
+    {
+        double hyperparameters[3];
+        hyperparameters[0] = lengthscale;          // lengthscale
+        hyperparameters[1] = vertical_lengthscale; // vertical_lengthscale
+        hyperparameters[2] = noise_variance;       // noise_variance
+        hpx::shared_future<double> fut = compute_loss_hpx(_training_input, _training_output, _n_tiles, _n_tile_size,
+                                                          n_regressors, hyperparameters);
+
+        double loss;
+        hpx::threads::run_as_hpx_thread([&loss, &fut]()
+                                        {
+                                            loss = fut.get(); // Wait for and get the result from the future
+                                        });
+        return loss;
+    }
+
 }

@@ -138,6 +138,48 @@ hpx::shared_future<std::vector<std::vector<double>>> predict_hpx(const std::vect
         return result; });
 }
 
+hpx::shared_future<double> compute_loss_hpx(const std::vector<double> &training_input, const std::vector<double> &training_output,
+                                            int n_tiles, int n_tile_size, int n_regressors, double *hyperparameters)
+{
+    std::vector<hpx::shared_future<std::vector<double>>> K_tiles;
+    std::vector<hpx::shared_future<std::vector<double>>> alpha_tiles;
+    std::vector<hpx::shared_future<std::vector<double>>> y_tiles;
+    hpx::shared_future<double> loss_value;
+    ////// Comput loss after parameter update
+    K_tiles.resize(n_tiles * n_tiles);
+    for (std::size_t i = 0; i < n_tiles; i++)
+    {
+        for (std::size_t j = 0; j <= i; j++)
+        {
+            K_tiles[i * n_tiles + j] = hpx::async(hpx::annotated_function(&gen_tile_covariance, "assemble_tiled"), i, j,
+                                                  n_tile_size, n_regressors, hyperparameters, training_input);
+        }
+    }
+    // Assemble alpha
+    alpha_tiles.resize(n_tiles);
+    for (std::size_t i = 0; i < n_tiles; i++)
+    {
+        alpha_tiles[i] = hpx::async(hpx::annotated_function(&gen_tile_output, "assemble_tiled"), i, n_tile_size, training_output);
+    }
+    // Assemble y
+    y_tiles.resize(n_tiles);
+    for (std::size_t i = 0; i < n_tiles; i++)
+    {
+        y_tiles[i] = hpx::async(hpx::annotated_function(&gen_tile_output, "assemble_tiled"), i, n_tile_size, training_output);
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
+    // PART 2: CHOLESKY SOLVE
+    // Cholesky decomposition
+    right_looking_cholesky_tiled_mkl(K_tiles, n_tile_size, n_tiles);
+    // Triangular solve K_NxN * alpha = y
+    forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
+    backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
+    // Compute loss
+    compute_loss_tiled(K_tiles, alpha_tiles, y_tiles, loss_value, n_tile_size, n_tiles);
+    return loss_value;
+}
+
 hpx::shared_future<std::vector<double>> optimize_hpx(const std::vector<double> &training_input, const std::vector<double> &training_output,
                                                      int n_tiles, int n_tile_size, double &lengthscale, double &vertical_lengthscale,
                                                      double &noise_variance, int n_regressors, const gpppy_hyper::Hyperparameters &hyperparams,
@@ -145,9 +187,9 @@ hpx::shared_future<std::vector<double>> optimize_hpx(const std::vector<double> &
 {
 
     double hyperparameters[7];
-    hyperparameters[0] = lengthscale;               // lengthscale = variance of training_output
-    hyperparameters[1] = vertical_lengthscale;      // vertical_lengthscale = standard deviation of training_input
-    hyperparameters[2] = noise_variance;            // noise_variance = small value
+    hyperparameters[0] = lengthscale;               // lengthscale
+    hyperparameters[1] = vertical_lengthscale;      // vertical_lengthscale
+    hyperparameters[2] = noise_variance;            // noise_variance
     hyperparameters[3] = hyperparams.learning_rate; // learning rate
     hyperparameters[4] = hyperparams.beta1;         // beta1
     hyperparameters[5] = hyperparams.beta2;         // beta2
@@ -258,11 +300,6 @@ hpx::shared_future<std::vector<double>> optimize_hpx(const std::vector<double> &
         forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
         backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
 
-        // Compute loss
-        compute_loss_tiled(K_tiles, alpha_tiles, y_tiles, loss_value, n_tile_size, n_tiles);
-        // printf("iter: %d param: %.10lf loss: %.10lf\n", iter, hyperparameters[0], loss_value.get());
-        printf("iter: %d loss: %.17lf l: %.12lf, v: %.12lf, n: %.17lf\n", iter, loss_value.get(), hyperparameters[0], hyperparameters[1], hyperparameters[2]);
-        losses[iter] = loss_value.get();
         // Fill y*y^T*inv(K)-I Cholesky Algorithms
         update_grad_K_tiled_mkl(grad_K_tiles, y_tiles, alpha_tiles, n_tile_size, n_tiles);
 
@@ -282,8 +319,12 @@ hpx::shared_future<std::vector<double>> optimize_hpx(const std::vector<double> &
         if (trainable_params[2])
         {
             update_noise_variance(grad_K_tiles, hyperparameters, n_tile_size, n_tiles, m_T, v_T, beta1_T, beta2_T, iter);
-            printf("iter: %d, n: %.17lf\n", iter, hyperparameters[2]);
         }
+
+        loss_value = compute_loss_hpx(training_input, training_output, n_tiles, n_tile_size, n_regressors, hyperparameters);
+        // printf("iter: %d param: %.10lf loss: %.10lf\n", iter, hyperparameters[0], loss_value.get());
+        printf("iter: %d loss: %.17lf l: %.12lf, v: %.12lf, n: %.17lf\n", iter, loss_value.get(), hyperparameters[0], hyperparameters[1], hyperparameters[2]);
+        losses[iter] = loss_value.get();
     }
     // printf("iter: %d, n: %.17lf\n", iter, hyperparameters[2]);
     //// update params
