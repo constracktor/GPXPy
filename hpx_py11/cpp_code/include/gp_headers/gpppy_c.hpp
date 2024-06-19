@@ -46,6 +46,8 @@ namespace gpppy
 
         std::vector<double> optimize(const gpppy_hyper::Hyperparameters &hyperparams);
 
+        double optimize_step(gpppy_hyper::Hyperparameters &hyperparams, int iter);
+
         double calculate_loss();
     };
 
