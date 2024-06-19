@@ -82,6 +82,20 @@ namespace gpppy
         return losses;
     }
 
+    double GP::optimize_step(gpppy_hyper::Hyperparameters &hyperparams, int iter)
+    {
+        hpx::shared_future<double> fut = optimize_step_hpx(_training_input, _training_output, _n_tiles, _n_tile_size,
+                                                           lengthscale, vertical_lengthscale, noise_variance, n_regressors,
+                                                           hyperparams, trainable_params, iter);
+
+        double loss;
+        hpx::threads::run_as_hpx_thread([&loss, &fut]()
+                                        {
+                                            loss = fut.get(); // Wait for and get the result from the future
+                                        });
+        return loss;
+    }
+
     double GP::calculate_loss()
     {
         double hyperparameters[3];
