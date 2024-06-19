@@ -37,7 +37,8 @@ int main(int argc, char *argv[])
 
     /////////////////////
     ///// hyperparams
-    gpppy_hyper::Hyperparameters hpar = {0.1, 0.9, 0.999, 1e-8, 3};
+    std::vector<double> M = {1.0, 0.0, 1.0};
+    gpppy_hyper::Hyperparameters hpar = {0.1, 0.9, 0.999, 1e-8, 3, M};
     std::cout << "lr: " << hpar.learning_rate << std::endl;
     std::cout << hpar.repr() << std::endl;
 
@@ -73,10 +74,16 @@ int main(int argc, char *argv[])
     init_loss = gp.calculate_loss();
     std::cout << "init loss: " << init_loss << std::endl;
 
-    std::vector<double> losses;
-    losses = gp.optimize(hpar);
-    std::cout << "Loss" << std::endl;
-    utils::print(losses, 0, 5);
+    std::size_t iter = 2;
+    for (std::size_t i; i < iter; i++)
+    {
+        std::cout << "loss:" << gp.optimize_step(hpar, i) << std::endl;
+    }
+
+    // std::vector<double> losses;
+    // losses = gp.optimize(hpar);
+    // std::cout << "Loss" << std::endl;
+    // utils::print(losses, 0, 5);
 
     std::vector<std::vector<double>> sum;
     sum = gp.predict(test_input.data, result.first, result.second);
