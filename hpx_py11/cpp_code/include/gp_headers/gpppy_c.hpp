@@ -45,6 +45,8 @@ namespace gpppy
         std::vector<std::vector<double>> predict(const std::vector<double> &test_data, int m_tiles, int m_tile_size);
 
         std::vector<double> optimize(const gpppy_hyper::Hyperparameters &hyperparams);
+
+        double calculate_loss();
     };
 
 }
