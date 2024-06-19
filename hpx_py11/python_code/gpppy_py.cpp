@@ -45,5 +45,6 @@ void init_gpppy(py::module &m)
         .def("get_input_data", &gpppy::GP::get_training_input)
         .def("get_output_data", &gpppy::GP::get_training_output)
         .def("predict", &gpppy::GP::predict, py::arg("test_data"), py::arg("m_tiles"), py::arg("m_tile_size"))
-        .def("optimize", &gpppy::GP::optimize, py::arg("hyperparams"));
+        .def("optimize", &gpppy::GP::optimize, py::arg("hyperparams"))
+        .def("compute_loss", &gpppy::GP::calculate_loss);
 }
