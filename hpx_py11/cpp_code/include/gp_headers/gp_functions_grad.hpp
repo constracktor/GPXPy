@@ -215,8 +215,7 @@ double compute_gradient_noise(const std::vector<std::vector<double>> &ft_tiles,
 // Update biased first raw moment estimate
 double update_fist_moment(const double &gradient,
                           double m_T,
-                          const double &beta_1,
-                          int iter)
+                          const double &beta_1)
 {
   // printf("gradient: %.17lf\n", gradient);
   // printf("beta_1: %.17lf\n", beta_1);
@@ -227,8 +226,7 @@ double update_fist_moment(const double &gradient,
 // Update biased second raw moment estimate
 double update_second_moment(const double &gradient,
                             double v_T,
-                            const double &beta_2,
-                            int iter)
+                            const double &beta_2)
 {
   // printf("v_T: %.12lf\n", beta2_T[iter] * v_T + (1.0 - beta2_T[iter]) * gradient * gradient);
   return beta_2 * v_T + (1.0 - beta_2) * gradient * gradient;
