@@ -14,17 +14,21 @@ void init_gpppy(py::module &m)
         .def_readonly("data", &gpppy::GP_data::data);
 
     py::class_<gpppy_hyper::Hyperparameters>(m, "Hyperparameters")
-        .def(py::init<double, double, double, double, int>(),
+        .def(py::init<double, double, double, double, int, std::vector<double>, std::vector<double>>(),
              py::arg("learning_rate") = 0.001,
              py::arg("beta1") = 0.9,
              py::arg("beta2") = 0.999,
              py::arg("epsilon") = 1e-8,
-             py::arg("opt_iter") = 0)
+             py::arg("opt_iter") = 0,
+             py::arg("m_T") = std::vector<double>{0.0, 0.0, 0.0},
+             py::arg("v_T") = std::vector<double>{0.0, 0.0, 0.0})
         .def_readwrite("learning_rate", &gpppy_hyper::Hyperparameters::learning_rate)
         .def_readwrite("beta1", &gpppy_hyper::Hyperparameters::beta1)
         .def_readwrite("beta2", &gpppy_hyper::Hyperparameters::beta2)
         .def_readwrite("epsilon", &gpppy_hyper::Hyperparameters::epsilon)
         .def_readwrite("opt_iter", &gpppy_hyper::Hyperparameters::opt_iter)
+        .def_readwrite("m_T", &gpppy_hyper::Hyperparameters::M_T)
+        .def_readwrite("v_T", &gpppy_hyper::Hyperparameters::V_T)
         .def("__repr__", &gpppy_hyper::Hyperparameters::repr);
     ;
 
@@ -46,5 +50,6 @@ void init_gpppy(py::module &m)
         .def("get_output_data", &gpppy::GP::get_training_output)
         .def("predict", &gpppy::GP::predict, py::arg("test_data"), py::arg("m_tiles"), py::arg("m_tile_size"))
         .def("optimize", &gpppy::GP::optimize, py::arg("hyperparams"))
+        .def("optimize_step", &gpppy::GP::optimize_step, py::arg("hyperparams"), py::arg("iter"))
         .def("compute_loss", &gpppy::GP::calculate_loss);
 }
