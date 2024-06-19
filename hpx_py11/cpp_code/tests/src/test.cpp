@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 
     /////////////////////
     ///// hyperparams
-    gpppy_hyper::Hyperparameters hpar = {0.1, 0.9, 0.999, 1e-8, 2};
+    gpppy_hyper::Hyperparameters hpar = {0.1, 0.9, 0.999, 1e-8, 3};
     std::cout << "lr: " << hpar.learning_rate << std::endl;
     std::cout << hpar.repr() << std::endl;
 
@@ -69,6 +69,9 @@ int main(int argc, char *argv[])
 
     // Initialize HPX with the new arguments, don't run hpx_main
     utils::start_hpx_runtime(new_argc, new_argv);
+    double init_loss;
+    init_loss = gp.calculate_loss();
+    std::cout << "init loss: " << init_loss << std::endl;
 
     std::vector<double> losses;
     losses = gp.optimize(hpar);
