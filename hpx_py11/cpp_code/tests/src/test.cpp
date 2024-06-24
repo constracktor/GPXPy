@@ -13,11 +13,14 @@ int main(int argc, char *argv[])
     int n_train = 300;
     int n_test = 700;
     const int N_CORES = 2; // Set this to the number of threads
-    const int tile_size = 100;
+    // const int tile_size = 100;
+    const int n_tiles = 10;
     const int n_reg = 100;
 
-    int n_tiles = utils::compute_train_tiles(n_train, tile_size);
-    std::cout << "n_tiles: " << n_tiles << std::endl;
+    // int n_tiles = utils::compute_train_tiles(n_train, tile_size);
+    // std::cout << "n_tiles: " << n_tiles << std::endl;
+    int tile_size = utils::compute_train_tile_size(n_train, n_tiles);
+    std::cout << "n_tile_size: " << tile_size << std::endl;
     auto result = utils::compute_test_tiles(n_test, n_tiles, tile_size);
     std::cout << "m_tiles: " << result.first << ", m_tile_size: " << result.second << std::endl;
 
@@ -37,7 +40,7 @@ int main(int argc, char *argv[])
 
     /////////////////////
     ///// hyperparams
-    std::vector<double> M = {1.0, 0.0, 1.0};
+    std::vector<double> M = {0.0, 0.0, 0.0};
     gpppy_hyper::Hyperparameters hpar = {0.1, 0.9, 0.999, 1e-8, 3, M};
     std::cout << "lr: " << hpar.learning_rate << std::endl;
     std::cout << hpar.repr() << std::endl;
@@ -74,7 +77,7 @@ int main(int argc, char *argv[])
     init_loss = gp.calculate_loss();
     std::cout << "init loss: " << init_loss << std::endl;
 
-    std::size_t iter = 2;
+    std::size_t iter = 3;
     for (std::size_t i; i < iter; i++)
     {
         std::cout << "loss:" << gp.optimize_step(hpar, i) << std::endl;
