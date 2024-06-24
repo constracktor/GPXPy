@@ -16,6 +16,18 @@ int compute_train_tiles_wrap(int n_samples, int n_tile_size)
     }
 }
 
+int compute_train_tile_size_wrap(int n_samples, int n_tiles)
+{
+    if (n_tiles > 0)
+    {
+        return utils::compute_train_tile_size(n_samples, n_tiles);
+    }
+    else
+    {
+        throw std::runtime_error("Error: Please specify a valid value for train_tiles.\n");
+    }
+}
+
 void start_hpx_wrapper(std::vector<std::string> args, int n_cores)
 {
     // Add the --hpx:threads argument to the args vector
@@ -63,7 +75,21 @@ void init_utils(py::module &m)
               n_tile_size (int): The size of each tile.
 
           Returns:
-              tuple: A tuple containing the number of tiles and the adjusted tile size.
+              int: Number of tiles per dimension.
+          )pbdoc");
+
+    m.def("compute_train_tile_size", &compute_train_tile_size_wrap,
+          py::arg("n_samples"),
+          py::arg("n_tiles"),
+          R"pbdoc(
+          Compute the tile size for training data.
+
+          Parameters:
+              n_samples (int): Number of samples.
+              n_tiles (int): Number of tiles per dimension.
+
+          Returns:
+              int: Tile size
           )pbdoc");
 
     m.def("compute_test_tiles", &utils::compute_test_tiles,
