@@ -16,6 +16,8 @@ namespace utils
     /// Function to load data from a file into data
     int compute_train_tiles(int n_samples, int n_tile_size);
 
+    int compute_train_tile_size(int n_samples, int n_tiles);
+
     std::pair<int, int> compute_test_tiles(int m_samples, int n_tiles, int n_tile_size);
 
     /// Function to load data from a file
