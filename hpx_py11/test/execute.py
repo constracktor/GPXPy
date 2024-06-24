@@ -21,7 +21,7 @@ def gpppy_run(config, output_csv_obj, n_train, l, cores):
     
     n_tile_size = gpppy.compute_train_tile_size(n_train, config["N_TILES"])
     m_tiles, m_tile_size = gpppy.compute_test_tiles(config["N_TEST"], config["N_TILES"], n_tile_size)
-    hpar = gpppy.Hyperparameters(learning_rate=0.1, opt_iter=3, m_T=[0,0,0], v_T=[0,0,0])
+    hpar = gpppy.Hyperparameters(learning_rate=0.1, opt_iter=config["OPT_ITER"], m_T=[0,0,0], v_T=[0,0,0])
     train_in = gpppy.GP_data(config["train_in_file"], n_train)
     train_out = gpppy.GP_data(config["train_out_file"], n_train)
     test_in = gpppy.GP_data(config["test_in_file"], config["N_TEST"])
@@ -44,7 +44,7 @@ def gpppy_run(config, output_csv_obj, n_train, l, cores):
     pred_t = time.time()
     pr = gp.predict(test_in.data, m_tiles, m_tile_size)
     pred_t = time.time() - pred_t
-    logger.info("Finished making predictions.") 
+    logger.info("Finished predictions.") 
     
     # Stop HPX runtime
     gpppy.stop_hpx()
@@ -54,7 +54,7 @@ def gpppy_run(config, output_csv_obj, n_train, l, cores):
     OPTI_TIME = opti_t
     PREDICTION_TIME = pred_t
     
-    row_data = [config["N_CORES"], size_train, config["N_TEST"], config["N_REG"], 
+    row_data = [cores, n_train, config["N_TEST"], config["N_TILES"], config["N_REG"], config["OPT_ITER"],
                 TOTAL_TIME, INIT_TIME, OPTI_TIME, PREDICTION_TIME, l]
     output_csv_obj.writerow(row_data)
     
@@ -83,27 +83,20 @@ def execute():
     
     if not file_exists:
         logger.info("Write output file header")
-        header = ["Cores", "N_train", "N_test", "N_TILES", "N_regressor", "Total_time",
+        header = ["Cores", "N_train", "N_test", "N_TILES", "N_regressor", "Opt_iter", "Total_time",
              "Init_time", "Optimization_Time", "Predict_time", "N_loop"]
         output_csv_obj.writerow(header)
 
     start = config["START"]
     end = config["END"]
-    step = config["STEP"]
-   
-    for i in range(start, end+step, step):
-        for l in range(config["LOOP"]):
-            logger.info("*" * 40)
-            logger.info(f"Train Size: {i}, Loop: {l}")
-            gpppy_run(config, output_csv_obj, i, l, 1)
-            
+    step = config["STEP"]         
         
-    for core in range(1, 6):
-        for i in range(start, end+step, step):
+    for core in range(0, config["N_CORES"]):
+        for data_size in range(start, end+step, step):
             for l in range(config["LOOP"]):
                 logger.info("*" * 40)
-                logger.info(f"Train Size: {i}, Loop: {l}")
-                gpppy_run(config, output_csv_obj, i, l, 2**core)
+                logger.info(f"Core: {2**core}, Train Size: {data_size}, Loop: {l}")
+                gpppy_run(config, output_csv_obj, data_size, l, 2**core)
         
     
 if __name__ == "__main__":

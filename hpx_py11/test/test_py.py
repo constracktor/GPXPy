@@ -42,7 +42,7 @@ if __name__ == "__main__":
     print(f"Tiles in N dimension: {n_tiles}")
     print(f"Tiles in M dimension: {m_tiles}")
 
-    hpar = a.Hyperparameters(learning_rate=0.1, opt_iter=2, v_T=[0, 0, 0])
+    hpar = a.Hyperparameters(learning_rate=0.1, opt_iter=3, v_T=[0, 0, 0])
     print(hpar.beta1)
     print(hpar)
 
@@ -91,13 +91,13 @@ if __name__ == "__main__":
 
     print("Initial loss", gp.compute_loss())
 
-    for i in range(3):
-        loss = gp.optimize_step(hpar, i)
-        print(f"iter: {i}, loss: {loss}")
+    # for i in range(3):
+        # loss = gp.optimize_step(hpar, i)
+        # print(f"iter: {i}, loss: {loss}")
 
-    # losses = gp.optimize(hpar)
-    # print("loss")
-    # a.print(losses)
+    losses = gp.optimize(hpar)
+    print("loss")
+    a.print(losses)
     pr = gp.predict(test_in.data, m_tiles, m_tile_size)
     print("predict: ")
     # a.print(pr[0])
