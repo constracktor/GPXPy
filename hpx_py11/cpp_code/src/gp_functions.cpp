@@ -301,6 +301,10 @@ hpx::shared_future<std::vector<double>> optimize_hpx(const std::vector<double> &
         forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
         backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
 
+        // Compute loss
+        compute_loss_tiled(K_tiles, alpha_tiles, y_tiles, loss_value, n_tile_size, n_tiles);
+        losses[iter] = loss_value.get();
+
         // Fill y*y^T*inv(K)-I Cholesky Algorithms
         update_grad_K_tiled_mkl(grad_K_tiles, y_tiles, alpha_tiles, n_tile_size, n_tiles);
 
@@ -321,11 +325,6 @@ hpx::shared_future<std::vector<double>> optimize_hpx(const std::vector<double> &
         {
             update_noise_variance(grad_K_tiles, hyperparameters, n_tile_size, n_tiles, m_T, v_T, beta1_T, beta2_T, iter);
         }
-
-        loss_value = compute_loss_hpx(training_input, training_output, n_tiles, n_tile_size, n_regressors, hyperparameters);
-        // printf("iter: %d param: %.10lf loss: %.10lf\n", iter, hyperparameters[0], loss_value.get());
-        // printf("iter: %d loss: %.17lf l: %.12lf, v: %.12lf, n: %.17lf\n", iter, loss_value.get(), hyperparameters[0], hyperparameters[1], hyperparameters[2]);
-        losses[iter] = loss_value.get();
     }
     // printf("iter: %d, n: %.17lf\n", iter, hyperparameters[2]);
     //// update params
@@ -445,6 +444,10 @@ hpx::shared_future<double> optimize_step_hpx(const std::vector<double> &training
     forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
     backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
 
+
+    // Compute loss
+    compute_loss_tiled(K_tiles, alpha_tiles, y_tiles, loss_value, n_tile_size, n_tiles);
+
     // Fill y*y^T*inv(K)-I Cholesky Algorithms
     update_grad_K_tiled_mkl(grad_K_tiles, y_tiles, alpha_tiles, n_tile_size, n_tiles);
 
@@ -466,11 +469,6 @@ hpx::shared_future<double> optimize_step_hpx(const std::vector<double> &training
         update_noise_variance(grad_K_tiles, hyperparameters, n_tile_size, n_tiles, m_T, v_T, beta1_T, beta2_T, 0);
     }
 
-    loss_value = compute_loss_hpx(training_input, training_output, n_tiles, n_tile_size, n_regressors, hyperparameters);
-    // printf("iter: %d param: %.10lf loss: %.10lf\n", iter, hyperparameters[0], loss_value.get());
-    // printf("iter: %d loss: %.17lf l: %.12lf, v: %.12lf, n: %.17lf\n", iter, loss_value.get(), hyperparameters[0], hyperparameters[1], hyperparameters[2]);
-
-    // printf("iter: %d, n: %.17lf\n", iter, hyperparameters[2]);
     //// update params
     lengthscale = hyperparameters[0];
     vertical_lengthscale = hyperparameters[1];
