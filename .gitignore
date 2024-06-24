@@ -198,3 +198,4 @@ backward_substitution.py
 /.vscode
 /gpflow_parallel/logs/
 hpx_py11/cmake_cpp/
+/hpx_py11/cpp_code/tests/test_cpp
