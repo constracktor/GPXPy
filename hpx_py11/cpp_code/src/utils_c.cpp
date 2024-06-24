@@ -20,6 +20,21 @@ namespace utils
         }
     }
 
+    int compute_train_tile_size(int n_samples, int n_tiles)
+    {
+        if (n_tiles > 0)
+        {
+            std::size_t _n_samples = static_cast<std::size_t>(n_samples);
+            std::size_t _n_tiles = static_cast<std::size_t>(n_tiles);
+            std::size_t _n_tile_size = _n_samples / n_tiles;
+            return static_cast<int>(_n_tile_size);
+        }
+        else
+        {
+            throw std::runtime_error("Error: Please specify a valid value for train_tiles.\n");
+        }
+    }
+
     std::pair<int, int> compute_test_tiles(int n_test, int n_tiles, int n_tile_size)
     {
         std::size_t _n_test = static_cast<std::size_t>(n_test);
