@@ -1,6 +1,5 @@
 #ifndef GP_FUNCTIONS_H_INCLUDED
 #define GP_FUNCTIONS_H_INCLUDED
-// #define _USE_MATH_DEFINES
 
 #include <cmath>
 #include <vector>
@@ -126,6 +125,23 @@ std::vector<double> gen_tile_cross_covariance(std::size_t row,
   return std::move(tile);
 }
 
+// generate a tile of the cross-covariance matrix
+std::vector<double> gen_tile_cross_cov_T(std::size_t N_row,
+                                         std::size_t N_col,
+                                         const std::vector<double> &cross_covariance_tile)
+{
+  std::vector<double> transposed;
+  transposed.resize(N_row * N_col);
+  for (std::size_t i = 0; i < N_row; ++i)
+  {
+    for (std::size_t j = 0; j < N_col; j++)
+    {
+      transposed[j * N_row + i] = cross_covariance_tile[i * N_col + j];
+    }
+  }
+  return std::move(transposed);
+}
+
 // generate a tile containing the output observations
 std::vector<double> gen_tile_output(std::size_t row,
                                     std::size_t N,
@@ -163,7 +179,7 @@ double compute_error_norm(std::size_t n_tiles,
   return std::move(sqrt(error));
 }
 
-// generate a empty tile
+// generate an empty tile
 std::vector<double> gen_tile_zeros(std::size_t N)
 {
   // Initialize tile
