@@ -42,26 +42,6 @@ void start_hpx_wrapper(std::vector<std::string> args, int n_cores)
     utils::start_hpx_runtime(argc, argv.data());
 }
 
-// void print_slice(const std::vector<double>& vec, py::slice slice, const std::string& separator = " ") {
-
-//     py::str slice_str = py::str(slice);
-//     std::cout << "Slice: " << slice_str << std::endl;
-//     std::cout << "Separator: " << separator << std::endl;
-
-//     size_t start, stop, step, slicelength;
-//     if (!slice.compute(vec.size(), &start, &stop, &step, &slicelength)) {
-//         throw py::error_already_set();
-//     }
-
-//     std::cout << "start: " << start << std::endl;
-//     std::cout << "stop: " << stop << std::endl;
-//     std::cout << "step: " << step << std::endl;
-//     std::cout << "slicelength: " << slicelength << std::endl;
-
-//     // Call the original print function with sliced vector
-//     gpppy::print(vec, start, stop, separator);
-// }
-
 void init_utils(py::module &m)
 {
     m.def("compute_train_tiles", &compute_train_tiles_wrap,
@@ -117,8 +97,4 @@ void init_utils(py::module &m)
 
     m.def("start_hpx", &start_hpx_wrapper, py::arg("args"), py::arg("n_cores")); // Using the wrapper function
     m.def("stop_hpx", &utils::stop_hpx_runtime);
-
-    //  m.def("print_slice", &print_slice,
-    //       py::arg("vec"), py::arg("slice"), py::arg("separator") = " ",
-    //       "Print sliced elements of a vector using Python-style slicing notation vec[start:end] with optional separator parameter")u
 }
