@@ -11,8 +11,8 @@ int main(int argc, char *argv[])
     int START = 100;
     int END = 300;
     int STEP = 100;
-    int LOOP = 10;
-    const int OPT_ITER = 3;
+    int LOOP = 1;
+    const int OPT_ITER = 1;
 
     int n_test = 700;
     const int N_CORES = 2; // Set this to the number of threads
@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
         for (std::size_t start = START; start <= END; start = start + STEP)
         {
             int n_train = start;
-            for (std::size_t l = 0; l < 10; l++)
+            for (std::size_t l = 0; l < LOOP; l++)
             {
                 auto start_total = std::chrono::high_resolution_clock::now();
 
