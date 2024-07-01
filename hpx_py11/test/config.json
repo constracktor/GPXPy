@@ -10,6 +10,6 @@
     "N_CORES": 2,
     "N_TEST": 700,
     "N_REG": 100,
-    "LOOP": 5,
-    "OPT_ITER": 3
+    "LOOP": 1,
+    "OPT_ITER": 1
 }
