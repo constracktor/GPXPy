@@ -14,7 +14,6 @@ double to_constrained(const double &parameter,
 {
   if (noise)
   {
-    // printf("before constr : %.17lf\n", parameter);
     return log(1.0 + exp(parameter)) + 1e-6;
   }
   else
@@ -24,14 +23,13 @@ double to_constrained(const double &parameter,
 }
 
 // transform hyperparmeter to entire real line using inverse
-// of sofplus. Optimizer, such as gradient decent or Adam,
-//  work better with unconstrained parameters
+// of sofplus. Optimizers, such as gradient decent or Adam,
+// work better with unconstrained parameters
 double to_unconstrained(const double &parameter,
                         bool noise)
 {
   if (noise)
   {
-    // printf("to_unconstrained: %.12lf\n", log(exp(parameter - 1e-6) - 1.0));
     return log(exp(parameter - 1e-6) - 1.0);
   }
   else
@@ -60,11 +58,9 @@ double compute_covariance_dist_func(std::size_t i_global,
   double distance = 0.0;
   for (std::size_t k = 0; k < n_regressors; k++)
   {
-    //
     int offset = -n_regressors + 1 + k;
     int i_local = i_global + offset;
     int j_local = j_global + offset;
-    //
     if (i_local >= 0)
     {
       z_ik = i_input[i_local];
@@ -79,13 +75,13 @@ double compute_covariance_dist_func(std::size_t i_global,
   return -1.0 / (2.0 * pow(hyperparameters[0], 2.0)) * distance;
 }
 
-// compute derivative w.r.t. vertical_lengthscale
-std::vector<double> gen_tile_grad_v(std::size_t row,
-                                    std::size_t col,
-                                    std::size_t N,
-                                    std::size_t n_regressors,
-                                    double *hyperparameters,
-                                    const std::vector<double> &input)
+// compute vector of distances devided by the lengthscale
+std::vector<double> compute_cov_dist_vec(std::size_t row,
+                                         std::size_t col,
+                                         std::size_t N,
+                                         std::size_t n_regressors,
+                                         double *hyperparameters,
+                                         const std::vector<double> &input)
 {
   std::size_t i_global, j_global;
   double cov_dist;
@@ -100,22 +96,22 @@ std::vector<double> gen_tile_grad_v(std::size_t row,
       j_global = N * col + j;
       // compute covariance function
       cov_dist = compute_covariance_dist_func(i_global, j_global, n_regressors, hyperparameters, input, input);
-      tile[i * N + j] = exp(cov_dist) * compute_sigmoid(to_unconstrained(hyperparameters[1], false));
+      tile[i * N + j] = cov_dist;
     }
   }
   return std::move(tile);
 }
 
-// compute derivative w.r.t. lengthscale
-std::vector<double> gen_tile_grad_l(std::size_t row,
-                                    std::size_t col,
-                                    std::size_t N,
-                                    std::size_t n_regressors,
-                                    double *hyperparameters,
-                                    const std::vector<double> &input)
+// generate a tile of the covariance matrix
+std::vector<double> gen_tile_covariance_opt(std::size_t row,
+                                            std::size_t col,
+                                            std::size_t N,
+                                            std::size_t n_regressors,
+                                            double *hyperparameters,
+                                            const std::vector<double> &cov_dists)
 {
   std::size_t i_global, j_global;
-  double cov_dist;
+  double covariance;
   // Initialize tile
   std::vector<double> tile;
   tile.resize(N * N);
@@ -126,11 +122,96 @@ std::vector<double> gen_tile_grad_l(std::size_t row,
     {
       j_global = N * col + j;
       // compute covariance function
-      cov_dist = compute_covariance_dist_func(i_global, j_global, n_regressors, hyperparameters, input, input);
-      tile[i * N + j] = -2.0 * (hyperparameters[1] / hyperparameters[0]) * cov_dist * exp(cov_dist) * compute_sigmoid(to_unconstrained(hyperparameters[0], false));
+      covariance = hyperparameters[1] * exp(cov_dists[i * N + j]);
+      if (i_global == j_global)
+      {
+        // noise variance on diagonal
+        covariance += hyperparameters[2];
+      }
+      tile[i * N + j] = covariance;
     }
   }
   return std::move(tile);
+}
+
+// generate a derivative tile w.r.t. vertical_lengthscale
+std::vector<double> gen_tile_grad_v(std::size_t row,
+                                    std::size_t col,
+                                    std::size_t N,
+                                    std::size_t n_regressors,
+                                    double *hyperparameters,
+                                    const std::vector<double> &cov_dists)
+{
+  // Initialize tile
+  std::vector<double> tile;
+  tile.resize(N * N);
+  double hyperparam_der = compute_sigmoid(to_unconstrained(hyperparameters[1], false));
+  for (std::size_t i = 0; i < N; i++)
+  {
+    for (std::size_t j = 0; j < N; j++)
+    {
+      // compute covariance function
+      tile[i * N + j] = exp(cov_dists[i * N + j]) * hyperparam_der;
+    }
+  }
+  return std::move(tile);
+}
+
+// generate a derivative tile w.r.t. lengthscale
+std::vector<double> gen_tile_grad_l(std::size_t row,
+                                    std::size_t col,
+                                    std::size_t N,
+                                    std::size_t n_regressors,
+                                    double *hyperparameters,
+                                    const std::vector<double> &cov_dists)
+{
+  // Initialize tile
+  std::vector<double> tile;
+  tile.resize(N * N);
+  double hyperparam_der = compute_sigmoid(to_unconstrained(hyperparameters[0], false));
+  for (std::size_t i = 0; i < N; i++)
+  {
+    for (std::size_t j = 0; j < N; j++)
+    {
+      // compute covariance function
+      tile[i * N + j] = -2.0 * (hyperparameters[1] / hyperparameters[0]) * cov_dists[i * N + j] * exp(cov_dists[i * N + j]) * hyperparam_der;
+    }
+  }
+  return std::move(tile);
+}
+
+// generate a derivative tile w.r.t. lengthscale
+std::vector<double> gen_tile_grad_v_trans(std::size_t N,
+                                          const std::vector<double> &grad_l_tile)
+{
+  std::vector<double> transposed;
+  transposed.resize(N * N);
+  for (std::size_t i = 0; i < N; i++)
+  {
+    for (std::size_t j = 0; j < N; j++)
+    {
+      // Mapping (i, j) in the original matrix to (j, i) in the transposed matrix
+      transposed[j * N + i] = grad_l_tile[i * N + j];
+    }
+  }
+  return std::move(transposed);
+}
+
+// generate a derivative tile w.r.t. lengthscale
+std::vector<double> gen_tile_grad_l_trans(std::size_t N,
+                                          const std::vector<double> &grad_l_tile)
+{
+  std::vector<double> transposed;
+  transposed.resize(N * N);
+  for (std::size_t i = 0; i < N; i++)
+  {
+    for (std::size_t j = 0; j < N; j++)
+    {
+      // Mapping (i, j) in the original matrix to (j, i) in the transposed matrix
+      transposed[j * N + i] = grad_l_tile[i * N + j];
+    }
+  }
+  return std::move(transposed);
 }
 
 // compute hyper-parameter beta_1 or beta_2 to power t
@@ -169,7 +250,7 @@ double add_losses(const std::vector<double> &losses,
   return 0.5 * l / (N * n);
 }
 
-// compute trace
+// compute trace of (K^-1 - K^-1*y*y^T*K^-1)* del(K)/del(hyperparam) = gradient(K) w.r.t. hyperparam
 double compute_gradient(const std::vector<std::vector<double>> &diag_tiles,
                         std::size_t N,
                         std::size_t n_tiles)
@@ -185,13 +266,12 @@ double compute_gradient(const std::vector<std::vector<double>> &diag_tiles,
     }
   }
   trace = 1.0 / (2.0 * N * n_tiles) * trace;
-  // printf("gradient: %.12lf\n", trace);
   return std::move(trace);
 }
 
 // compute trace for noise variance
-// Same function as compute_trace with the only difference
-// that we need to retrieve the diag tiles
+// Same function as compute_trace with() the only difference
+// that we only use diag tiles multiplied by derivative of noise_variance
 double compute_gradient_noise(const std::vector<std::vector<double>> &ft_tiles,
                               double *hyperparameters,
                               std::size_t N,
@@ -199,16 +279,16 @@ double compute_gradient_noise(const std::vector<std::vector<double>> &ft_tiles,
 {
   // Initialize tile
   double trace = 0.0;
+  double hyperparam_der = compute_sigmoid(to_unconstrained(hyperparameters[2], true));
   for (std::size_t d = 0; d < n_tiles; d++)
   {
     auto tile = ft_tiles[d * n_tiles + d];
     for (std::size_t i = 0; i < N; ++i)
     {
-      trace += (tile[i * N + i] * compute_sigmoid(to_unconstrained(hyperparameters[2], true)));
+      trace += (tile[i * N + i] * hyperparam_der);
     }
   }
   trace = 1.0 / (2.0 * N * n_tiles) * trace;
-  // printf("gradient: %.12lf\n", trace);
   return std::move(trace);
 }
 
@@ -217,9 +297,6 @@ double update_fist_moment(const double &gradient,
                           double m_T,
                           const double &beta_1)
 {
-  // printf("gradient: %.17lf\n", gradient);
-  // printf("beta_1: %.17lf\n", beta_1);
-  // printf("m_T: %.17lf\n", beta_1 * m_T + (1.0 - beta_1) * gradient);
   return beta_1 * m_T + (1.0 - beta_1) * gradient;
 }
 
@@ -228,7 +305,6 @@ double update_second_moment(const double &gradient,
                             double v_T,
                             const double &beta_2)
 {
-  // printf("v_T: %.12lf\n", beta2_T[iter] * v_T + (1.0 - beta2_T[iter]) * gradient * gradient);
   return beta_2 * v_T + (1.0 - beta_2) * gradient * gradient;
 }
 
@@ -242,26 +318,14 @@ double update_param(const double &unconstrained_hyperparam,
                     const std::vector<double> &beta2_T,
                     int iter)
 {
-  double alpha_T = hyperparameters[3] * sqrt(1.0 - beta2_T[iter]) / (1.0 - beta1_T[iter]);
-  // printf("m_T: %.12lf\n", m_T);
-  // printf("v_T: %.12lf\n", v_T);
-  // printf("alpha_T: %.12lf\n", alpha_T);
-  // printf("hyperparameters[6]: %.12lf\n", hyperparameters[6]);
-  // printf("unconstrained_hyperparam: %.15lf\n", unconstrained_hyperparam);
-
+  // Option 1:
   // double mhat = m_T / (1.0 - beta1_T[iter]);
   // double vhat = v_T / (1.0 - beta2_T[iter]);
-
-  // printf("back 1: %.19lf\n", - hyperparameters[3] * mhat );
-  // printf("back 2: %.19lf\n", (sqrt(vhat) + hyperparameters[6]));
-  // printf("back part: %.19lf\n", hyperparameters[3] * mhat / (sqrt(vhat) + hyperparameters[6]));
   // return unconstrained_hyperparam - hyperparameters[3] * mhat / (sqrt(vhat) + hyperparameters[6]);
-  // printf("return before constrained: %.19lf\n", unconstrained_hyperparam - alpha_T * m_T / (sqrt(v_T) + hyperparameters[6]));
-  return unconstrained_hyperparam - alpha_T * m_T / (sqrt(v_T) + hyperparameters[6]);
 
-  // double updated_param = unconstrained_hyperparam - alpha_T * m_T / (sqrt(v_T) + hyperparameters[6]);
-  // printf("updated_param: %.12lf\n", updated_param);
-  // return updated_param;
+  // Option 2:
+  double alpha_T = hyperparameters[3] * sqrt(1.0 - beta2_T[iter]) / (1.0 - beta1_T[iter]);
+  return unconstrained_hyperparam - alpha_T * m_T / (sqrt(v_T) + hyperparameters[6]);
 }
 
 // generate an identity tile if i==j
@@ -289,7 +353,7 @@ std::vector<double> gen_tile_identity(std::size_t row,
   return std::move(tile);
 }
 
-// generate a empty tile NxN
+// generate an empty tile NxN
 std::vector<double> gen_tile_zeros_diag(std::size_t N)
 {
   // Initialize tile
