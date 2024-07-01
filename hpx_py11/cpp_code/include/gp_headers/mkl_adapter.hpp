@@ -1,14 +1,11 @@
 #ifndef MKL_ADAPTER_H
 #define MKL_ADAPTER_H
 
-// #include "mkl.h
 #include "mkl_cblas.h"
 #include "mkl_lapacke.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // BLAS operations for tiled cholkesy
-// in-place Cholesky decomposition of A -> return factorized matrix L
-
 // in-place Cholesky decomposition of A -> return factorized matrix L
 std::vector<double> mkl_potrf(std::vector<double> A,
                               std::size_t N)
