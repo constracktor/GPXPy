@@ -8,7 +8,7 @@
 
 namespace gpppy
 {
-    // Implementation of the Car constructor
+    // Initialize of the Gaussian process data constructor
     GP_data::GP_data(const std::string &f_path, int n)
     {
         n_samples = n;
@@ -16,6 +16,7 @@ namespace gpppy
         data = utils::load_data(f_path, n);
     }
 
+    // Initialize of the Gaussian process constructor   
     GP::GP(std::vector<double> input, std::vector<double> output, int n_tiles, int n_tile_size, double l, double v, double n, int n_r, std::vector<bool> trainable_bool)
     {
         _training_input = input;
@@ -29,16 +30,19 @@ namespace gpppy
         trainable_params = trainable_bool;
     }
 
+    // Return training input data
     std::vector<double> GP::get_training_input() const
     {
         return _training_input;
     }
 
+    // Return training output data
     std::vector<double> GP::get_training_output() const
     {
         return _training_output;
     }
 
+    // Print Gausian process attributes
     std::string GP::repr() const
     {
         std::ostringstream oss;
@@ -54,6 +58,7 @@ namespace gpppy
         return oss.str();
     }
 
+    // Predict output for test input and additionally provide uncertainty for the predictions
     std::vector<std::vector<double>> GP::predict(const std::vector<double> &test_data, int m_tiles, int m_tile_size)
     {
         hpx::shared_future<std::vector<std::vector<double>>> fut = predict_hpx(_training_input, _training_output, test_data,
@@ -68,6 +73,7 @@ namespace gpppy
         return result;
     }
 
+    // Optimize hyperparameters for a specified number of iterations
     std::vector<double> GP::optimize(const gpppy_hyper::Hyperparameters &hyperparams)
     {
         hpx::shared_future<std::vector<double>> fut = optimize_hpx(_training_input, _training_output, _n_tiles, _n_tile_size,
@@ -82,6 +88,7 @@ namespace gpppy
         return losses;
     }
 
+    // Perform a single optimization step
     double GP::optimize_step(gpppy_hyper::Hyperparameters &hyperparams, int iter)
     {
         hpx::shared_future<double> fut = optimize_step_hpx(_training_input, _training_output, _n_tiles, _n_tile_size,
@@ -96,6 +103,7 @@ namespace gpppy
         return loss;
     }
 
+    // Calculate loss for given data and Gaussian process model
     double GP::calculate_loss()
     {
         double hyperparameters[3];
