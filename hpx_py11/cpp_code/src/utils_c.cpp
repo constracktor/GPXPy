@@ -5,6 +5,7 @@
 
 namespace utils
 {
+    // Compute number of train tiles
     int compute_train_tiles(int n_samples, int n_tile_size)
     {
         if (n_tile_size > 0)
@@ -20,6 +21,7 @@ namespace utils
         }
     }
 
+    // Compute size of train tile
     int compute_train_tile_size(int n_samples, int n_tiles)
     {
         if (n_tiles > 0)
@@ -35,6 +37,7 @@ namespace utils
         }
     }
 
+    // Compute number of test tiles and the size of a test tile
     std::pair<int, int> compute_test_tiles(int n_test, int n_tiles, int n_tile_size)
     {
         std::size_t _n_test = static_cast<std::size_t>(n_test);
@@ -56,6 +59,7 @@ namespace utils
         return {static_cast<int>(m_tiles), static_cast<int>(m_tile_size)};
     }
 
+    // Load data from file
     std::vector<double> load_data(const std::string &file_path, int n_samples)
     {
         std::vector<double> _data;
@@ -71,11 +75,6 @@ namespace utils
         std::size_t scanned_elements = 0;
         for (int i = 0; i < n_samples; i++)
         {
-            // if (fscanf(input_file, "%lf", &data[i]) != 1)
-            // {
-            //     fclose(training_input_file);
-            //     throw std::runtime_error("Error: Failed to read data element at index " + std::to_string(i));
-            // }
             scanned_elements += fscanf(input_file, "%lf", &_data[i]); // scanned_elements++;
         }
 
@@ -89,6 +88,7 @@ namespace utils
         return std::move(_data);
     }
 
+    // Print a vector
     void print(const std::vector<double> &vec, int start, int end, const std::string &separator)
     {
         // Convert negative indices to positive
@@ -121,11 +121,13 @@ namespace utils
         std::cout << std::endl;
     }
 
+    // Start HPX runtime
     void start_hpx_runtime(int argc, char **argv)
     {
         hpx::start(nullptr, argc, argv);
     }
 
+    // Stop HPX runtime
     void stop_hpx_runtime()
     {
         hpx::post([]()
