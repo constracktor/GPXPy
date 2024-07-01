@@ -12,23 +12,26 @@
 
 namespace utils
 {
-
-    /// Function to load data from a file into data
+    // Compute number of train tiles
     int compute_train_tiles(int n_samples, int n_tile_size);
 
+    // Compute size of train tile
     int compute_train_tile_size(int n_samples, int n_tiles);
 
+    // Compute number of test tiles and the size of a test tile
     std::pair<int, int> compute_test_tiles(int m_samples, int n_tiles, int n_tile_size);
 
-    /// Function to load data from a file
+    // Load data from file
     std::vector<double> load_data(const std::string &file_path, int n_samples);
 
+    // Print a vector
     void print(const std::vector<double> &vec, int start = 0, int end = -1, const std::string &separator = " ");
 
+    // Start HPX runtime
     void start_hpx_runtime(int argc, char **argv);
 
+    // Stop HPX runtime
     void stop_hpx_runtime();
-
 }
 
 #endif
