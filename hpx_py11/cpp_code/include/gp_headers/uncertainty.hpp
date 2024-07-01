@@ -1,8 +1,6 @@
 #ifndef UNCERTAINTY_H
 #define UNCERTAINTY_H
 
-
-// #include "mkl.h
 #include "mkl_cblas.h"
 #include "mkl_lapacke.h"
 
