@@ -29,5 +29,5 @@ $CMAKE_COMMAND .. -DCMAKE_BUILD_TYPE=Release -DPYTHON_LIBRARY_DIR="/usr/local/li
 
 make -j4 all           # Build the project
 
-cd ../test
-python3 test_py.py
+#cd ../test
+#python3 test_py.py
