@@ -1,9 +1,5 @@
 #include <gaussian_process>
 
-// #include <hpx/include/run_as.hpp>
-// #include <hpx/hpx_start.hpp>
-// #include <hpx/future.hpp>
-// #include <hpx/include/post.hpp>
 #include <iostream>
 
 int main(int argc, char *argv[])
@@ -77,16 +73,16 @@ int main(int argc, char *argv[])
     init_loss = gp.calculate_loss();
     std::cout << "init loss: " << init_loss << std::endl;
 
-    std::size_t iter = 3;
-    for (std::size_t i; i < iter; i++)
-    {
-        std::cout << "loss:" << gp.optimize_step(hpar, i) << std::endl;
-    }
+    // std::size_t iter = 3;
+    // for (std::size_t i; i < iter; i++)
+    // {
+    //     std::cout << "loss:" << gp.optimize_step(hpar, i) << std::endl;
+    // }
 
-    // std::vector<double> losses;
-    // losses = gp.optimize(hpar);
-    // std::cout << "Loss" << std::endl;
-    // utils::print(losses, 0, 5);
+    std::vector<double> losses;
+    losses = gp.optimize(hpar);
+    std::cout << "Loss" << std::endl;
+    utils::print(losses, 0, 5);
 
     std::vector<std::vector<double>> sum;
     sum = gp.predict(test_input.data, result.first, result.second);
