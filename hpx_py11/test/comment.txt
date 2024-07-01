@@ -8,8 +8,9 @@ General Parameters -
     "START": Starting number of training samples,
     "END": End number of training samples,
     "STEP": Increment of training samples,
+    "N_TILES": Number of tiles in one dimension,
     "N_CORES": Number of cores to use for computation,
     "N_TEST": Number of test samples,
     "N_REG": Number of regressors,
     "LOOP": Number of iterations to be performed for each number of training samples,
-    "PRECISION": Set floating-point type used by gpytorch
+    "OPT_ITER": Number of optimization iterations
