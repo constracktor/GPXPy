@@ -358,7 +358,7 @@ std::vector<double> gen_tile_zeros_diag(std::size_t N)
 {
   // Initialize tile
   std::vector<double> tile;
-  tile.resize(N * N);
+  tile.resize(N);
   std::fill(tile.begin(), tile.end(), 0.0);
   return std::move(tile);
 }
