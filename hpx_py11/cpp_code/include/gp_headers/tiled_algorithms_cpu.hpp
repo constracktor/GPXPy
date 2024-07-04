@@ -122,7 +122,8 @@ void backward_solve_tiled_matrix(std::vector<hpx::shared_future<std::vector<doub
   }
 }
 
-// Tiled Triangular Solve Algorithms for Matrices: A_M,N * K_NxN = K_MxN -> A_MxN = K_MxN * K^-1_NxN
+//////// Triangular solve A_M,N * K_NxN = K_MxN -> A_MxN = K_MxN * K^-1_NxN
+// Tiled Triangular Solve Algorithms for Mtrices (K * X = B)
 void forward_solve_KK_tiled(std::vector<hpx::shared_future<std::vector<double>>> &ft_tiles,
                             std::vector<hpx::shared_future<std::vector<double>>> &ft_rhs,
                             std::size_t N,
@@ -135,13 +136,13 @@ void forward_solve_KK_tiled(std::vector<hpx::shared_future<std::vector<double>>>
     for (std::size_t c = 0; c < n_tiles; c++)
     {
       // TRSM
-      ft_rhs[r * n_tiles + c] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_trsm_u_KK), "triangular_solve_tiled_matrix"), ft_tiles[c * n_tiles + c],
-                                              ft_rhs[r * n_tiles + c], N, M);
+      ft_rhs[c * m_tiles + r] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_trsm_l_KK), "triangular_solve_tiled_matrix"), ft_tiles[c * n_tiles + c],
+                                              ft_rhs[c * m_tiles + r], N, M);
       for (std::size_t m = c + 1; m < n_tiles; m++)
       {
         // GEMV
-        ft_rhs[r * n_tiles + m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_u_KK), "triangular_solve_tiled_matrix"), ft_tiles[m * n_tiles + c],
-                                                ft_rhs[r * n_tiles + c], ft_rhs[r * n_tiles + m], N, M);
+        ft_rhs[m * m_tiles + r] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_l_KK), "triangular_solve_tiled_matrix"), ft_tiles[m * n_tiles + c],
+                                                ft_rhs[c * m_tiles + r], ft_rhs[m * m_tiles + r], N, M);
       }
     }
   }
@@ -209,36 +210,33 @@ void prediction_tiled(std::vector<hpx::shared_future<std::vector<double>>> &ft_t
 }
 
 // Tiled Diagonal of Posterior Covariance Matrix
-void posterior_covariance_tiled(std::vector<hpx::shared_future<std::vector<double>>> &ft_CC_tiles,
-                                std::vector<hpx::shared_future<std::vector<double>>> &ft_tCC_tiles,
-                                std::vector<hpx::shared_future<std::vector<double>>> &ft_K_tiles,
+void posterior_covariance_tiled(std::vector<hpx::shared_future<std::vector<double>>> &ft_tCC_tiles,
+                                std::vector<hpx::shared_future<std::vector<double>>> &ft_inter_tiles,
                                 std::size_t N,
                                 std::size_t M,
                                 std::size_t n_tiles,
                                 std::size_t m_tiles)
 {
-  for (int i = 0; i < m_tiles; ++i)
+  for (std::size_t i = 0; i < m_tiles; ++i)
   {
-    for (int j = i; j < i + 1; ++j)
-    { // outer two loops used for diagonal tiles of prior K
-      for (int m = 0; m < n_tiles; ++m)
-      { // Compute inner product to obtain diagonal elements of (K_MxN * (K^-1_NxN * K_NxM))
-        ft_K_tiles[i * m_tiles + j] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_uncertainty_matrix), "posterior_tiled"), ft_CC_tiles[i * n_tiles + m],
-                                                    ft_tCC_tiles[m * m_tiles + i], ft_K_tiles[i * m_tiles + j], N, M);
-      }
+    for (std::size_t n = 0; n < n_tiles; ++n)
+    { // Compute inner product to obtain diagonal elements of (K_MxN * (K^-1_NxN * K_NxM))
+      ft_inter_tiles[i] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_uncertainty_matrix), "posterior_tiled"),
+                                        ft_tCC_tiles[i * n_tiles + n], ft_inter_tiles[i], N, M);
     }
   }
 }
 
 // Tiled Prediction Uncertainty
-void prediction_uncertainty_tiled(std::vector<hpx::shared_future<std::vector<double>>> &ft_tiles,
+void prediction_uncertainty_tiled(std::vector<hpx::shared_future<std::vector<double>>> &ft_priorK,
+                                  std::vector<hpx::shared_future<std::vector<double>>> &ft_inter,
                                   std::vector<hpx::shared_future<std::vector<double>>> &ft_vector,
                                   std::size_t M,
                                   std::size_t m_tiles)
 {
   for (std::size_t i = 0; i < m_tiles; i++)
   {
-    ft_vector[i] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&diag), "uncertainty_tiled"), ft_tiles[i * m_tiles + i], M);
+    ft_vector[i] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&diag), "uncertainty_tiled"), ft_priorK[i], ft_inter[i], M);
   }
 }
 
@@ -279,7 +277,7 @@ void update_hyperparameter(const std::vector<hpx::shared_future<std::vector<doub
     diag_tiles.resize(n_tiles);
     for (std::size_t d = 0; d < n_tiles; d++)
     {
-      diag_tiles[d] = hpx::async(hpx::annotated_function(&gen_tile_zeros_diag, "assemble_tiled"), N);
+      diag_tiles[d] = hpx::async(hpx::annotated_function(&gen_tile_zeros_diag, "assemble_tiled"), N*N);
     }
 
     // Compute diagonal tiles using GEMM
