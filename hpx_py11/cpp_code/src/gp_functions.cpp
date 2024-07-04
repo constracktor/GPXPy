@@ -7,6 +7,11 @@
 #include <numeric>
 #include <sstream>
 
+#include <iostream>
+#include <iomanip>
+#include <fstream>
+#include <iterator>
+
 namespace gpppy_hyper
 {
     // Initialize Hyperparameter constructor
@@ -43,6 +48,7 @@ hpx::shared_future<std::vector<std::vector<double>>> predict_hpx(const std::vect
     std::vector<hpx::shared_future<std::vector<double>>> K_tiles;
     std::vector<hpx::shared_future<std::vector<double>>> alpha_tiles;
     std::vector<hpx::shared_future<std::vector<double>>> prior_K_tiles;
+    std::vector<hpx::shared_future<std::vector<double>>> prior_inter_tiles;
     std::vector<hpx::shared_future<std::vector<double>>> cross_covariance_tiles;
     std::vector<hpx::shared_future<std::vector<double>>> t_cross_covariance_tiles;
     std::vector<hpx::shared_future<std::vector<double>>> prediction_tiles;
@@ -66,11 +72,11 @@ hpx::shared_future<std::vector<std::vector<double>>> predict_hpx(const std::vect
         alpha_tiles[i] = hpx::async(hpx::annotated_function(&gen_tile_output, "assemble_tiled"), i, n_tile_size, training_output);
     }
     // Assemble prior covariance matrix vector
-    prior_K_tiles.resize(m_tiles * m_tiles);
+    prior_K_tiles.resize(m_tiles);
     for (std::size_t i = 0; i < m_tiles; i++)
     {
-        prior_K_tiles[i * m_tiles + i] = hpx::async(hpx::annotated_function(&gen_tile_prior_covariance, "assemble_tiled"), i, i,
-                                                    m_tile_size, n_regressors, hyperparameters, test_input);
+        prior_K_tiles[i] = hpx::async(hpx::annotated_function(&gen_tile_prior_covariance, "assemble_tiled"), i, i,
+                                      m_tile_size, n_regressors, hyperparameters, test_input);
     }
     // Assemble MxN cross-covariance matrix vector and NxM (transpose) cross-covariance matrix vector
     cross_covariance_tiles.resize(m_tiles * n_tiles);
@@ -85,6 +91,12 @@ hpx::shared_future<std::vector<std::vector<double>>> predict_hpx(const std::vect
             t_cross_covariance_tiles[j * m_tiles + i] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gen_tile_cross_cov_T), "assemble_pred"),
                                                                       m_tile_size, n_tile_size, cross_covariance_tiles[i * n_tiles + j]);
         }
+    }
+    // Assemble placeholder matrix for diag(K_MxN * (K^-1_NxN * K_NxM))
+    prior_inter_tiles.resize(m_tiles);
+    for (std::size_t i = 0; i < m_tiles; i++)
+    {
+        prior_inter_tiles[i] = hpx::async(hpx::annotated_function(&gen_tile_zeros_diag, "assemble_prior_inter"), m_tile_size);
     }
     // Assemble placeholder for prediction
     prediction_tiles.resize(m_tiles);
@@ -103,20 +115,34 @@ hpx::shared_future<std::vector<std::vector<double>>> predict_hpx(const std::vect
     //// Compute Cholesky decomposition
     right_looking_cholesky_tiled_mkl(K_tiles, n_tile_size, n_tiles);
     //// Triangular solve K_NxN * alpha = y
-    // forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
-    // backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
+    forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
+    backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
+
+    std::ofstream k_file("./t_cross.txt");
+    k_file << std::setprecision(12);
+    std::ostream_iterator<double> k_iterator(k_file, "\n");
+    for (std::size_t i = 0; i < n_tiles; i++)
+    {
+        for (std::size_t j = 0; j <=i; j++)
+        {
+            std::vector<double> k_ = K_tiles[i * n_tiles + j].get(); // Get the vector from the shared_future
+            std::copy(k_.begin(), k_.end(), k_iterator);
+            // std::vector<float> nuller = {0.0, 0.0, 0.0}; // Get the vector from the shared_future
+            // std::copy(nuller.begin(), nuller.end(), k_iterator);
+        }
+    }
 
     //// Triangular solve A_M,N * K_NxN = K_MxN -> A_MxN = K_MxN * K^-1_NxN
-    forward_solve_KK_tiled(K_tiles, cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
-    backward_solve_KK_tiled(K_tiles, cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
+    forward_solve_KK_tiled(K_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
+    // backward_solve_KK_tiled(K_tiles, cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
 
     //////////////////////////////////////////////////////////////////////////////
     //// Compute predictions
     prediction_tiled(cross_covariance_tiles, alpha_tiles, prediction_tiles, m_tile_size, n_tile_size, n_tiles, m_tiles);
     // posterior covariance matrix - (K_MxN * K^-1_NxN) * K_NxM
-    posterior_covariance_tiled(cross_covariance_tiles, t_cross_covariance_tiles, prior_K_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
+    posterior_covariance_tiled(t_cross_covariance_tiles, prior_inter_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
     //// Compute predicition uncertainty
-    prediction_uncertainty_tiled(prior_K_tiles, prediction_uncertainty_tiles, m_tile_size, m_tiles);
+    prediction_uncertainty_tiled(prior_K_tiles, prior_inter_tiles, prediction_uncertainty_tiles, m_tile_size, m_tiles);
 
     //// Get predictions and uncertainty to return them
     std::vector<double> pred;
