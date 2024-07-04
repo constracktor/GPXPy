@@ -62,34 +62,33 @@ std::vector<double> mkl_gemm_u_matrix(std::vector<double> A,
                                       std::size_t M)
 {
   // GEMM constants
-  const double alpha = -1.0;
+  const double alpha = 1.0;
   const double beta = 1.0;
   // GEMM kernel - caution with dgemm
   cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans,
-              N, M, N, alpha, A.data(), N, B.data(), M, beta, C.data(), M);
+              M, M, N, alpha, A.data(), M, B.data(), N, beta, C.data(), M);
   // return vector
   return C;
 }
 
 // C = C - A * B
 std::vector<double> mkl_gemm_uncertainty_matrix(std::vector<double> A,
-                                                std::vector<double> B,
-                                                std::vector<double> C,
+                                                std::vector<double> R,
                                                 std::size_t N,
                                                 std::size_t M)
 {
-  // GEMM constants
-  const double alpha = -1.0;
-  const double beta = 1.0;
-  // GEMM kernel - caution with dgemm
-  cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-              M, M, N, alpha, A.data(), N, B.data(), M, beta, C.data(), M);
-  // return vector
-  return C;
+  for (int j = 0; j < M; ++j)
+  {
+    // Extract the j-th column and compute its dot product with itself
+    R[j] += cblas_ddot(N, &A[j], M, &A[j], M);
+  }
+
+  return R;
 }
 
 // retrieve diagonal elements of posterior covariance matrix
 std::vector<double> diag(const std::vector<double> &A,
+                         const std::vector<double> &B,
                          std::size_t M)
 {
   // Initialize tile
@@ -98,7 +97,7 @@ std::vector<double> diag(const std::vector<double> &A,
 
   for (std::size_t i = 0; i < M; ++i)
   {
-    tile.push_back(A[i * M + i]);
+    tile.push_back(A[i] - B[i]);
   }
 
   return std::move(tile);
@@ -113,7 +112,7 @@ std::vector<double> mkl_trsm_l_KK(std::vector<double> L,
   // TRSM constants
   const double alpha = 1.0;
   // TRSM kernel - caution with dtrsm
-  cblas_dtrsm(CblasRowMajor, CblasRight, CblasLower, CblasNoTrans, CblasNonUnit, M, N, alpha, L.data(), N, A.data(), N);
+  cblas_dtrsm(CblasRowMajor, CblasLeft, CblasLower, CblasNoTrans, CblasNonUnit, N, M, alpha, L.data(), N, A.data(), M);
   // return vector
   return A;
 }
@@ -130,7 +129,7 @@ std::vector<double> mkl_gemm_l_KK(std::vector<double> A,
   const double beta = 1.0;
   // GEMM kernel - caution with dgemm
   cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-              M, N, N, alpha, B.data(), N, A.data(), N, beta, C.data(), N);
+              N, M, N, alpha, A.data(), N, B.data(), M, beta, C.data(), M);
   // return vector
   return C;
 }
