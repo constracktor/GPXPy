@@ -5,6 +5,7 @@
 #include <cmath>
 #include <vector>
 #include <numeric>
+#include <iostream>
 
 // compute the squared exponential kernel of two feature vectors
 double compute_covariance_function(std::size_t i_global,
@@ -82,19 +83,33 @@ std::vector<double> gen_tile_prior_covariance(std::size_t row,
   double covariance_function;
   // Initialize tile
   std::vector<double> tile;
-  tile.resize(N * N);
+  tile.resize(N);
   for (std::size_t i = 0; i < N; i++)
   {
     i_global = N * row + i;
-    for (std::size_t j = 0; j < N; j++)
-    {
-      j_global = N * col + j;
-      // compute covariance function
-      covariance_function = compute_covariance_function(i_global, j_global, n_regressors, hyperparameters, input, input);
-      tile[i * N + j] = covariance_function;
-    }
+    j_global = N * col + i;
+    // compute covariance function
+    covariance_function = compute_covariance_function(i_global, j_global, n_regressors, hyperparameters, input, input);
+    tile[i] = covariance_function;
   }
   return std::move(tile);
+}
+
+// generate a tile of the cross-covariance matrix
+std::vector<double> gen_tile_cross_cov_t(std::size_t N_row,
+                                         std::size_t N_col,
+                                         const std::vector<double> &cross_covariance_tile)
+{
+  std::vector<double> transposed;
+  transposed.resize(N_row * N_col);
+  for (std::size_t i = 0; i < N_row; ++i)
+  {
+    for (std::size_t j = 0; j < N_col; j++)
+    {
+      transposed[j * N_row + i] = cross_covariance_tile[i * N_col + j];
+    }
+  }
+  return std::move(transposed);
 }
 
 // generate a tile of the cross-covariance matrix
