@@ -96,7 +96,7 @@ std::vector<double> gen_tile_prior_covariance(std::size_t row,
 }
 
 // generate a tile of the cross-covariance matrix
-std::vector<double> gen_tile_cross_cov_t(std::size_t N_row,
+std::vector<double> gen_tile_cross_cov_T(std::size_t N_row,
                                          std::size_t N_col,
                                          const std::vector<double> &cross_covariance_tile)
 {
