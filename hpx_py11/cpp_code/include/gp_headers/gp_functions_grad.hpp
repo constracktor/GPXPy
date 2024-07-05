@@ -1,6 +1,7 @@
 #ifndef GP_FUNCTIONS_GRAD_H_INCLUDED
 #define GP_FUNCTIONS_GRAD_H_INCLUDED
 
+#include "mkl_cblas.h"
 #include <cmath>
 #include <vector>
 #include <numeric>
@@ -251,22 +252,18 @@ double add_losses(const std::vector<double> &losses,
 }
 
 // compute trace of (K^-1 - K^-1*y*y^T*K^-1)* del(K)/del(hyperparam) = gradient(K) w.r.t. hyperparam
-double compute_gradient(const std::vector<std::vector<double>> &diag_tiles,
+double compute_gradient(const double &grad_l,
+                        const double &grad_r,
                         std::size_t N,
                         std::size_t n_tiles)
 {
-  // Initialize tile
-  double trace = 0.0;
-  for (std::size_t d = 0; d < n_tiles; d++)
-  {
-    auto tile = diag_tiles[d];
-    for (std::size_t i = 0; i < N; ++i)
-    {
-      trace += tile[i * N + i];
-    }
-  }
-  trace = 1.0 / (2.0 * N * n_tiles) * trace;
-  return std::move(trace);
+  printf("grad_l: %.12lf\n", grad_l);
+  printf("grad_r: %.12lf\n", grad_r);
+  double grad = 0.0;
+  grad = 1.0 / (2.0 * N * n_tiles) * (grad_l - grad_r);
+
+  printf("gradient: %.12lf\n", grad);
+  return std::move(grad);
 }
 
 // compute trace for noise variance
@@ -368,6 +365,22 @@ double gen_zero()
 {
   double z = 0.0;
   return z;
+}
+
+double sum_gradleft(const std::vector<double> &diagonal,
+                    double grad)
+{
+  grad += std::reduce(diagonal.begin(), diagonal.end());
+  return grad;
+}
+
+double sum_gradright(const std::vector<double> &inter_alpha,
+                     const std::vector<double> &alpha,
+                     double grad,
+                     std::size_t N)
+{
+  grad += cblas_ddot(N, inter_alpha.data(), 1, alpha.data(), 1);
+  return grad;
 }
 
 #endif
