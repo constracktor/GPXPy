@@ -86,10 +86,24 @@ std::vector<double> mkl_gemm_uncertainty_matrix(std::vector<double> A,
   return R;
 }
 
+// C = C - A * B
+std::vector<double> mkl_gemm_grad(std::vector<double> A,
+                                  std::vector<double> B,
+                                  std::vector<double> R,
+                                  std::size_t N,
+                                  std::size_t M)
+{
+  for (std::size_t i = 0; i < N; ++i)
+  {
+    R[i] += cblas_ddot(M, &A[i * M], 1, &B[i], N);
+  }
+  return R;
+}
+
 // retrieve diagonal elements of posterior covariance matrix
-std::vector<double> diag(const std::vector<double> &A,
-                         const std::vector<double> &B,
-                         std::size_t M)
+std::vector<double> diag_posterior(const std::vector<double> &A,
+                                   const std::vector<double> &B,
+                                   std::size_t M)
 {
   // Initialize tile
   std::vector<double> tile;
