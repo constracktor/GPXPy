@@ -351,7 +351,8 @@ void update_hyperparameter(const std::vector<hpx::shared_future<std::vector<doub
 }
 
 // Update noise variance using gradient decent + Adam
-void update_noise_variance(const std::vector<hpx::shared_future<std::vector<double>>> &ft_tiles,
+void update_noise_variance(const std::vector<hpx::shared_future<std::vector<double>>> &ft_invK,
+                           const std::vector<hpx::shared_future<std::vector<double>>> &ft_alpha,
                            double *hyperparameters,
                            std::size_t N,
                            std::size_t n_tiles,
@@ -361,8 +362,26 @@ void update_noise_variance(const std::vector<hpx::shared_future<std::vector<doub
                            const std::vector<hpx::shared_future<double>> &beta2_T,
                            int iter)
 {
-  // compute gradient = trace of diag_tiles
-  hpx::shared_future<double> gradient = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&compute_gradient_noise), "gradient_tiled"), ft_tiles, hyperparameters, N, n_tiles);
+  ///////////////////////////////////////
+  // part1: compute trace(inv(K) * grad_hyperparam)
+  hpx::shared_future<double> grad_left = hpx::make_ready_future(0.0).share();
+  for (std::size_t j = 0; j < n_tiles; ++j)
+  {
+    grad_left = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&sum_noise_gradleft), "grad_left_tiled"),
+                              ft_invK[j * n_tiles + j], grad_left, hyperparameters, N, n_tiles);
+  }
+  ///////////////////////////////////////
+  /// part 2: alpha^T * grad_param * alpha
+  hpx::shared_future<double> grad_right = hpx::make_ready_future(0.0).share();
+  for (std::size_t j = 0; j < n_tiles; ++j)
+  { // Compute inner product to obtain diagonal elements of (K_MxN * (K^-1_NxN * K_NxM))
+    grad_right = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&sum_noise_gradright), "grad_right_tiled"),
+                               ft_alpha[j], grad_right, hyperparameters, N);
+  }
+  // printf("grad_right: %.12lf\n", grad_right.get());
+  ////////////////////////////
+  /// part 3: update parameter
+  hpx::shared_future<double> gradient = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&compute_gradient), "gradient_tiled"), grad_left, grad_right, N, n_tiles);
   // transform hyperparameter to unconstrained form
   hpx::shared_future<double> unconstrained_param = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&to_unconstrained), "gradient_tiled"), hyperparameters[2], true);
   // update moments
