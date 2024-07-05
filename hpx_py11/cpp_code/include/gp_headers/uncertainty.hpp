@@ -62,11 +62,11 @@ std::vector<double> mkl_gemm_u_matrix(std::vector<double> A,
                                       std::size_t M)
 {
   // GEMM constants
-  const double alpha = 1.0;
+  const double alpha = -1.0;
   const double beta = 1.0;
   // GEMM kernel - caution with dgemm
   cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans,
-              M, M, N, alpha, A.data(), M, B.data(), N, beta, C.data(), M);
+              N, M, N, alpha, A.data(), N, B.data(), M, beta, C.data(), M);
   // return vector
   return C;
 }
