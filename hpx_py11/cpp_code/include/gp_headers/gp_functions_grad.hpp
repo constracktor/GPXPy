@@ -383,4 +383,29 @@ double sum_gradright(const std::vector<double> &inter_alpha,
   return grad;
 }
 
+double sum_noise_gradleft(const std::vector<double> &ft_invK,
+                          double grad,
+                          double *hyperparameters,
+                          std::size_t N,
+                          std::size_t n_tiles)
+{
+  double noise_der = compute_sigmoid(to_unconstrained(hyperparameters[2], true));
+  for (std::size_t i = 0; i < N; ++i)
+  {
+    // printf("grad_left i : %.2ld\n", i);
+    grad += (ft_invK[i * N + i] * noise_der);
+  }
+  return std::move(grad);
+}
+
+double sum_noise_gradright(const std::vector<double> &alpha,
+                           double grad,
+                           double *hyperparameters,
+                           std::size_t N)
+{
+  double noise_der = compute_sigmoid(to_unconstrained(hyperparameters[2], true));
+  grad += (noise_der * cblas_ddot(N, alpha.data(), 1, alpha.data(), 1));
+  return grad;
+}
+
 #endif
