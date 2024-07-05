@@ -78,8 +78,9 @@ hpx::shared_future<std::vector<std::vector<double>>> predict_hpx(const std::vect
         prior_K_tiles[i] = hpx::async(hpx::annotated_function(&gen_tile_prior_covariance, "assemble_tiled"), i, i,
                                       m_tile_size, n_regressors, hyperparameters, test_input);
     }
-    // Assemble MxN cross-covariance matrix vector and NxM (transpose) cross-covariance matrix vector
+    // Assemble MxN cross-covariance matrix vector
     cross_covariance_tiles.resize(m_tiles * n_tiles);
+    // Assemble NxM (transpose) cross-covariance matrix vector
     t_cross_covariance_tiles.resize(n_tiles * m_tiles);
     for (std::size_t i = 0; i < m_tiles; i++)
     {
@@ -118,20 +119,6 @@ hpx::shared_future<std::vector<std::vector<double>>> predict_hpx(const std::vect
     forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
     backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
 
-    std::ofstream k_file("./t_cross.txt");
-    k_file << std::setprecision(12);
-    std::ostream_iterator<double> k_iterator(k_file, "\n");
-    for (std::size_t i = 0; i < n_tiles; i++)
-    {
-        for (std::size_t j = 0; j <= i; j++)
-        {
-            std::vector<double> k_ = K_tiles[i * n_tiles + j].get(); // Get the vector from the shared_future
-            std::copy(k_.begin(), k_.end(), k_iterator);
-            // std::vector<float> nuller = {0.0, 0.0, 0.0}; // Get the vector from the shared_future
-            // std::copy(nuller.begin(), nuller.end(), k_iterator);
-        }
-    }
-
     //// Triangular solve A_M,N * K_NxN = K_MxN -> A_MxN = K_MxN * K^-1_NxN
     forward_solve_KK_tiled(K_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
     // backward_solve_KK_tiled(K_tiles, cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
@@ -141,6 +128,7 @@ hpx::shared_future<std::vector<std::vector<double>>> predict_hpx(const std::vect
     prediction_tiled(cross_covariance_tiles, alpha_tiles, prediction_tiles, m_tile_size, n_tile_size, n_tiles, m_tiles);
     // posterior covariance matrix - (K_MxN * K^-1_NxN) * K_NxM
     posterior_covariance_tiled(t_cross_covariance_tiles, prior_inter_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
+
     //// Compute predicition uncertainty
     prediction_uncertainty_tiled(prior_K_tiles, prior_inter_tiles, prediction_uncertainty_tiles, m_tile_size, m_tiles);
 
@@ -360,12 +348,12 @@ hpx::shared_future<std::vector<double>> optimize_hpx(const std::vector<double> &
         }
         if (trainable_params[1])
         { // vertical_lengthscale
-            update_hyperparameter(grad_K_tiles, grad_v_tiles, alpha_tiles, hyperparameters, n_tile_size, n_tiles, m_T, v_T, beta1_T, beta2_T, 0, 1);
+            update_hyperparameter(grad_I_tiles, grad_v_tiles, alpha_tiles, hyperparameters, n_tile_size, n_tiles, m_T, v_T, beta1_T, beta2_T, 0, 1);
         }
-        // if (trainable_params[2])
-        // { // noise_variance
-        //     update_noise_variance(grad_K_tiles, hyperparameters, n_tile_size, n_tiles, m_T, v_T, beta1_T, beta2_T, iter);
-        // }
+        if (trainable_params[2])
+        { // noise_variance
+            update_noise_variance(grad_I_tiles, alpha_tiles, hyperparameters, n_tile_size, n_tiles, m_T, v_T, beta1_T, beta2_T, iter);
+        }
     }
     // Update hyperparameter attributes in Gaussian process model
     lengthscale = hyperparameters[0];
