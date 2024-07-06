@@ -172,6 +172,21 @@ void backward_solve_KK_tiled(std::vector<hpx::shared_future<std::vector<double>>
   }
 }
 
+void compute_gemm_of_invK_y(std::vector<hpx::shared_future<std::vector<double>>> &ft_invK,
+                            std::vector<hpx::shared_future<std::vector<double>>> &ft_y,
+                            std::vector<hpx::shared_future<std::vector<double>>> &ft_alpha,
+                            std::size_t N,
+                            std::size_t n_tiles)
+{
+  for (std::size_t i = 0; i < n_tiles; i++)
+  {
+    for (std::size_t j = 0; j < n_tiles; j++)
+    {
+      ft_alpha[i] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemv_p), "prediction_tiled"), ft_invK[i * n_tiles + j], ft_y[j], ft_alpha[i], N, N);
+    }
+  }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Tiled Loss
 void compute_loss_tiled(std::vector<hpx::shared_future<std::vector<double>>> &ft_tiles,
