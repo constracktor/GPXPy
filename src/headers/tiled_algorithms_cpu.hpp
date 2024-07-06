@@ -177,6 +177,21 @@ void backward_solve_KK_tiled(std::vector<hpx::shared_future<std::vector<double>>
   }
 }
 
+void compute_gemm_of_invK_y(std::vector<hpx::shared_future<std::vector<double>>> &ft_invK,
+                            std::vector<hpx::shared_future<std::vector<double>>> &ft_y,
+                            std::vector<hpx::shared_future<std::vector<double>>> &ft_alpha,
+                            std::size_t N,
+                            std::size_t n_tiles)
+{
+  for (std::size_t i = 0; i < n_tiles; i++)
+  {
+    for (std::size_t j = 0; j < n_tiles; j++)
+    {
+      ft_alpha[i] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemv_p), "prediction_tiled"), ft_invK[i * n_tiles + j], ft_y[j], ft_alpha[i], N, N);
+    }
+  }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Tiled Loss
 void compute_loss_tiled(std::vector<hpx::shared_future<std::vector<double>>> &ft_tiles,
@@ -296,17 +311,6 @@ void update_hyperparameter(const std::vector<hpx::shared_future<std::vector<doub
         diag_tiles[i] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_grad), "grad_left_tiled"),
                                       ft_invK[i * n_tiles + j], ft_gradparam[j * n_tiles + i], diag_tiles[i], N, N);
       }
-    }
-
-    std::ofstream k_file("./diag_tiles.txt");
-    k_file << std::setprecision(12);
-    std::ostream_iterator<double> k_iterator(k_file, "\n");
-    for (std::size_t i = 0; i < n_tiles; i++)
-    {
-      std::vector<double> k_ = diag_tiles[i].get(); // Get the vector from the shared_future
-      std::copy(k_.begin(), k_.end(), k_iterator);
-      // std::vector<float> nuller = {0.0, 0.0, 0.0}; // Get the vector from the shared_future
-      // std::copy(nuller.begin(), nuller.end(), k_iterator);
     }
 
     // compute trace(inv(K) * grad_hyperparam)
