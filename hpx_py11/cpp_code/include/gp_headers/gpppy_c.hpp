@@ -45,8 +45,11 @@ namespace gpppy
         // Return training output data
         std::vector<double> get_training_output() const;
 
+        // Predict output for test input
+        std::vector<double> predict(const std::vector<double> &test_data, int m_tiles, int m_tile_size);
+
         // Predict output for test input and additionally provide uncertainty for the predictions
-        std::vector<std::vector<double>> predict(const std::vector<double> &test_data, int m_tiles, int m_tile_size);
+        std::vector<std::vector<double>> predict_with_uncertainty(const std::vector<double> &test_data, int m_tiles, int m_tile_size);
 
         // Optimize hyperparameters for a specified number of iterations
         std::vector<double> optimize(const gpppy_hyper::Hyperparameters &hyperparams);
