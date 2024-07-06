@@ -225,7 +225,7 @@ int hpx_main(hpx::program_options::variables_map &vm)
     alpha_tiles.resize(n_tiles);
     for (std::size_t i = 0; i < n_tiles; i++)
     {
-      alpha_tiles[i] = hpx::async(hpx::annotated_function(&gen_tile_output, "assemble_tiled"), i, n_tile_size, training_output);
+      alpha_tiles[i] = hpx::async(hpx::annotated_function(&gen_tile_zeros, "assemble_tiled"), n_tile_size);
     }
     // Assemble placeholder matrix for K^-1
     grad_I_tiles.resize(n_tiles * n_tiles);
@@ -241,26 +241,27 @@ int hpx_main(hpx::program_options::variables_map &vm)
     // PART 2: CHOLESKY SOLVE
     // Cholesky decomposition
     right_looking_cholesky_tiled_mkl(K_tiles, n_tile_size, n_tiles);
-    // Triangular solve K_NxN * alpha = y
-    forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
-    backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
 
     // Compute K^-1 through L*L^T*X = I
     forward_solve_tiled_matrix(K_tiles, grad_I_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
     backward_solve_tiled_matrix(K_tiles, grad_I_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
 
-    // std::ofstream k_file("./grad_I_tiles.txt");
+    // Triangular solve K_NxN * alpha = y
+    // forward_solve_tiled(grad_I_tiles, alpha_tiles, n_tile_size, n_tiles);
+    // backward_solve_tiled(grad_I_tiles, alpha_tiles, n_tile_size, n_tiles);
+
+    // inv(K)*y
+    compute_gemm_of_invK_y(grad_I_tiles, y_tiles, alpha_tiles, n_tile_size, n_tiles);
+
+    // std::ofstream k_file("./alpha_tiles.txt");
     // k_file << std::setprecision(12);
     // std::ostream_iterator<CALC_TYPE> k_iterator(k_file, "\n");
     // for (std::size_t i = 0; i < n_tiles; i++)
     // {
-    //   for (std::size_t j = 0; j < n_tiles; j++)
-    //   {
-    //     std::vector<CALC_TYPE> k_ = grad_I_tiles[i * n_tiles + j].get(); // Get the vector from the shared_future
-    //     std::copy(k_.begin(), k_.end(), k_iterator);
-    //     // std::vector<float> nuller = {0.0, 0.0, 0.0}; // Get the vector from the shared_future
-    //     // std::copy(nuller.begin(), nuller.end(), k_iterator);
-    //   }
+    //   std::vector<CALC_TYPE> k_ = alpha_tiles[i].get(); // Get the vector from the shared_future
+    //   std::copy(k_.begin(), k_.end(), k_iterator);
+    //   // std::vector<float> nuller = {0.0, 0.0, 0.0}; // Get the vector from the shared_future
+    //   // std::copy(nuller.begin(), nuller.end(), k_iterator);
     // }
 
     // Compute loss
@@ -275,8 +276,8 @@ int hpx_main(hpx::program_options::variables_map &vm)
     // backward_solve_tiled_matrix(K_tiles, grad_K_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
 
     update_hyperparameter(grad_I_tiles, grad_l_tiles, alpha_tiles, hyperparameters, n_tile_size, n_tiles, m_T, v_T, beta1_T, beta2_T, iter, 0);
-    // update_hyperparameter(grad_I_tiles, grad_v_tiles, alpha_tiles, hyperparameters, n_tile_size, n_tiles, m_T, v_T, beta1_T, beta2_T, iter, 1);
-    // update_noise_variance(grad_K_tiles, hyperparameters, n_tile_size, n_tiles, m_T, v_T, beta1_T, beta2_T, iter);
+    update_hyperparameter(grad_I_tiles, grad_v_tiles, alpha_tiles, hyperparameters, n_tile_size, n_tiles, m_T, v_T, beta1_T, beta2_T, iter, 1);
+    update_noise_variance(grad_I_tiles, alpha_tiles, hyperparameters, n_tile_size, n_tiles, m_T, v_T, beta1_T, beta2_T, iter);
 
     printf("iter: %d loss: %.12lf l: %.12lf, v: %.12lf, n: %.12lf\n", iter, loss_value.get(), hyperparameters[0], hyperparameters[1], hyperparameters[2]);
   }
@@ -315,7 +316,7 @@ int hpx_main(hpx::program_options::variables_map &vm)
       cross_covariance_tiles[i * n_tiles + j] = hpx::async(hpx::annotated_function(&gen_tile_cross_covariance, "assemble_pred"), i, j,
                                                            m_tile_size, n_tile_size, n_regressors, hyperparameters, test_input, training_input);
 
-      t_cross_covariance_tiles[j * m_tiles + i] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gen_tile_cross_cov_t), "assemble_pred"),
+      t_cross_covariance_tiles[j * m_tiles + i] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gen_tile_cross_cov_T), "assemble_pred"),
                                                                 m_tile_size, n_tile_size, cross_covariance_tiles[i * n_tiles + j]);
     }
   }
@@ -345,6 +346,19 @@ int hpx_main(hpx::program_options::variables_map &vm)
   backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
 
   /////////////////
+  std::ofstream k_file("./tcross.txt");
+  k_file << std::setprecision(12);
+  std::ostream_iterator<CALC_TYPE> k_iterator(k_file, "\n");
+  for (std::size_t i = 0; i < m_tiles; i++)
+  {
+    for (std::size_t j = 0; j < n_tiles; j++)
+    {
+      std::vector<CALC_TYPE> k_ = t_cross_covariance_tiles[j * m_tiles + i].get(); // Get the vector from the shared_future
+      std::copy(k_.begin(), k_.end(), k_iterator);
+      // std::vector<float> nuller = {0.0, 0.0, 0.0}; // Get the vector from the shared_future
+      // std::copy(nuller.begin(), nuller.end(), k_iterator);
+    }
+  }
 
   // Triangular solve A_M,N * K_NxN = K_MxN -> A_MxN = K_MxN * K^-1_NxN
   forward_solve_KK_tiled(K_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
@@ -355,17 +369,6 @@ int hpx_main(hpx::program_options::variables_map &vm)
   prediction_tiled(cross_covariance_tiles, alpha_tiles, prediction_tiles, m_tile_size, n_tile_size, n_tiles, m_tiles);
   // posterior covariance matrix - (K_MxN * K^-1_NxN) * K_NxM
   posterior_covariance_tiled(t_cross_covariance_tiles, prior_inter_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
-
-  // std::ofstream k_file("./diag.txt");
-  // k_file << std::setprecision(12);
-  // std::ostream_iterator<CALC_TYPE> k_iterator(k_file, "\n");
-  // for (std::size_t i = 0; i < m_tiles; i++)
-  // {
-  //     std::vector<CALC_TYPE> k_ = prior_inter_tiles[i].get(); // Get the vector from the shared_future
-  //     std::copy(k_.begin(), k_.end(), k_iterator);
-  //     // std::vector<float> nuller = {0.0, 0.0, 0.0}; // Get the vector from the shared_future
-  //     // std::copy(nuller.begin(), nuller.end(), k_iterator);
-  // }
 
   // predicition uncertainty
   prediction_uncertainty_tiled(prior_K_tiles, prior_inter_tiles, prediction_uncertainty_tiles, m_tile_size, m_tiles);
