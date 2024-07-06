@@ -228,10 +228,11 @@ double compute_loss(const std::vector<double> &K_diag_tile,
                     std::size_t N)
 {
   double l = 0.0;
+  l += cblas_ddot(N, y_tile.data(), 1, alpha_tile.data(), 1);
   for (std::size_t i = 0; i < N; i++)
   {
     // Add the squared difference to the error
-    l += log(K_diag_tile[i * N + i] * K_diag_tile[i * N + i]) + y_tile[i] * alpha_tile[i];
+    l += log(K_diag_tile[i * N + i] * K_diag_tile[i * N + i]);
   }
   return l;
 }
