@@ -16,7 +16,7 @@ namespace gpppy
         data = utils::load_data(f_path, n);
     }
 
-    // Initialize of the Gaussian process constructor   
+    // Initialize of the Gaussian process constructor
     GP::GP(std::vector<double> input, std::vector<double> output, int n_tiles, int n_tile_size, double l, double v, double n, int n_r, std::vector<bool> trainable_bool)
     {
         _training_input = input;
@@ -46,7 +46,7 @@ namespace gpppy
     std::string GP::repr() const
     {
         std::ostringstream oss;
-        oss << std::fixed << std::setprecision(8);
+        oss << std::fixed << std::setprecision(12);
         oss << "Kernel_Params: [lengthscale=" << lengthscale
             << ", vertical_lengthscale=" << vertical_lengthscale
             << ", noise_variance=" << noise_variance
@@ -58,12 +58,27 @@ namespace gpppy
         return oss.str();
     }
 
-    // Predict output for test input and additionally provide uncertainty for the predictions
-    std::vector<std::vector<double>> GP::predict(const std::vector<double> &test_data, int m_tiles, int m_tile_size)
+    // Predict output for test input
+    std::vector<double> GP::predict(const std::vector<double> &test_data, int m_tiles, int m_tile_size)
     {
-        hpx::shared_future<std::vector<std::vector<double>>> fut = predict_hpx(_training_input, _training_output, test_data,
-                                                                               _n_tiles, _n_tile_size, m_tiles, m_tile_size,
-                                                                               lengthscale, vertical_lengthscale, noise_variance, n_regressors);
+        hpx::shared_future<std::vector<double>> fut = predict_hpx(_training_input, _training_output, test_data,
+                                                                  _n_tiles, _n_tile_size, m_tiles, m_tile_size,
+                                                                  lengthscale, vertical_lengthscale, noise_variance, n_regressors);
+
+        std::vector<double> result;
+        hpx::threads::run_as_hpx_thread([&result, &fut]()
+                                        {
+                                            result = fut.get(); // Wait for and get the result from the future
+                                        });
+        return result;
+    }
+
+    // Predict output for test input and additionally provide uncertainty for the predictions
+    std::vector<std::vector<double>> GP::predict_with_uncertainty(const std::vector<double> &test_data, int m_tiles, int m_tile_size)
+    {
+        hpx::shared_future<std::vector<std::vector<double>>> fut = predict_with_uncertainty_hpx(_training_input, _training_output, test_data,
+                                                                                                _n_tiles, _n_tile_size, m_tiles, m_tile_size,
+                                                                                                lengthscale, vertical_lengthscale, noise_variance, n_regressors);
 
         std::vector<std::vector<double>> result;
         hpx::threads::run_as_hpx_thread([&result, &fut]()
