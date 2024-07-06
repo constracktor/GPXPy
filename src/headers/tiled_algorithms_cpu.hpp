@@ -242,7 +242,7 @@ void posterior_covariance_tiled(std::vector<hpx::shared_future<std::vector<doubl
     for (std::size_t n = 0; n < n_tiles; ++n)
     { // Compute inner product to obtain diagonal elements of (K_MxN * (K^-1_NxN * K_NxM))
       ft_inter_tiles[i] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_uncertainty_matrix), "posterior_tiled"),
-                                        ft_tCC_tiles[i * n_tiles + n], ft_inter_tiles[i], N, M);
+                                        ft_tCC_tiles[n * m_tiles + i], ft_inter_tiles[i], N, M);
     }
   }
 }
