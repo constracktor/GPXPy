@@ -86,13 +86,31 @@ def to_unconstrained(parameter):
     # return log(exp(parameter) - 1.0);
 
 def rhs(X_train, Y_train, hyperparam):
-    K = 1.0*rbf_kernel(X_train, gamma=1./(2*hyperparam**2)) + 0.1*np.eye(X_train.shape[0])
+    K = rbf_kernel(X_train, gamma=1./(2*1.0**2)) + hyperparam*np.eye(X_train.shape[0])
+        
     # print(np.all(np.linalg.eigvals(K) > 0))
     # print(np.linalg.cond(K)
     L = cholesky(K, lower=True)
+    # print(solve_triangular(L.T, solve_triangular(L, np.eye(X_train.shape[0]), lower=True)) @ Y_train)
+    
     alpha = solve_triangular(L, Y_train, lower=True)
     alpha = solve_triangular(L.T, alpha)
     return K, L, alpha
+
+def pred_and_uncert(X_train, Y_train, X_test):
+    K = rbf_kernel(X_train, gamma=1./(2*1.0**2)) + 0.1*np.eye(X_train.shape[0])   
+    priorK = rbf_kernel(X_test, gamma=1./(2*1.0**2))
+    crossK = rbf_kernel(X_test, X_train, gamma=1./(2*1.0**2))
+    t_crossK = rbf_kernel(X_train, X_test, gamma=1./(2*1.0**2))
+    # print(np.all(np.linalg.eigvals(K) > 0))
+    # print(np.linalg.cond(K)
+    L = cholesky(K, lower=True)
+    pred = crossK @ solve_triangular(L.T, solve_triangular(L, Y_train, lower=True))
+    V = solve_triangular(L, t_crossK, lower=True)
+    print(V.T[0])
+    print(np.diag(V.T @ V))
+    uncertainty = np.diag(priorK) - np.diag(V.T @ V)
+    return pred, uncertainty
 
 # objective function
 def objective(X_train, Y_train, L, alpha):
@@ -107,15 +125,27 @@ def compute_distance_matrix(X, Y):
 # derivative of objective function
 def derivative(X_train, Y_train, K, alpha, hyperparam):
     N = X_train.shape[0]
-    # grad_noise = np.eye(X_train.shape[0], X_train.shape[0]) * sigmoid(inv_softplus(0.1 - 1.e-6))
+    grad_noise = np.eye(X_train.shape[0], X_train.shape[0]) * sigmoid(inv_softplus(hyperparam - 1.e-6))
+    # print("grad left ", np.trace(np.linalg.solve(K, (np.eye(X_train.shape[0]))) @ grad_noise))
+    # print(np.linalg.solve(K, (np.eye(X_train.shape[0]))))
+    # print(np.dot(alpha.T, np.dot(grad_noise, alpha))[0][0])
+    return 0.5 * 1/N * np.trace(np.linalg.solve(K, (np.eye(X_train.shape[0]))) @ grad_noise) - 0.5 * 1/N * np.dot(alpha.T, np.dot(grad_noise, alpha))[0][0]
     # return 0.5 * 1/N * np.trace( np.linalg.solve(K, (np.eye(X_train.shape[0]) - np.outer(Y_train, alpha))) @  grad_noise )
-    # grad_v = rbf_kernel(X_train, gamma=0.5) * der_sofplus(inv_softplus(hyperparam))
-    # return 0.5 * 1/N * np.trace( np.linalg.solve(K, (np.eye(X_train.shape[0]) - np.outer(Y_train, alpha))) @  grad_v )
-    grad_l = 1.0/ (hyperparam**3) * compute_distance_matrix(X_train, X_train) * rbf_kernel(X_train, gamma=1./(2*(hyperparam**2))) * sigmoid(inv_softplus(hyperparam))
-    return 0.5 * 1/N * np.trace( np.linalg.solve(K, (np.eye(X_train.shape[0]) - np.outer(Y_train, alpha))) @  grad_l  )
+    
+    # grad_v = rbf_kernel(X_train, gamma=0.5) * sigmoid(inv_softplus(hyperparam))
+    # print(np.diag(np.linalg.solve(K, (np.eye(X_train.shape[0]))) @ grad_v))
+    # print(np.trace(np.linalg.solve(K, (np.eye(X_train.shape[0]))) @ grad_v))
+    # grad_left = 0.5 * 1/N * np.trace(np.linalg.solve(K, (np.eye(X_train.shape[0]))) @ grad_v)
+    # print(grad_left)
+    # grad_right = - 0.5 * 1/N * np.dot(alpha.T, np.dot(grad_v, alpha))
+    # print(grad_right[0][0])
+    # # return 0.5 * 1/N * np.trace( np.linalg.solve(K, (np.eye(X_train.shape[0]) - np.outer(Y_train, alpha))) @  grad_v )
+    # return grad_left + grad_right[0][0]
+    # grad_l = 1.0/ (hyperparam**3) * compute_distance_matrix(X_train, X_train) * rbf_kernel(X_train, gamma=1./(2*(hyperparam**2))) * sigmoid(inv_softplus(hyperparam))
+    # return 0.5 * 1/N * np.trace( np.linalg.solve(K, (np.eye(X_train.shape[0]) - np.outer(Y_train, alpha))) @  grad_l  )
 
 # gradient descent algorithm with adam
-def adam(objective, derivative, X_train, Y_train, noise, n_iter, alpha, beta1, beta2, eps=1e-8):
+def adam(objective, derivative, X_train, Y_train, noise, n_iter, lr, beta1, beta2, eps=1e-8):
     # generate an initial point
     K, L, a = rhs(X_train, Y_train, noise)
     score = objective(X_train, Y_train, L, a)
@@ -126,28 +156,47 @@ def adam(objective, derivative, X_train, Y_train, noise, n_iter, alpha, beta1, b
     # run the gradient descent updates
     for t in range(n_iter):
         
-        print(f'>{t} f({noise:.10f}) = {score[0][0]:.10f}')
+        # print(f'>{t} f({noise:.10f}) = {score[0][0]:.10f}')
+        print(f'>{t} loss: {score[0][0]:.17f}, param: {noise:.17f}')
         # calculate gradient g(t)
         g = derivative(X_train, Y_train, K, a, noise)
+        print(f'gradient: {g:.12f}')
         # build a solution one variable at a time
         for i in range(1):
             # m(t) = beta1 * m(t-1) + (1 - beta1) * g(t)
             m[i] = beta1 * m[i] + (1.0 - beta1) * g
+            # print("m", m[i], ", i: ", i)
             # v(t) = beta2 * v(t-1) + (1 - beta2) * g(t)^2
             v[i] = beta2 * v[i] + (1.0 - beta2) * g**2
+            # print("v", v[i])
             # mhat(t) = m(t) / (1 - beta1(t))
             # print("beta1 ", beta1**(t+1))
             mhat = m[i] / (1.0 - beta1**(t+1))
             # print("mhat ", mhat)
+            # print("mhat ", mhat)
             # vhat(t) = v(t) / (1 - beta2(t))
             vhat = v[i] / (1.0 - beta2**(t+1))
+            # print(vhat)
             # print("vhat ", vhat)
             # # x(t) = x(t-1) - alpha * mhat(t) / (sqrt(vhat(t)) + eps)
             # print("change ", alpha * mhat / (sqrt(vhat) + eps))
             # print("to_unconstrained(noise) ", to_unconstrained(noise))
-            noise = to_constrained(to_unconstrained(noise) - alpha * mhat / (sqrt(vhat) + eps))
+            alpha_T = lr * np.sqrt(1.0 - beta2**(t+1)) / (1.0 - beta1**(t+1))
+            # print("alpha_T", alpha_T)
+            # print("unconstrained ", to_unconstrained(noise))
+            # print("back 1 ", - lr * mhat )
+            # print("back 2 ", (sqrt(vhat) + eps) )
+            # print("back part ", - lr * mhat / (sqrt(vhat) + eps) )
+            # print("before_constr a ",  (lr * mhat) / (sqrt(vhat) + eps))
+            # print("before_constr aT ",  (alpha_T * m[i]) / (np.sqrt(v[i], dtype='d') + eps))
+            noise = to_constrained(to_unconstrained(noise) - alpha_T * m[i] / (np.sqrt(v[i], dtype='d') + eps))
+            # print(" noise alphaT", to_constrained(to_unconstrained(noise) - lr * mhat / (sqrt(vhat) + eps)) )
+            # noise = to_constrained(to_unconstrained(noise) - lr * mhat / (sqrt(vhat) + eps))
         # evaluate candidate point
         K, L, a = rhs(X_train, Y_train, noise)
+        # for elem in K:
+        #     for e in elem:
+        #         print(f'{e:.12f}')
         score = objective(X_train, Y_train, L, a)
         # report progress
         # if t % 10 == 0:
@@ -157,7 +206,7 @@ def adam(objective, derivative, X_train, Y_train, noise, n_iter, alpha, beta1, b
 
 if __name__ == "__main__":
     # seed the pseudo random number generator
-    np.random.seed(1)
+    np.random.seed(7)
     # define range for input
     # bounds = asarray([[-1.0, 1.0], [-1.0, 1.0]])
     # define the total iterations
@@ -166,8 +215,8 @@ if __name__ == "__main__":
     test_in_file = "src/data/test/test_input.txt"
     test_out_file = "src/data/test/test_output.txt"
 
-    size_train = 100
-    size_test = 10
+    size_train = 80
+    size_test = 50
     n_regressors = 100
 
     X_train, Y_train, X_test, Y_test = load_data(
@@ -180,16 +229,38 @@ if __name__ == "__main__":
         n_regressors,
     )
     
-    noise = 0.5
+    noise = 0.1
     # number of optimisation steps
-    n_iter = 2
+    n_iter = 0
     # steps size
-    alpha = 0.001
+    lr = 0.1
     # factor for average gradient
     beta1 = 0.9
     # factor for average squared gradient
     beta2 = 0.999
     # perform the gradient descent search with adam
-    best, score = adam(objective, derivative, X_train, Y_train, noise, n_iter, alpha, beta1, beta2)
-    print('Done!')
-    print(f'f({best:.10f}) = {score:.10f}')
+    pred, uncert = pred_and_uncert(X_train, Y_train, X_test)
+    print(uncert)
+    best, score = adam(objective, derivative, X_train, Y_train, noise, n_iter, lr, beta1, beta2)
+    print('------')
+    print(f'f({best:.14f}) = {score:.10f}')
+
+
+
+# iter: 0 loss: 1.263018328416 param: 0.200000000000
+# gradient: 0.082484334523
+# m_T: 0.008248433452
+# v_T: 0.000006803665
+# alpha_T: 0.000316227766
+# unconstrained_hyperparam: -1.507777317638544
+# back part: 0.082484334523
+# before constr : -1.508777317638544
+# iter: 1 loss: 1.262935854803 param: 0.199818805761
+# gradient: 0.082462890009
+# m_T: 0.015667949102
+# v_T: 0.000013593456
+# alpha_T: 0.000235316725
+# unconstrained_hyperparam: -1.508777317638544
+# back part: -0.001000000000
+# before constr : -1.509777317638544
+
