@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
     /////////////////////
     ///// hyperparams
     std::vector<double> M = {0.0, 0.0, 0.0};
-    gpppy_hyper::Hyperparameters hpar = {0.1, 0.9, 0.999, 1e-8, 3, M};
+    gpppy_hyper::Hyperparameters hpar = {0.1, 0.9, 0.999, 1e-8, 0, M};
     std::cout << "lr: " << hpar.learning_rate << std::endl;
     std::cout << hpar.repr() << std::endl;
 
@@ -50,28 +50,28 @@ int main(int argc, char *argv[])
 
     std::string out_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/training/training_output.txt";
     gpppy::GP_data training_output(out_path, n_train);
-    std::cout << "training output" << std::endl;
-    utils::print(training_output.data, 0, 10, ", ");
+    // std::cout << "training output" << std::endl;
+    // utils::print(training_output.data, 0, 10, ", ");
 
     std::string test_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/test/test_input.txt";
     gpppy::GP_data test_input(test_path, n_test);
-    utils::print(test_input.data, 0, 10, ", ");
+    // utils::print(test_input.data, 0, 10, ", ");
 
     /////////////////////
     ///// GP
-    std::vector<bool> trainable = {false, false, true};
+    std::vector<bool> trainable = {true, true, true};
     gpppy::GP gp(training_input.data, training_output.data, n_tiles, tile_size, 1.0, 1.0, 0.1, n_reg, trainable);
-    std::vector<double> training_data = gp.get_training_input();
-    std::cout << "training input" << std::endl;
-    utils::print(training_data, 0, 5, ", ");
+    // std::vector<double> training_data = gp.get_training_input();
+    // std::cout << "training input" << std::endl;
+    // utils::print(training_data, 0, 5, ", ");
 
     std::cout << gp.repr() << std::endl;
 
     // Initialize HPX with the new arguments, don't run hpx_main
     utils::start_hpx_runtime(new_argc, new_argv);
-    double init_loss;
-    init_loss = gp.calculate_loss();
-    std::cout << "init loss: " << init_loss << std::endl;
+    //double init_loss;
+    //init_loss = gp.calculate_loss();
+    //std::cout << "init loss: " << init_loss << std::endl;
 
     // std::size_t iter = 3;
     // for (std::size_t i; i < iter; i++)
@@ -82,14 +82,19 @@ int main(int argc, char *argv[])
     std::vector<double> losses;
     losses = gp.optimize(hpar);
     std::cout << "Loss" << std::endl;
-    utils::print(losses, 0, 5);
+    utils::print(losses);
 
-    std::vector<std::vector<double>> sum;
-    sum = gp.predict(test_input.data, result.first, result.second);
+    std::vector<std::vector<double>> pred_and_uncert;
+    pred_and_uncert = gp.predict_with_uncertainty(test_input.data, result.first, result.second);
     std::cout << "Prediction" << std::endl;
-    utils::print(sum[0], 0, 10, ", ");
+    utils::print(pred_and_uncert[0], 0, 10, ", ");
     std::cout << "Uncertainty" << std::endl;
-    utils::print(sum[1], 0, 10, ", ");
+    utils::print(pred_and_uncert[1], 0, 10, ", ");
+
+    std::vector<double> pred;
+    pred = gp.predict(test_input.data, result.first, result.second);
+    std::cout << "Prediction" << std::endl;
+    utils::print(pred, 0, 10, ", ");
 
     // Stop the HPX runtime
     utils::stop_hpx_runtime();
