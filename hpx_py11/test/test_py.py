@@ -42,7 +42,7 @@ if __name__ == "__main__":
     print(f"Tiles in N dimension: {n_tiles}")
     print(f"Tiles in M dimension: {m_tiles}")
 
-    hpar = a.Hyperparameters(learning_rate=0.1, opt_iter=3, v_T=[0, 0, 0])
+    hpar = a.Hyperparameters(learning_rate=0.1, opt_iter=0, v_T=[0, 0, 0])
     print(hpar.beta1)
     print(hpar)
 
@@ -98,12 +98,17 @@ if __name__ == "__main__":
     losses = gp.optimize(hpar)
     print("loss")
     a.print(losses)
+    pr_and_uncert = gp.predict_with_uncertainty(test_in.data, m_tiles, m_tile_size)
+    # print("predict: ")
+    # a.print(pr_and_uncert[0])
+    print("uncertainty: ")
+    a.print(pr_and_uncert[1])
+    print(gp)
+
     pr = gp.predict(test_in.data, m_tiles, m_tile_size)
     print("predict: ")
-    # a.print(pr[0])
-    print("uncertainty: ")
-    # a.print(pr[1])
-    print(gp)
+    # a.print(pr)
+
     s = time.time()
     a.stop_hpx()
     e = time.time()
@@ -112,7 +117,7 @@ if __name__ == "__main__":
     X = np.array(gp.get_input_data()).reshape(300, 1)
     Y_train = np.array(gp.get_output_data()).reshape(300, 1)
     f_lower, f_upper = compute_confidence_interval(
-        np.array(pr[0]).reshape(700, 1), np.array(pr[1]).reshape(700, 1)
+        np.array(pr_and_uncert[0]).reshape(700, 1), np.array(pr_and_uncert[1]).reshape(700, 1)
     )
 
     train_indices_f = (
@@ -127,4 +132,4 @@ if __name__ == "__main__":
     # X_test = np.loadtxt(test_in_file, dtype='d').reshape(700, 1)
     X_plot = np.loadtxt(test_indices_f, dtype="d").reshape(700, 1)
 
-    plot_process(X, Y_train, X_plot, np.array(pr[0]), f_lower, f_upper)
+    plot_process(X, Y_train, X_plot, np.array(pr_and_uncert[0]), f_lower, f_upper)
