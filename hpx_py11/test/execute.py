@@ -42,7 +42,7 @@ def gpppy_run(config, output_csv_obj, n_train, l, cores):
     
     # Predict
     pred_t = time.time()
-    pr = gp.predict(test_in.data, m_tiles, m_tile_size)
+    pr = gp.predict_with_uncertainty(test_in.data, m_tiles, m_tile_size)
     pred_t = time.time() - pred_t
     logger.info("Finished predictions.") 
     
