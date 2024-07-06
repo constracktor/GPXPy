@@ -307,7 +307,7 @@ hpx::shared_future<std::vector<double>> optimize_hpx(const std::vector<double> &
         alpha_tiles.resize(n_tiles);
         for (std::size_t i = 0; i < n_tiles; i++)
         {
-            alpha_tiles[i] = hpx::async(hpx::annotated_function(&gen_tile_output, "assemble_tiled"), i, n_tile_size, training_output);
+            alpha_tiles[i] = hpx::async(hpx::annotated_function(&gen_tile_zeros, "assemble_tiled"), n_tile_size);
         }
         // Assemble placeholder matrix for K^-1
         grad_I_tiles.resize(n_tiles * n_tiles);
@@ -322,13 +322,16 @@ hpx::shared_future<std::vector<double>> optimize_hpx(const std::vector<double> &
         //////////////////////////////////////////////////////////////////////////////
         // Cholesky decomposition
         right_looking_cholesky_tiled_mkl(K_tiles, n_tile_size, n_tiles);
-        // Triangular solve K_NxN * alpha = y
-        forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
-        backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
-
         // Compute K^-1 through L*L^T*X = I
         forward_solve_tiled_matrix(K_tiles, grad_I_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
         backward_solve_tiled_matrix(K_tiles, grad_I_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
+
+        // Triangular solve K_NxN * alpha = y
+        // forward_solve_tiled(grad_I_tiles, alpha_tiles, n_tile_size, n_tiles);
+        // backward_solve_tiled(grad_I_tiles, alpha_tiles, n_tile_size, n_tiles);
+
+        // inv(K)*y
+        compute_gemm_of_invK_y(grad_I_tiles, y_tiles, alpha_tiles, n_tile_size, n_tiles);
 
         // Compute loss
         compute_loss_tiled(K_tiles, alpha_tiles, y_tiles, loss_value, n_tile_size, n_tiles);
