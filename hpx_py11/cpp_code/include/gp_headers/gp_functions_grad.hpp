@@ -258,12 +258,9 @@ double compute_gradient(const double &grad_l,
                         std::size_t N,
                         std::size_t n_tiles)
 {
-  printf("grad_l: %.12lf\n", grad_l);
-  printf("grad_r: %.12lf\n", grad_r);
   double grad = 0.0;
   grad = 1.0 / (2.0 * N * n_tiles) * (grad_l - grad_r);
 
-  printf("gradient: %.12lf\n", grad);
   return std::move(grad);
 }
 
