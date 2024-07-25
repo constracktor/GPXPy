@@ -96,5 +96,7 @@ void init_utils(py::module &m)
           "Print elements of a vector with optional start, end, and separator parameters");
 
     m.def("start_hpx", &start_hpx_wrapper, py::arg("args"), py::arg("n_cores")); // Using the wrapper function
+    m.def("resume_hpx", &utils::resume_hpx_runtime);
+    m.def("suspend_hpx", &utils::suspend_hpx_runtime);
     m.def("stop_hpx", &utils::stop_hpx_runtime);
 }
