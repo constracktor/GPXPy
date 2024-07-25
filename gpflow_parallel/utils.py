@@ -1,5 +1,6 @@
 import numpy as np
 import gpflow
+import tensorflow as tf
 
 
 def generate_regressor(x_original, n_regressors):
@@ -60,19 +61,19 @@ def load_data(
             - X_test (numpy.ndarray): Regressor matrix for testing data.
             - Y_test (numpy.ndarray): Target values for testing data.
     """
-    x_train_in = np.loadtxt(train_in_path, dtype="f")[:size_train]
-    x_test_in = np.loadtxt(test_in_path, dtype="f")[:size_test]
+    x_train_in = np.loadtxt(train_in_path, dtype="d")[:size_train]
+    x_test_in = np.loadtxt(test_in_path, dtype="d")[:size_test]
 
-    X_train = generate_regressor(x_train_in, n_regressors).astype("f")
-    X_test = generate_regressor(x_test_in, n_regressors).astype("f")
+    X_train = generate_regressor(x_train_in, n_regressors).astype("d")
+    X_test = generate_regressor(x_test_in, n_regressors).astype("d")
 
-    Y_train = np.loadtxt(train_out_path, dtype="f")[:size_train, None]
-    Y_test = np.loadtxt(test_out_path, dtype="f")[:size_test, None]
+    Y_train = np.loadtxt(train_out_path, dtype="d")[:size_train, None]
+    Y_test = np.loadtxt(test_out_path, dtype="d")[:size_test, None]
 
     return X_train, Y_train, X_test, Y_test
 
 
-def train(X, Y, k_var=1.0, k_lscale=1.0,  noise_var=0.1, params_summary: bool = False):
+def init_model(X, Y, k_var=1.0, k_lscale=1.0,  noise_var=0.1, params_summary: bool = False):
     """
     Train a Gaussian process regression model using GPflow.
 
@@ -103,7 +104,7 @@ def train(X, Y, k_var=1.0, k_lscale=1.0,  noise_var=0.1, params_summary: bool = 
     return model
 
 
-def optimize_model(model):
+def optimize_model(model, training_iter):
     """
     Optimize the parameters of the given GPflow model.
 
@@ -113,10 +114,39 @@ def optimize_model(model):
     Returns:
         None
     """
-    # opt = gpflow.optimizers.Scipy()
-    # opt.minimize(model.training_loss, model.trainable_variables)
+    opt = tf.keras.optimizers.Adam(learning_rate=0.1, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
+
+    @tf.function
+    def optimization_step(): 
+        with tf.GradientTape() as tape:
+            # Compute the loss inside the tape context
+            loss = model.training_loss()
+        # Compute the gradients of the loss with respect to the model's trainable variables
+        gradients = tape.gradient(loss, model.trainable_variables)
+        # Apply the gradients to update the model's trainable variables
+        opt.apply_gradients(zip(gradients, model.trainable_variables))
+
+    # Run the optimization step
+    for i in range(training_iter): 
+        optimization_step()
+
     return None
 
+def predict_with_var(model, X_test):
+    """
+    Predict latent function values and observed target values for the given test data.
+
+    Args:
+        model (gpflow.models.GPModel): The trained GPflow model.
+        X_test (numpy.ndarray): The test input data.
+
+    Returns:
+        f_pred (numpy.ndarray): Mean of latent function values for test data.
+        f_var (numpy.ndarray): Variance of latent function values for test data.
+    """
+    f_pred, f_var = model.predict_f(X_test)
+    
+    return f_pred, f_var
 
 def predict(model, X_test):
     """
@@ -128,14 +158,10 @@ def predict(model, X_test):
 
     Returns:
         f_pred (numpy.ndarray): Mean of latent function values for test data.
-        f_var (numpy.ndarray): Variance of latent function values for test data.
-        y_pred (numpy.ndarray): Mean of observed target values for test data.
-        y_var (numpy.ndarray): Variance of observed target values for test data.
     """
-    f_pred, f_var = model.predict_f(X_test)
-    y_pred, y_var = model.predict_y(X_test)
+    f_pred = model.predict_f(X_test)
     
-    return f_pred, f_var, y_pred, y_var
+    return f_pred
 
 
 def calculate_error(Y_test, Y_pred):
