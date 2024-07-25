@@ -72,10 +72,10 @@ std::vector<double> mkl_gemm_u_matrix(std::vector<double> A,
 }
 
 // C = C - A * B
-std::vector<double> mkl_gemm_uncertainty_matrix(std::vector<double> A,
-                                                std::vector<double> R,
-                                                std::size_t N,
-                                                std::size_t M)
+std::vector<double> mkl_dot_uncertainty(std::vector<double> A,
+                                        std::vector<double> R,
+                                        std::size_t N,
+                                        std::size_t M)
 {
   for (int j = 0; j < M; ++j)
   {
