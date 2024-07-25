@@ -127,6 +127,18 @@ namespace utils
         hpx::start(nullptr, argc, argv);
     }
 
+    // Resume HPX runtime
+    void resume_hpx_runtime()
+    {
+        hpx::resume();
+    }
+
+    // Wait for all tasks to finish, and suspend the HPX runtime
+    void suspend_hpx_runtime()
+    {
+        hpx::suspend();
+    }
+
     // Stop HPX runtime
     void stop_hpx_runtime()
     {
