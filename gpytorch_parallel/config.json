@@ -1,14 +1,15 @@
 {
-    "train_in_file": "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/training/training_input.txt",
-    "train_out_file": "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/training/training_output.txt",
-    "test_in_file": "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/test/test_input.txt",
-    "test_out_file": "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/test/test_output.txt",
-    "START": 10,   
-    "END": 10,
-    "STEP": 10,
+    "train_in_file": "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/interim_data/training_input.txt",
+    "train_out_file": "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/interim_data/training_output.txt",
+    "test_in_file": "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/interim_data/test_input.txt",
+    "test_out_file": "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/interim_data/test_output.txt",
+    "START": 1000,   
+    "END": 1000,
+    "STEP": 100000,
     "N_CORES": 2,
-    "N_TEST": 100,
-    "N_REG": 10,
+    "N_TEST": 1000,
+    "N_REG": 100,
     "LOOP": 1,
-    "PRECISION": "float32"
+    "PRECISION": "float64",
+    "OPT_ITER":1
 }
