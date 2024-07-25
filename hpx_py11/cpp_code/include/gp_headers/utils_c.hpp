@@ -8,6 +8,7 @@
 #include <string>
 
 #include <hpx/hpx_start.hpp>
+#include <hpx/hpx_suspend.hpp>
 #include <hpx/include/post.hpp>
 
 namespace utils
@@ -30,6 +31,12 @@ namespace utils
     // Start HPX runtime
     void start_hpx_runtime(int argc, char **argv);
 
+    // Resume HPX runtime
+    void resume_hpx_runtime();
+
+    // Wait for all tasks to finish, and suspend the HPX runtime
+    void suspend_hpx_runtime();    
+    
     // Stop HPX runtime
     void stop_hpx_runtime();
 }
