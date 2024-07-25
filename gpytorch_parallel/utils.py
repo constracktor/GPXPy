@@ -145,7 +145,7 @@ def train(model, likelihood, X_train, Y_train, training_iter=10):
     return None
 
 
-def predict(model, likelihood, X_test):
+def predict_with_var(model, likelihood, X_test):
     """
     Predict the mean and variance of latent function values and observed target values.
 
@@ -157,8 +157,6 @@ def predict(model, likelihood, X_test):
     Returns:
         - f_mean (torch.Tensor): Mean of latent function values.
         - f_var (torch.Tensor): Variance of latent function values.
-        - y_mean (torch.Tensor): Mean of observed target values.
-        - y_var (torch.Tensor): Variance of observed target values.
     """
     model.eval()
     likelihood.eval()
@@ -167,10 +165,34 @@ def predict(model, likelihood, X_test):
         f_pred = model(X_test)
         f_mean = f_pred.mean
         f_var = f_pred.variance
-        
-        y_pred = likelihood(model(X_test))
-        y_mean = y_pred.mean
-        y_var = y_pred.variance
+    
+    '''
+    for future plot generation:
+    # Get upper and lower confidence bounds
+    observed_pred = likelihood(model(test_x))
+    lower, upper = observed_pred.confidence_region()
+    '''
+    
+    return f_mean, f_var
+
+def predict(model, likelihood, X_test):
+    """
+    Predict the mean and variance of latent function values and observed target values.
+
+    Args:
+        model (gpytorch.models.ExactGP): The trained Gaussian process regression model.
+        likelihood (gpytorch.likelihoods.GaussianLikelihood): The likelihood function.
+        X_test (torch.Tensor): The test input data.
+
+    Returns:
+        - f_mean (torch.Tensor): Mean of latent function values.
+    """
+    model.eval()
+    likelihood.eval()
+    
+    with torch.no_grad(), gpytorch.settings.fast_pred_var():
+        f_pred = model(X_test)
+        f_mean = f_pred.mean
 
     '''
     for future plot generation:
@@ -179,7 +201,7 @@ def predict(model, likelihood, X_test):
     lower, upper = observed_pred.confidence_region()
     '''
     
-    return f_mean, f_var, y_mean, y_var
+    return f_mean
 
 
 def calculate_error(Y_test, Y_pred):
