@@ -1,18 +1,18 @@
 import time
 import logging
-from csv import writer
 import torch
 import gpytorch
+import os
 
 from config import get_config
 from gpytorch_logger import setup_logging
-from utils import load_data, ExactGPModel, train, predict, calculate_error
+from utils import load_data, ExactGPModel, train, predict, predict_with_var
 
 logger = logging.getLogger()
 log_filename = "./gpytorch_logs.log"
 
 
-def gpytorch_run(config, output_csv_obj, size_train, l):
+def gpytorch_run(config, output_file, size_train, l, cores):
     """
     Run the Gaussian process regression pipeline.
 
@@ -23,7 +23,6 @@ def gpytorch_run(config, output_csv_obj, size_train, l):
         l (int): Loop index.
     """
     total_t = time.time()
-    
     X_train, Y_train, X_test, Y_test = load_data(
         train_in_path=config["train_in_file"],
         train_out_path=config["train_out_file"],
@@ -34,36 +33,42 @@ def gpytorch_run(config, output_csv_obj, size_train, l):
         n_regressors=config["N_REG"],
     )
 
-    logger.info("Finished loading the data.")
+    # logger.info("Finished loading the data.")
 
     init_t = time.time()
     likelihood = gpytorch.likelihoods.GaussianLikelihood()
     likelihood.noise = 0.1
     model = ExactGPModel(X_train, Y_train, likelihood)
     init_t = time.time() - init_t
-    logger.info("Initialized model.")
-    
+    # logger.info("Initialized model.")
+
     train_t = time.time()
-    train(model, likelihood, X_train, Y_train)
+    train(model, likelihood, X_train, Y_train, training_iter=config['OPT_ITER'])
     train_t = time.time() - train_t
-    logger.info("Trained model.")
+    # logger.info("Trained model.")
+
+    pred_var_t = time.time()
+    f_pred, f_var = predict_with_var(model, likelihood, X_test)
+    pred_var_t = time.time() - pred_var_t
+    # logger.info("Finished making predictions.")
 
     pred_t = time.time()
-    f_pred, f_var, y_pred, y_var = predict(model, likelihood, X_test)
+    f_pred = predict(model, likelihood, X_test)
     pred_t = time.time() - pred_t
-    logger.info("Finished making predictions.") 
-    
+    # logger.info("Finished making predictions.")
+
     TOTAL_TIME = time.time() - total_t
     INIT_TIME = init_t
-    TRAIN_TIME = train_t
+    OPT_TIME = train_t
+    PRED_UNCER_TIME = pred_var_t
     PREDICTION_TIME = pred_t
-    ERROR = calculate_error(Y_test, y_pred).detach().cpu().numpy()
-    
-    row_data = [config["N_CORES"], size_train, config["N_TEST"], config["N_REG"], 
-                TOTAL_TIME, INIT_TIME, TRAIN_TIME, PREDICTION_TIME, ERROR, l]
-    output_csv_obj.writerow(row_data)
-    
-    logger.info("Completed iteration.")
+    # ERROR = calculate_error(Y_test, y_pred).detach().cpu().numpy()
+
+    row_data = f"{cores},{size_train},{config['N_TEST']},{config['N_REG']},{config['OPT_ITER']},{TOTAL_TIME},{INIT_TIME},{OPT_TIME},{PREDICTION_TIME},{l}\n"
+    output_file.write(row_data)
+
+    logger.info(f"{cores},{size_train},{config['N_TEST']},{config['N_REG']},{config['OPT_ITER']},{TOTAL_TIME},{INIT_TIME},{OPT_TIME},{PRED_UNCER_TIME},{PREDICTION_TIME},{l}")
+    #logger.info("Completed iteration.")
     
 
 def execute():
@@ -81,30 +86,35 @@ def execute():
     logger.info("-" * 40)
     logger.info("Load config file.")
     config = get_config()
-    output_file = open("./output.csv", "a", newline="")
-    output_csv_obj = writer(output_file)
-    
-    logger.info("Write output file header")
-    header = ["Cores", "N_train", "N_test", "N_regressor", "Total_time",
-         "Train_time", "Optimization_Time", "Predict_time", "Error", "N_loop"]
-    output_csv_obj.writerow(header)
 
-    start = config["START"]
-    end = config["END"]
-    step = config["STEP"]
-    torch.set_num_threads(config["N_CORES"])
-    if config["PRECISION"] == "float32":
-        torch.set_default_dtype(torch.float32)
-    else:
-        torch.set_default_dtype(torch.float64)
+    file_path = "./results.txt"
+    file_exists = os.path.isfile(file_path)
 
-    for i in range(start, end+step, step):
-        for l in range(config["LOOP"]):
-            logger.info("*" * 40)
-            logger.info(f"Train Size: {i}, Loop: {l}")
-            gpytorch_run(config, output_csv_obj, i, l)
+    with open(file_path, "a") as output_file:
+        if not file_exists or os.stat(file_path).st_size == 0:
+            # logger.info("Write output file header")
+            logger.info("Cores,N_train,N_test,N_reg,Opt_iter,Total_time,Init_time,Opt_Time,Pred_Var_time,Pred_time,N_loop")
+            header = "Cores,N_train,N_test,N_regressor,Opt_iter,Total_time,Init_time,Opt_time,Pred_Uncer_time,Predict_time,N_loop\n"
+            output_file.write(header)
 
-    output_file.close()
+
+        start = config["START"]
+        end = config["END"]
+        step = config["STEP"]
+        # torch.set_num_threads(config["N_CORES"])
+        if config["PRECISION"] == "float32":
+            torch.set_default_dtype(torch.float32)
+        else:
+            torch.set_default_dtype(torch.float64)
+
+        for core in range(0, config["N_CORES"]):
+            torch.set_num_threads(2**core)
+            for data in range(start, end+step, step):
+                for l in range(config["LOOP"]):
+                    logger.info("*" * 40)
+                    logger.info(f"Train Size: {data}, Loop: {l}")
+                    gpytorch_run(config, output_file, data, l, 2**core)
+
     
     logger.info("Completed the program.")
 
