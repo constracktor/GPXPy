@@ -3,12 +3,13 @@
     "train_out_file": "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/training/training_output.txt",
     "test_in_file": "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/test/test_input.txt",
     "test_out_file": "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/test/test_output.txt",
-    "START": 10,   
-    "END": 100,
-    "STEP": 10,
-    "N_CORES": 2,
-    "N_TEST": 10,
-    "N_REG": 10,
+    "START": 1000,   
+    "END": 1000,
+    "STEP": 100000,
+    "N_CORES": 3,
+    "N_TEST": 1000,
+    "N_REG": 100,
     "LOOP": 1,
-    "PRECISION": "float32"
+    "PRECISION": "float64",
+    "OPT_ITER": 1
 }
