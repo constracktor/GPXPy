@@ -71,6 +71,23 @@ std::vector<double> mkl_gemm_u_matrix(std::vector<double> A,
   return C;
 }
 
+// C = C - A^T * B
+std::vector<double> mkl_gemm_cross_tcross_matrix(std::vector<double> A,
+                                                 std::vector<double> B,
+                                                 std::vector<double> C,
+                                                 std::size_t N,
+                                                 std::size_t M)
+{
+  // GEMM constants
+  const double alpha = -1.0;
+  const double beta = 1.0;
+  // GEMM kernel - caution with dgemm
+  cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans,
+              M, M, N, alpha, A.data(), M, B.data(), M, beta, C.data(), M);
+  // return vector
+  return C;
+}
+
 // C = C - A * B
 std::vector<double> mkl_dot_uncertainty(std::vector<double> A,
                                         std::vector<double> R,
@@ -112,6 +129,22 @@ std::vector<double> diag_posterior(const std::vector<double> &A,
   for (std::size_t i = 0; i < M; ++i)
   {
     tile.push_back(A[i] - B[i]);
+  }
+
+  return std::move(tile);
+}
+
+// retrieve diagonal elements of posterior covariance matrix
+std::vector<double> diag_tile(const std::vector<double> &A,
+                              std::size_t M)
+{
+  // Initialize tile
+  std::vector<double> tile;
+  tile.reserve(M);
+
+  for (std::size_t i = 0; i < M; ++i)
+  {
+    tile.push_back(A[i * M + i]);
   }
 
   return std::move(tile);
