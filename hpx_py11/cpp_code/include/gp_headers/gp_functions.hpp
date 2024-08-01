@@ -34,9 +34,15 @@ hpx::shared_future<std::vector<double>> predict_hpx(const std::vector<double> &t
 
 // Compute the predictions and uncertainties
 hpx::shared_future<std::vector<std::vector<double>>> predict_with_uncertainty_hpx(const std::vector<double> &training_input, const std::vector<double> &training_output,
-                                                                                  const std::vector<double> &test_data, int n_tiles, int n_tile_size,
+                                                                                  const std::vector<double> &test_input, int n_tiles, int n_tile_size,
                                                                                   int m_tiles, int m_tile_size, double lengthscale, double vertical_lengthscale,
                                                                                   double noise_variance, int n_regressors);
+
+// Compute the predictions and full covariance matrix
+hpx::shared_future<std::vector<std::vector<double>>> predict_with_full_cov_hpx(const std::vector<double> &training_input, const std::vector<double> &training_output,
+                                                                                  const std::vector<double> &test_data, int n_tiles, int n_tile_size,
+                                                                                  int m_tiles, int m_tile_size, double lengthscale, double vertical_lengthscale,
+                                                                                  double noise_variance, int n_regressors);                                                                                  
 
 // Compute loss for given data and Gaussian process model
 hpx::shared_future<double> compute_loss_hpx(const std::vector<double> &training_input, const std::vector<double> &training_output,
@@ -53,5 +59,11 @@ hpx::shared_future<double> optimize_step_hpx(const std::vector<double> &training
                                              int n_tiles, int n_tile_size, double &lengthscale, double &vertical_lengthscale,
                                              double &noise_variance, int n_regressors, gpppy_hyper::Hyperparameters &hyperparams,
                                              std::vector<bool> trainable_params, int iter);
+
+// Compute Cholesky decomposition
+hpx::shared_future<std::vector<std::vector<double>>> cholesky_hpx(const std::vector<double> &training_input, const std::vector<double> &training_output,
+                                                                 int n_tiles, int n_tile_size, double lengthscale, double vertical_lengthscale,
+                                                                 double noise_variance, int n_regressors);
+                                    
 
 #endif
