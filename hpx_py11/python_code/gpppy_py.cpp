@@ -52,6 +52,7 @@ void init_gpppy(py::module &m)
         .def("get_output_data", &gpppy::GP::get_training_output)
         .def("predict", &gpppy::GP::predict, py::arg("test_data"), py::arg("m_tiles"), py::arg("m_tile_size"))
         .def("predict_with_uncertainty", &gpppy::GP::predict_with_uncertainty, py::arg("test_data"), py::arg("m_tiles"), py::arg("m_tile_size"))
+        .def("predict_with_full_cov", &gpppy::GP::predict_with_full_cov, py::arg("test_data"), py::arg("m_tiles"), py::arg("m_tile_size"))
         .def("optimize", &gpppy::GP::optimize, py::arg("hyperparams"))
         .def("optimize_step", &gpppy::GP::optimize_step, py::arg("hyperparams"), py::arg("iter"))
         .def("compute_loss", &gpppy::GP::calculate_loss);
