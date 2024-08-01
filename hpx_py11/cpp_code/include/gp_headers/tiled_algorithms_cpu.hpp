@@ -136,12 +136,12 @@ void forward_solve_KK_tiled(std::vector<hpx::shared_future<std::vector<double>>>
     for (std::size_t c = 0; c < n_tiles; c++)
     {
       // TRSM
-      ft_rhs[c * m_tiles + r] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_trsm_l_KK), "triangular_solve_tiled_matrix"), ft_tiles[c * n_tiles + c],
+      ft_rhs[c * m_tiles + r] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_trsm_l_KK), "triangular_solve_tiled_matrix_KK"), ft_tiles[c * n_tiles + c],
                                               ft_rhs[c * m_tiles + r], N, M);
       for (std::size_t m = c + 1; m < n_tiles; m++)
       {
         // GEMV
-        ft_rhs[m * m_tiles + r] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_l_KK), "triangular_solve_tiled_matrix"), ft_tiles[m * n_tiles + c],
+        ft_rhs[m * m_tiles + r] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_l_KK), "triangular_solve_tiled_matrix_KK"), ft_tiles[m * n_tiles + c],
                                                 ft_rhs[c * m_tiles + r], ft_rhs[m * m_tiles + r], N, M);
       }
     }
@@ -160,12 +160,12 @@ void backward_solve_KK_tiled(std::vector<hpx::shared_future<std::vector<double>>
     for (int c = n_tiles - 1; c >= 0; c--) // int instead of std::size_t for last comparison
     {
       // TRSM
-      CrossK_tiles[r * n_tiles + c] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_trsm_l_KK), "triangular_solve_tiled_matrix"), K_tiles[c * n_tiles + c],
+      CrossK_tiles[r * n_tiles + c] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_trsm_l_KK), "triangular_solve_tiled_matrix_KK"), K_tiles[c * n_tiles + c],
                                                     CrossK_tiles[r * n_tiles + c], N, M);
       for (int m = c - 1; m >= 0; m--) // int instead of std::size_t for last comparison
       {
         // GEMV
-        CrossK_tiles[r * n_tiles + m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_l_KK), "triangular_solve_tiled_matrix"), K_tiles[c * n_tiles + m],
+        CrossK_tiles[r * n_tiles + m] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_l_KK), "triangular_solve_tiled_matrix_KK"), K_tiles[c * n_tiles + m],
                                                       CrossK_tiles[r * n_tiles + c], CrossK_tiles[r * n_tiles + m], N, M);
       }
     }
@@ -243,6 +243,28 @@ void posterior_covariance_tiled(std::vector<hpx::shared_future<std::vector<doubl
   }
 }
 
+// Tiled Diagonal of Posterior Covariance Matrix
+void full_cov_tiled(std::vector<hpx::shared_future<std::vector<double>>> &ft_tCC_tiles,
+                    std::vector<hpx::shared_future<std::vector<double>>> &ft_priorK,
+                    std::size_t N,
+                    std::size_t M,
+                    std::size_t n_tiles,
+                    std::size_t m_tiles)
+{
+  for (std::size_t c = 0; c < m_tiles; c++)
+  {
+    for (std::size_t k = 0; k < m_tiles; k++)
+    {
+      for (std::size_t m = 0; m < n_tiles; m++)
+      {
+        // GEMV
+        ft_priorK[c * m_tiles + k] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&mkl_gemm_cross_tcross_matrix), "triangular_solve_tiled_matrix"),
+                                                   ft_tCC_tiles[m * m_tiles + c], ft_tCC_tiles[m * m_tiles + k], ft_priorK[c * m_tiles + k], N, M);
+      }
+    }
+  }
+}
+
 // Tiled Prediction Uncertainty
 void prediction_uncertainty_tiled(std::vector<hpx::shared_future<std::vector<double>>> &ft_priorK,
                                   std::vector<hpx::shared_future<std::vector<double>>> &ft_inter,
@@ -253,6 +275,18 @@ void prediction_uncertainty_tiled(std::vector<hpx::shared_future<std::vector<dou
   for (std::size_t i = 0; i < m_tiles; i++)
   {
     ft_vector[i] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&diag_posterior), "uncertainty_tiled"), ft_priorK[i], ft_inter[i], M);
+  }
+}
+
+// Tiled Prediction Uncertainty
+void pred_uncer_tiled(std::vector<hpx::shared_future<std::vector<double>>> &ft_priorK,
+                      std::vector<hpx::shared_future<std::vector<double>>> &ft_vector,
+                      std::size_t M,
+                      std::size_t m_tiles)
+{
+  for (std::size_t i = 0; i < m_tiles; i++)
+  {
+    ft_vector[i] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&diag_tile), "uncertainty_tiled"), ft_priorK[i * m_tiles + i], M);
   }
 }
 
@@ -393,7 +427,6 @@ void update_noise_variance(const std::vector<hpx::shared_future<std::vector<doub
     grad_right = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&sum_noise_gradright), "grad_right_tiled"),
                                ft_alpha[j], grad_right, hyperparameters, N);
   }
-  // printf("grad_right: %.12lf\n", grad_right.get());
   ////////////////////////////
   /// part 3: update parameter
   hpx::shared_future<double> gradient = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&compute_gradient), "gradient_tiled"), grad_left, grad_right, N, n_tiles);
