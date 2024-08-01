@@ -61,29 +61,43 @@ namespace gpppy
     // Predict output for test input
     std::vector<double> GP::predict(const std::vector<double> &test_data, int m_tiles, int m_tile_size)
     {
-        hpx::shared_future<std::vector<double>> fut = predict_hpx(_training_input, _training_output, test_data,
-                                                                  _n_tiles, _n_tile_size, m_tiles, m_tile_size,
-                                                                  lengthscale, vertical_lengthscale, noise_variance, n_regressors);
-
         std::vector<double> result;
-        hpx::threads::run_as_hpx_thread([&result, &fut]()
-                                        {
-                                            result = fut.get(); // Wait for and get the result from the future
-                                        });
+	    // result = fut.get();
+        hpx::threads::run_as_hpx_thread([this, &result, &test_data, m_tiles, m_tile_size]()
+                                       {
+                                           result = predict_hpx(_training_input, _training_output, test_data,
+                                                                  _n_tiles, _n_tile_size, m_tiles, m_tile_size,
+                                                                  lengthscale, vertical_lengthscale, noise_variance, 
+                                                                  n_regressors).get(); // Wait for and get the result from the future
+                                       });
         return result;
     }
 
     // Predict output for test input and additionally provide uncertainty for the predictions
-    std::vector<std::vector<double>> GP::predict_with_uncertainty(const std::vector<double> &test_data, int m_tiles, int m_tile_size)
+    std::vector<std::vector<double>> GP::predict_with_uncertainty(const std::vector<double> &test_input, int m_tiles, int m_tile_size)
     {
-        hpx::shared_future<std::vector<std::vector<double>>> fut = predict_with_uncertainty_hpx(_training_input, _training_output, test_data,
-                                                                                                _n_tiles, _n_tile_size, m_tiles, m_tile_size,
-                                                                                                lengthscale, vertical_lengthscale, noise_variance, n_regressors);
-
         std::vector<std::vector<double>> result;
-        hpx::threads::run_as_hpx_thread([&result, &fut]()
+        hpx::threads::run_as_hpx_thread([this, &result, &test_input, m_tiles, m_tile_size]()
                                         {
-                                            result = fut.get(); // Wait for and get the result from the future
+                                            result = predict_with_uncertainty_hpx(_training_input, _training_output, test_input,
+                                                                                _n_tiles, _n_tile_size, m_tiles, m_tile_size,
+                                                                                lengthscale, vertical_lengthscale, noise_variance, 
+                                                                                n_regressors).get(); // Wait for and get the result from the future
+                                        });
+        return result;
+    }
+
+    
+    // Predict output for test input and additionally provide uncertainty for the predictions
+    std::vector<std::vector<double>> GP::predict_with_full_cov(const std::vector<double> &test_input, int m_tiles, int m_tile_size)
+    {
+        std::vector<std::vector<double>> result;
+        hpx::threads::run_as_hpx_thread([this, &result, &test_input, m_tiles, m_tile_size]()
+                                        {
+                                            result = predict_with_full_cov_hpx(_training_input, _training_output, test_input,
+                                                                                _n_tiles, _n_tile_size, m_tiles, m_tile_size,
+                                                                                lengthscale, vertical_lengthscale, noise_variance, 
+                                                                                n_regressors).get(); // Wait for and get the result from the future
                                         });
         return result;
     }
@@ -91,14 +105,16 @@ namespace gpppy
     // Optimize hyperparameters for a specified number of iterations
     std::vector<double> GP::optimize(const gpppy_hyper::Hyperparameters &hyperparams)
     {
-        hpx::shared_future<std::vector<double>> fut = optimize_hpx(_training_input, _training_output, _n_tiles, _n_tile_size,
-                                                                   lengthscale, vertical_lengthscale, noise_variance, n_regressors,
-                                                                   hyperparams, trainable_params);
+        // hpx::shared_future<std::vector<double>> fut = optimize_hpx(_training_input, _training_output, _n_tiles, _n_tile_size,
+        //                                                            lengthscale, vertical_lengthscale, noise_variance, n_regressors,
+        //                                                            hyperparams, trainable_params);
 
         std::vector<double> losses;
-        hpx::threads::run_as_hpx_thread([&losses, &fut]()
+        hpx::threads::run_as_hpx_thread([this, &losses, &hyperparams]()
                                         {
-                                            losses = fut.get(); // Wait for and get the result from the future
+                                            losses = optimize_hpx(_training_input, _training_output, _n_tiles, _n_tile_size,
+                                                                   lengthscale, vertical_lengthscale, noise_variance, n_regressors,
+                                                                   hyperparams, trainable_params).get(); // Wait for and get the result from the future
                                         });
         return losses;
     }
@@ -134,6 +150,19 @@ namespace gpppy
                                             loss = fut.get(); // Wait for and get the result from the future
                                         });
         return loss;
+    }
+
+    // Compute Cholesky decomposition
+    std::vector<std::vector<double>> GP::cholesky()
+    {
+        std::vector<std::vector<double>> result;
+        hpx::threads::run_as_hpx_thread([this, &result]()
+                                        {
+                                            result = cholesky_hpx(_training_input, _training_output, _n_tiles, _n_tile_size,
+                                                                   lengthscale, vertical_lengthscale, noise_variance, 
+                                                                   n_regressors).get(); // Wait for and get the result from the future
+                                        });
+        return result;
     }
 
 }
