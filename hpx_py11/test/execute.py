@@ -40,9 +40,24 @@ def gpppy_run(config, output_csv_obj, n_train, l, cores):
     opti_t = time.time() - opti_t
     logger.info("Finished optimization.")
     
+    gpppy.suspend_hpx()
+    gpppy.resume_hpx()
+        
+    # Predict
+    pred_uncer_t = time.time()
+    pr, var = gp.predict_with_uncertainty(test_in.data, m_tiles, m_tile_size)
+    pred_uncer_t = time.time() - pred_uncer_t
+    logger.info("Finished predictions.") 
+    
+    # Predict
+    pred_full_t = time.time()
+    pr__, var__ = gp.predict_with_full_cov(test_in.data, m_tiles, m_tile_size)
+    pred_full_t = time.time() - pred_full_t
+    logger.info("Finished predictions with full cov.") 
+    
     # Predict
     pred_t = time.time()
-    pr = gp.predict_with_uncertainty(test_in.data, m_tiles, m_tile_size)
+    pr_ = gp.predict(test_in.data, m_tiles, m_tile_size)
     pred_t = time.time() - pred_t
     logger.info("Finished predictions.") 
     
@@ -52,10 +67,12 @@ def gpppy_run(config, output_csv_obj, n_train, l, cores):
     TOTAL_TIME = time.time() - total_t
     INIT_TIME = init_t
     OPTI_TIME = opti_t
+    PRED_UNCER_TIME = pred_uncer_t
+    PRED_FULL_TIME = pred_full_t
     PREDICTION_TIME = pred_t
     
     row_data = [cores, n_train, config["N_TEST"], config["N_TILES"], config["N_REG"], config["OPT_ITER"],
-                TOTAL_TIME, INIT_TIME, OPTI_TIME, PREDICTION_TIME, l]
+                TOTAL_TIME, INIT_TIME, OPTI_TIME, PRED_UNCER_TIME, PRED_FULL_TIME, PREDICTION_TIME, l]
     output_csv_obj.writerow(row_data)
     
     logger.info("Completed iteration.")
@@ -84,14 +101,14 @@ def execute():
     if not file_exists:
         logger.info("Write output file header")
         header = ["Cores", "N_train", "N_test", "N_TILES", "N_regressor", "Opt_iter", "Total_time",
-             "Init_time", "Optimization_Time", "Predict_time", "N_loop"]
+             "Init_time", "Optimization_Time", "Pred_Var_time", "Pred_Full_time", "Predict_time", "N_loop"]
         output_csv_obj.writerow(header)
 
     start = config["START"]
     end = config["END"]
     step = config["STEP"]         
         
-    for core in range(0, config["N_CORES"]):
+    for core in range(1, config["N_CORES"]):
         for data_size in range(start, end+step, step):
             for l in range(config["LOOP"]):
                 logger.info("*" * 40)
