@@ -57,7 +57,7 @@ hpx::shared_future<std::vector<double>> predict_hpx(const std::vector<double> &t
     {
         for (std::size_t j = 0; j <= i; j++)
         {
-            K_tiles[i * n_tiles + j] = hpx::async(hpx::annotated_function(&gen_tile_covariance, "assemble_tiled"), i, j,
+            K_tiles[i * n_tiles + j] = hpx::async(hpx::annotated_function(&gen_tile_covariance, "assemble_tiled_K"), i, j,
                                                   n_tile_size, n_regressors, hyperparameters, training_input);
         }
     }
@@ -65,7 +65,7 @@ hpx::shared_future<std::vector<double>> predict_hpx(const std::vector<double> &t
     alpha_tiles.resize(n_tiles);
     for (std::size_t i = 0; i < n_tiles; i++)
     {
-        alpha_tiles[i] = hpx::async(hpx::annotated_function(&gen_tile_output, "assemble_tiled"), i, n_tile_size, training_output);
+        alpha_tiles[i] = hpx::async(hpx::annotated_function(&gen_tile_output, "assemble_tiled_alpha"), i, n_tile_size, training_output);
     }
     // Assemble MxN cross-covariance matrix vector
     cross_covariance_tiles.resize(m_tiles * n_tiles);
@@ -206,6 +206,125 @@ hpx::shared_future<std::vector<std::vector<double>>> predict_with_uncertainty_hp
 
     //// Compute predicition uncertainty
     prediction_uncertainty_tiled(prior_K_tiles, prior_inter_tiles, prediction_uncertainty_tiles, m_tile_size, m_tiles);
+
+    //// Get predictions and uncertainty to return them
+    std::vector<double> pred_full;
+    std::vector<double> pred_var_full;
+    pred_full.reserve(test_input.size());     // preallocate memory
+    pred_var_full.reserve(test_input.size()); // preallocate memory
+    for (std::size_t i; i < m_tiles; i++)
+    {
+        pred_full.insert(pred_full.end(), prediction_tiles[i].get().begin(), prediction_tiles[i].get().end());
+        pred_var_full.insert(pred_var_full.end(), prediction_uncertainty_tiles[i].get().begin(), prediction_uncertainty_tiles[i].get().end());
+    }
+
+    // Return computed data
+    return hpx::async([pred_full, pred_var_full]()
+                      {
+        std::vector<std::vector<double>> result(2);
+        result[0] = pred_full;
+        result[1] = pred_var_full;
+        return result; });
+}
+
+// Compute the predictions and full covariance matrix
+hpx::shared_future<std::vector<std::vector<double>>> predict_with_full_cov_hpx(const std::vector<double> &training_input, const std::vector<double> &training_output,
+                                                                               const std::vector<double> &test_input, int n_tiles, int n_tile_size,
+                                                                               int m_tiles, int m_tile_size, double lengthscale, double vertical_lengthscale,
+                                                                               double noise_variance, int n_regressors)
+{
+    double hyperparameters[3];
+    hyperparameters[0] = lengthscale;          // lengthscale = variance of training_output
+    hyperparameters[1] = vertical_lengthscale; // vertical_lengthscale = standard deviation of training_input
+    hyperparameters[2] = noise_variance;       // noise_variance = small value
+    // declare data structures
+    // tiled future data structures
+    std::vector<hpx::shared_future<std::vector<double>>> K_tiles;
+    std::vector<hpx::shared_future<std::vector<double>>> alpha_tiles;
+    std::vector<hpx::shared_future<std::vector<double>>> prior_K_tiles;
+    std::vector<hpx::shared_future<std::vector<double>>> prior_inter_tiles;
+    std::vector<hpx::shared_future<std::vector<double>>> cross_covariance_tiles;
+    std::vector<hpx::shared_future<std::vector<double>>> t_cross_covariance_tiles;
+    std::vector<hpx::shared_future<std::vector<double>>> prediction_tiles;
+    std::vector<hpx::shared_future<std::vector<double>>> prediction_uncertainty_tiles;
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Assemble covariance matrix vector
+    K_tiles.resize(n_tiles * n_tiles);
+    for (std::size_t i = 0; i < n_tiles; i++)
+    {
+        for (std::size_t j = 0; j <= i; j++)
+        {
+            K_tiles[i * n_tiles + j] = hpx::async(hpx::annotated_function(&gen_tile_covariance, "assemble_tiled"), i, j,
+                                                  n_tile_size, n_regressors, hyperparameters, training_input);
+        }
+    }
+    // Assemble alpha
+    alpha_tiles.resize(n_tiles);
+    for (std::size_t i = 0; i < n_tiles; i++)
+    {
+        alpha_tiles[i] = hpx::async(hpx::annotated_function(&gen_tile_output, "assemble_tiled"), i, n_tile_size, training_output);
+    }
+    // Assemble prior covariance matrix vector
+    prior_K_tiles.resize(m_tiles * m_tiles);
+    for (std::size_t i = 0; i < m_tiles; i++)
+    {
+        for (std::size_t j = 0; j <= i; j++)
+        {
+            prior_K_tiles[i * m_tiles + j] = hpx::async(hpx::annotated_function(&gen_tile_full_prior_covariance, "assemble_prior_tiled"), i, j,
+                                                        m_tile_size, n_regressors, hyperparameters, test_input);
+
+            if (i != j)
+            {
+                prior_K_tiles[j * m_tiles + i] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gen_tile_grad_l_trans), "assemble_prior_tiled"),
+                                                               m_tile_size, prior_K_tiles[i * m_tiles + j]);
+            }
+        }
+    }
+    // Assemble MxN cross-covariance matrix vector
+    cross_covariance_tiles.resize(m_tiles * n_tiles);
+    // Assemble NxM (transpose) cross-covariance matrix vector
+    t_cross_covariance_tiles.resize(n_tiles * m_tiles);
+    for (std::size_t i = 0; i < m_tiles; i++)
+    {
+        for (std::size_t j = 0; j < n_tiles; j++)
+        {
+            cross_covariance_tiles[i * n_tiles + j] = hpx::async(hpx::annotated_function(&gen_tile_cross_covariance, "assemble_pred"), i, j,
+                                                                 m_tile_size, n_tile_size, n_regressors, hyperparameters, test_input, training_input);
+
+            t_cross_covariance_tiles[j * m_tiles + i] = hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&gen_tile_cross_cov_T), "assemble_pred"),
+                                                                      m_tile_size, n_tile_size, cross_covariance_tiles[i * n_tiles + j]);
+        }
+    }
+    // Assemble placeholder for prediction
+    prediction_tiles.resize(m_tiles);
+    for (std::size_t i = 0; i < m_tiles; i++)
+    {
+        prediction_tiles[i] = hpx::async(hpx::annotated_function(&gen_tile_zeros, "assemble_tiled"), m_tile_size);
+    }
+    // Assemble placeholder for uncertainty
+    prediction_uncertainty_tiles.resize(m_tiles);
+    for (std::size_t i = 0; i < m_tiles; i++)
+    {
+        prediction_uncertainty_tiles[i] = hpx::async(hpx::annotated_function(&gen_tile_zeros, "assemble_tiled"), m_tile_size);
+    }
+    //////////////////////////////////////////////////////////////////////////////
+    //// Compute Cholesky decomposition
+    right_looking_cholesky_tiled_mkl(K_tiles, n_tile_size, n_tiles);
+    //// Triangular solve K_NxN * alpha = y
+    forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
+    backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
+
+    //// Triangular solve A_M,N * K_NxN = K_MxN -> A_MxN = K_MxN * K^-1_NxN
+    forward_solve_KK_tiled(K_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
+
+    //////////////////////////////////////////////////////////////////////////////
+    //// Compute predictions
+    prediction_tiled(cross_covariance_tiles, alpha_tiles, prediction_tiles, m_tile_size, n_tile_size, n_tiles, m_tiles);
+    // posterior covariance matrix K_MxM - (K_MxN * K^-1_NxN) * K_NxM
+    full_cov_tiled(t_cross_covariance_tiles, prior_K_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
+    //// Compute predicition uncertainty
+    pred_uncer_tiled(prior_K_tiles, prediction_uncertainty_tiles, m_tile_size, m_tiles);
 
     //// Get predictions and uncertainty to return them
     std::vector<double> pred;
@@ -599,4 +718,47 @@ hpx::shared_future<double> optimize_step_hpx(const std::vector<double> &training
     double loss = loss_value.get();
     return hpx::async([loss]()
                       { return loss; });
+}
+
+hpx::shared_future<std::vector<std::vector<double>>> cholesky_hpx(const std::vector<double> &training_input, const std::vector<double> &training_output,
+                                                                  int n_tiles, int n_tile_size, double lengthscale, double vertical_lengthscale,
+                                                                  double noise_variance, int n_regressors)
+{
+    double hyperparameters[3];
+    hyperparameters[0] = lengthscale;          // lengthscale = variance of training_output
+    hyperparameters[1] = vertical_lengthscale; // vertical_lengthscale = standard deviation of training_input
+    hyperparameters[2] = noise_variance;       // noise_variance = small value
+    // declare data structures
+    // tiled future data structures
+    std::vector<hpx::shared_future<std::vector<double>>> K_tiles;
+    //////////////////////////////////////////////////////////////////////////////
+    // Assemble covariance matrix vector
+    K_tiles.resize(n_tiles * n_tiles);
+    for (std::size_t i = 0; i < n_tiles; i++)
+    {
+        for (std::size_t j = 0; j <= i; j++)
+        {
+            K_tiles[i * n_tiles + j] = hpx::async(hpx::annotated_function(&gen_tile_covariance, "assemble_tiled"), i, j,
+                                                  n_tile_size, n_regressors, hyperparameters, training_input);
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
+    //// Compute Cholesky decomposition
+    right_looking_cholesky_tiled_mkl(K_tiles, n_tile_size, n_tiles);
+
+    //// Get predictions and uncertainty to return them
+    std::vector<std::vector<double>> result(n_tiles * n_tiles);
+
+    for (std::size_t i = 0; i < n_tiles; i++)
+    {
+        for (std::size_t j = 0; j <= i; j++)
+        {
+            result[i * n_tiles + j] = K_tiles[i * n_tiles + j].get();
+        }
+    }
+
+    // Return computed data
+    return hpx::async([result]()
+                      { return result; });
 }
