@@ -51,6 +51,9 @@ namespace gpppy
         // Predict output for test input and additionally provide uncertainty for the predictions
         std::vector<std::vector<double>> predict_with_uncertainty(const std::vector<double> &test_data, int m_tiles, int m_tile_size);
 
+        // Predict output for test input and additionally compute full posterior covariance matrix
+        std::vector<std::vector<double>> predict_with_full_cov(const std::vector<double> &test_data, int m_tiles, int m_tile_size);
+
         // Optimize hyperparameters for a specified number of iterations
         std::vector<double> optimize(const gpppy_hyper::Hyperparameters &hyperparams);
 
@@ -59,6 +62,10 @@ namespace gpppy
 
         // Calculate loss for given data and Gaussian process model
         double calculate_loss();
+
+        // Compute Cholesky decomposition (Returns L) <- not usuable yet. Only purpose right now
+        // is to measure performance to compare against PyTorch torch.linalg.cholesky()
+        std::vector<std::vector<double>> cholesky();
     };
 
 }
