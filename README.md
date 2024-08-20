@@ -19,19 +19,19 @@ Both libraries can be installed by executing [build-hpx.sh](dependencies/build-h
 
 ### To run the GPPPy C++ version
 
-Go to [gpppy_project/cpp_code](gpppy_project/cpp_code)
-Run `./run_cpp.sh` to build the C++ library
-Go to [gpppy_project/cpp_code/tests/src](gpppy_project/cpp_code/tests/src/)
-Set parameters in [../src/execute.py](gpppy_project/cpp_code/tests/src/execute.cpp)
-Go to [../tests](gpppy_project/cpp_code/tests/) and execute `./run.sh`
+- Go to [gpppy_project/cpp_code](gpppy_project/cpp_code)
+- Run `./run_cpp.sh` to build the C++ library
+- Go to [gpppy_project/cpp_code/tests/src](gpppy_project/cpp_code/tests/src/)
+- Set parameters in [../src/execute.py](gpppy_project/cpp_code/tests/src/execute.cpp)
+- Go to [../tests](gpppy_project/cpp_code/tests/) and execute `./run.sh`
 
 ### To run GPPPy
 
-Go to [gpppy_project](gpppy_project/)
-Run `./run.sh` to generate the executable
-Go to [gpppy_project/test/](gpppy_project/test/)
-Set parameters in [test/config.json](gpppy_project/test/config.json)
-Run [../tests/execute.py](gpppy_project/test/execute.py) via `python execute.py`
+- Go to [gpppy_project](gpppy_project/)
+- Run `./run.sh` to generate the executable
+- Go to [gpppy_project/test/](gpppy_project/test/)
+- Set parameters in [test/config.json](gpppy_project/test/config.json)
+- Run [../tests/execute.py](gpppy_project/test/execute.py) via `python execute.py`
 
 ## The Team
 Gaussian Processes Parallel in Python (GPPPy) devised by University of Stuttgart grad student [Maksim Helmann](https://de.linkedin.com/in/maksim-helmann-60b8701b1), under the supervision of [Prof. Dr. Dirk Pflüger](https://www.f05.uni-stuttgart.de/en/faculty/contactpersons/Pflueger-00005/) and [Mr. M.Sc. Alexander Strack](https://www.ipvs.uni-stuttgart.de/de/institut/team/Strack-00001/). Intial framework ([Scalability of Gaussian Processes Using Asynchronous Tasks: A Comparison Between HPX and PETSc](https://zenodo.org/records/7535794)) was developed by University of Stuttgart [Mr. M.Sc. Alexander Strack](https://www.ipvs.uni-stuttgart.de/de/institut/team/Strack-00001/).
