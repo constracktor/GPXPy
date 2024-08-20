@@ -88,7 +88,7 @@ namespace gpppy
     }
 
     
-    // Predict output for test input and additionally provide uncertainty for the predictions
+    // Predict output for test input and additionally provide full posterior covariance matrix
     std::vector<std::vector<double>> GP::predict_with_full_cov(const std::vector<double> &test_input, int m_tiles, int m_tile_size)
     {
         std::vector<std::vector<double>> result;
@@ -105,9 +105,6 @@ namespace gpppy
     // Optimize hyperparameters for a specified number of iterations
     std::vector<double> GP::optimize(const gpppy_hyper::Hyperparameters &hyperparams)
     {
-        // hpx::shared_future<std::vector<double>> fut = optimize_hpx(_training_input, _training_output, _n_tiles, _n_tile_size,
-        //                                                            lengthscale, vertical_lengthscale, noise_variance, n_regressors,
-        //                                                            hyperparams, trainable_params);
 
         std::vector<double> losses;
         hpx::threads::run_as_hpx_thread([this, &losses, &hyperparams]()
@@ -122,14 +119,13 @@ namespace gpppy
     // Perform a single optimization step
     double GP::optimize_step(gpppy_hyper::Hyperparameters &hyperparams, int iter)
     {
-        hpx::shared_future<double> fut = optimize_step_hpx(_training_input, _training_output, _n_tiles, _n_tile_size,
-                                                           lengthscale, vertical_lengthscale, noise_variance, n_regressors,
-                                                           hyperparams, trainable_params, iter);
 
         double loss;
-        hpx::threads::run_as_hpx_thread([&loss, &fut]()
+        hpx::threads::run_as_hpx_thread([this, &loss, &hyperparams, iter]()
                                         {
-                                            loss = fut.get(); // Wait for and get the result from the future
+                                            loss = optimize_step_hpx(_training_input, _training_output, _n_tiles, _n_tile_size,
+                                                           lengthscale, vertical_lengthscale, noise_variance, n_regressors,
+                                                           hyperparams, trainable_params, iter).get(); // Wait for and get the result from the future
                                         });
         return loss;
     }
@@ -141,13 +137,12 @@ namespace gpppy
         hyperparameters[0] = lengthscale;          // lengthscale
         hyperparameters[1] = vertical_lengthscale; // vertical_lengthscale
         hyperparameters[2] = noise_variance;       // noise_variance
-        hpx::shared_future<double> fut = compute_loss_hpx(_training_input, _training_output, _n_tiles, _n_tile_size,
-                                                          n_regressors, hyperparameters);
 
         double loss;
-        hpx::threads::run_as_hpx_thread([&loss, &fut]()
+        hpx::threads::run_as_hpx_thread([this, &loss, &hyperparameters]()
                                         {
-                                            loss = fut.get(); // Wait for and get the result from the future
+                                            loss = compute_loss_hpx(_training_input, _training_output, _n_tiles, _n_tile_size,
+                                                          n_regressors, hyperparameters).get(); // Wait for and get the result from the future
                                         });
         return loss;
     }

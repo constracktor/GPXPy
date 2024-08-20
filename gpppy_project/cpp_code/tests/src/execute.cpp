@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     const int OPT_ITER = 0;
 
     int n_test = 10;
-    const int N_CORES = 1; // Set this to the number of threads
+    const std::size_t N_CORES = 1; // Set this to the number of threads
     const int n_tiles = 1;
     const int n_reg = 100;
 

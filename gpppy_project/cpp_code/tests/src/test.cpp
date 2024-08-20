@@ -6,12 +6,13 @@ int main(int argc, char *argv[])
 {
     /////////////////////
     /////// configuration
-    int n_train = 300;
-    int n_test = 700;
-    const int N_CORES = 2; // Set this to the number of threads
+    int n_train = 1000;
+    int n_test = 500;
+    const int N_CORES = 1; // Set this to the number of threads
     // const int tile_size = 100;
-    const int n_tiles = 10;
+    const int n_tiles = 1;
     const int n_reg = 100;
+    const int opt_iter = 1;
 
     // int n_tiles = utils::compute_train_tiles(n_train, tile_size);
     // std::cout << "n_tiles: " << n_tiles << std::endl;
@@ -37,18 +38,18 @@ int main(int argc, char *argv[])
     /////////////////////
     ///// hyperparams
     std::vector<double> M = {0.0, 0.0, 0.0};
-    gpppy_hyper::Hyperparameters hpar = {0.1, 0.9, 0.999, 1e-8, 0, M};
+    gpppy_hyper::Hyperparameters hpar = {0.1, 0.9, 0.999, 1e-8, opt_iter, M};
     std::cout << "lr: " << hpar.learning_rate << std::endl;
     std::cout << hpar.repr() << std::endl;
 
     /////////////////////
     ////// data loading
-    std::string train_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/training/training_input.txt";
+    std::string train_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/interim_data/training_input.txt";
     gpppy::GP_data training_input(train_path, n_train);
     std::cout << "training input" << std::endl;
     utils::print(training_input.data, 0, 10, ", ");
 
-    std::string out_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/training/training_output.txt";
+    std::string out_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/interim_data/training_output.txt";
     gpppy::GP_data training_output(out_path, n_train);
     // std::cout << "training output" << std::endl;
     // utils::print(training_output.data, 0, 10, ", ");
@@ -83,7 +84,9 @@ int main(int argc, char *argv[])
     losses = gp.optimize(hpar);
     std::cout << "Loss" << std::endl;
     utils::print(losses);
+    utils::suspend_hpx_runtime();
 
+    utils::resume_hpx_runtime();
     std::vector<std::vector<double>> pred_and_uncert;
     pred_and_uncert = gp.predict_with_uncertainty(test_input.data, result.first, result.second);
     std::cout << "Prediction" << std::endl;

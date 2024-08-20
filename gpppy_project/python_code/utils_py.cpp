@@ -28,7 +28,7 @@ int compute_train_tile_size_wrap(int n_samples, int n_tiles)
     }
 }
 
-void start_hpx_wrapper(std::vector<std::string> args, int n_cores)
+void start_hpx_wrapper(std::vector<std::string> args, std::size_t n_cores)
 {
     // Add the --hpx:threads argument to the args vector
     args.push_back("--hpx:threads=" + std::to_string(n_cores));

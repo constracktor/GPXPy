@@ -1,0 +1,15 @@
+{
+    "train_in_file": "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/interim_data/training_input.txt",
+    "train_out_file": "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/interim_data/training_output.txt",
+    "test_in_file": "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/interim_data/test_input.txt",
+    "test_out_file": "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/interim_data/test_output.txt",
+    "START": 10000,
+    "END": 10000,
+    "STEP": 100,
+    "N_TILES": 25,
+    "N_CORES": 4,
+    "N_TEST": 1000,
+    "N_REG": 100,
+    "LOOP": 1,
+    "OPT_ITER": 0
+}
