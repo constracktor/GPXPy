@@ -201,3 +201,4 @@ hpx_py11/cmake_cpp/
 /hpx_py11/cpp_code/tests/test_cpp
 gpflow_parallel/venv_gpflow/
 gpytorch_parallel/venv_gpy/
+gpppy_project/paths_python.py
