@@ -195,7 +195,7 @@ hpx::shared_future<std::vector<std::vector<double>>> predict_with_uncertainty_hp
     backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
 
     //// Triangular solve A_M,N * K_NxN = K_MxN -> A_MxN = K_MxN * K^-1_NxN
-    forward_solve_KK_tiled(K_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
+    forward_solve_KcK_tiled(K_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
     // backward_solve_KK_tiled(K_tiles, cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
 
     //////////////////////////////////////////////////////////////////////////////
@@ -316,7 +316,7 @@ hpx::shared_future<std::vector<std::vector<double>>> predict_with_full_cov_hpx(c
     backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
 
     //// Triangular solve A_M,N * K_NxN = K_MxN -> A_MxN = K_MxN * K^-1_NxN
-    forward_solve_KK_tiled(K_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
+    forward_solve_KcK_tiled(K_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
 
     //////////////////////////////////////////////////////////////////////////////
     //// Compute predictions
