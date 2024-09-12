@@ -11,12 +11,12 @@ export APEX_SCREEN_OUTPUT=1 APEX_CSV_OUTPUT=1
 export CMAKE_COMMAND=cmake
 ###
 # TODO
-export HPX_DIR=/home/strackar/spack/opt/spack/linux-ubuntu22.04-skylake/gcc-11.4.0/hpx-1.9.1-vndnmetgj5b3bfo5y7ltnrwypsac7fii/lib/cmake
-#export MKL_DIR=/path/to/hpx_project/dependencies/mkl/install/mkl/2024.1/lib
+export HPX_DIR=/home/maksim/spack/opt/spack/linux-ubuntu22.04-skylake/gcc-11.4.0/hpx-1.9.1-geexjwq4h5szdenwju6rug26fad627bb/lib
+export MKL_DIR=/home/maksim/mkl/install/mkl/2024.1/lib
 ###
 
 # Configure MKL
-#export MKL_CONFIG='-DMKL_ARCH=intel64 -DMKL_LINK=dynamic -DMKL_INTERFACE_FULL=intel_lp64 -DMKL_THREADING=sequential'
+export MKL_CONFIG='-DMKL_ARCH=intel64 -DMKL_LINK=dynamic -DMKL_INTERFACE_FULL=intel_lp64 -DMKL_THREADING=sequential'
 
 ################################################################################
 # Compile code
@@ -86,12 +86,12 @@ for CHOLESKY in $CHOLESKY_VARIANTS; do
   #./data_script.sh $START $END $STEP $TILE_SIZE $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
   ##############################################################################
   # Run data_script for testing
-  START=10000
-  END=10000
+  START=1000
+  END=1000
   STEP=1000
-  N_CORES=18
-  TILE_SIZE=1000
-  N_TEST=5000
-  N_REG=100
+  N_CORES=2
+  TILE_SIZE=100
+  N_TEST=500
+  N_REG=10
   ./data_script.sh $START $END $STEP $TILE_SIZE $N_TEST $N_REG $N_CORES $CHOLESKY $LOOP $OUTPUT_FILE_DATA
 done

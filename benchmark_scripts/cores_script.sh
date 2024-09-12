@@ -9,7 +9,7 @@ N_REG=$7
 CHOLESKY=$8
 N_LOOP=$9
 OUTPUT_FILE=${10}
-APEX_FILE="../build/apex.0.csv"
+APEX_FILE="../build/apex_profiles.csv"
 ERROR_FILE="../build/error.csv"
 
 touch $ERROR_FILE
