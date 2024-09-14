@@ -1,7 +1,7 @@
 #ifndef GP_FUNCTIONS_GRAD_H_INCLUDED
 #define GP_FUNCTIONS_GRAD_H_INCLUDED
 
-#include "mkl_cblas.h"
+#include "mkl_adapter.hpp"
 #include <cmath>
 #include <vector>
 #include <numeric>
@@ -228,7 +228,7 @@ double compute_loss(const std::vector<double> &K_diag_tile,
                     std::size_t N)
 {
   double l = 0.0;
-  l += cblas_ddot(N, y_tile.data(), 1, alpha_tile.data(), 1);
+  l += dot(N, y_tile, alpha_tile);
   for (std::size_t i = 0; i < N; i++)
   {
     // Add the squared difference to the error
@@ -377,7 +377,7 @@ double sum_gradright(const std::vector<double> &inter_alpha,
                      double grad,
                      std::size_t N)
 {
-  grad += cblas_ddot(N, inter_alpha.data(), 1, alpha.data(), 1);
+  grad += dot(N, inter_alpha, alpha);
   return grad;
 }
 
@@ -402,7 +402,7 @@ double sum_noise_gradright(const std::vector<double> &alpha,
                            std::size_t N)
 {
   double noise_der = compute_sigmoid(to_unconstrained(hyperparameters[2], true));
-  grad += (noise_der * cblas_ddot(N, alpha.data(), 1, alpha.data(), 1));
+  grad += (noise_der * dot(N, alpha, alpha));
   return grad;
 }
 
