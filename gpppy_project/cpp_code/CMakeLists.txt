@@ -56,8 +56,5 @@ endif()
 # Install
 install(TARGETS gaussian_process DESTINATION lib)
 
-# Install the headers
-install(FILES include/gaussian_process DESTINATION include)
-
 # Create base directory
 install(DIRECTORY include/gp_headers DESTINATION include)
