@@ -19,12 +19,9 @@ int main(int argc, char *argv[])
     const int n_tiles = 1;
     const int n_reg = 100;
 
-    std::string train_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/training/training_input.txt";
-    std::string out_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/training/training_output.txt";
-    std::string test_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/test/test_input.txt";
-    // std::string train_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/interim_data/training_input.txt";
-    // std::string out_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/interim_data/training_output.txt";
-    // std::string test_path = "/home/maksim/simtech/thesis/GPPPy_hpx/src/data/interim_data/training_output.txt";
+    std::string train_path = "/home/strackar/git_workpace/GPXPy/data/training/training_input.txt";
+    std::string out_path = "/home/strackar/git_workpace/GPXPy/data/training/training_output.txt";
+    std::string test_path = "/home/strackar/git_workpace/GPXPy/data/test/test_input.txt";
 
     for (std::size_t core = 2; core <= pow(2, N_CORES); core = core * 2)
     {

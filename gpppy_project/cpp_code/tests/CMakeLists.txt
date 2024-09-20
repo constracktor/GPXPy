@@ -31,7 +31,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../)
 get_filename_component(LIB_DIR "${DIR_ONE_ABOVE}/cmake_cpp/lib" ABSOLUTE)
 
 # Find the Gaussian Process library
-find_library(GAUSSIAN_PROCESS_LIB gaussian_process HINTS ${LIB_DIR})
+find_library(GAUSSIAN_PROCESS_LIB gaussian_process HINTS ${LIB_DIR} REQUIRED)
 
 # Add the executable
 add_executable(test_cpp src/execute.cpp)
