@@ -697,10 +697,10 @@ hpx::shared_future<double> optimize_step_hpx(const std::vector<double> &training
         update_hyperparameter(grad_K_tiles, grad_v_tiles, alpha_tiles, hyperparameters, n_tile_size, n_tiles, m_T, v_T, beta1_T, beta2_T, 0, 1);
     }
 
-    // if (trainable_params[2])
-    // { // noise_variance
-    //     update_noise_variance(grad_K_tiles, hyperparameters, n_tile_size, n_tiles, m_T, v_T, beta1_T, beta2_T, 0);
-    // }
+    if (trainable_params[2])
+    { // noise_variance
+        update_noise_variance(grad_K_tiles, alpha_tiles, hyperparameters, n_tile_size, n_tiles, m_T, v_T, beta1_T, beta2_T, 0);
+    }
 
     // Update hyperparameter attributes in Gaussian process model
     lengthscale = hyperparameters[0];

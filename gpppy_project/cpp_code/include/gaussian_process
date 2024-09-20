@@ -1,8 +1,0 @@
-#ifndef GAUSSIAN_PROCESS_LIBRARY_H
-#define GAUSSIAN_PROCESS_LIBRARY_H
-
-#include "gp_headers/gpppy_c.hpp"
-#include "gp_headers/utils_c.hpp"
-#include "gp_headers/gp_functions.hpp"
-
-#endif
