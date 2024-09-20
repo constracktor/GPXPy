@@ -2,15 +2,13 @@ import sys
 import time
 import os
 sys.path.append(os.path.abspath("../plot"))
-
 import logging
 from csv import writer
 from config import get_config
 from hpx_logger import setup_logging
 
 import gaussian_process as gpppy
-from plotting import *
-import numpy as np
+
 
 logger = logging.getLogger()
 log_filename = "./hpx_logs.log"
