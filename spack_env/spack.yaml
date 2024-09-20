@@ -1,0 +1,14 @@
+# This is a Spack Environment file.
+#
+# It describes a set of packages to be installed, along with
+# configuration settings.
+spack:
+  specs:
+  - hpx@1.9.1%gcc@13.2.0 instrumentation=apex networking=none max_cpu_count=128
+  - intel-oneapi-mkl@2024.2.1%gcc@13.2.0
+  view: true
+  concretizer:
+    unify: true
+  compilers: []
+  packages: []
+
