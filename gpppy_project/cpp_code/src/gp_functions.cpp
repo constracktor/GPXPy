@@ -86,7 +86,7 @@ hpx::shared_future<std::vector<double>> predict_hpx(const std::vector<double> &t
 
     //////////////////////////////////////////////////////////////////////////////
     //// Compute Cholesky decomposition
-    right_looking_cholesky_tiled_mkl(K_tiles, n_tile_size, n_tiles);
+    right_looking_cholesky_tiled(K_tiles, n_tile_size, n_tiles);
     //// Triangular solve K_NxN * alpha = y
     forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
     backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
@@ -189,7 +189,7 @@ hpx::shared_future<std::vector<std::vector<double>>> predict_with_uncertainty_hp
 
     //////////////////////////////////////////////////////////////////////////////
     //// Compute Cholesky decomposition
-    right_looking_cholesky_tiled_mkl(K_tiles, n_tile_size, n_tiles);
+    right_looking_cholesky_tiled(K_tiles, n_tile_size, n_tiles);
     //// Triangular solve K_NxN * alpha = y
     forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
     backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
@@ -310,7 +310,7 @@ hpx::shared_future<std::vector<std::vector<double>>> predict_with_full_cov_hpx(c
     }
     //////////////////////////////////////////////////////////////////////////////
     //// Compute Cholesky decomposition
-    right_looking_cholesky_tiled_mkl(K_tiles, n_tile_size, n_tiles);
+    right_looking_cholesky_tiled(K_tiles, n_tile_size, n_tiles);
     //// Triangular solve K_NxN * alpha = y
     forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
     backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
@@ -383,7 +383,7 @@ hpx::shared_future<double> compute_loss_hpx(const std::vector<double> &training_
 
     //////////////////////////////////////////////////////////////////////////////
     // Cholesky decomposition
-    right_looking_cholesky_tiled_mkl(K_tiles, n_tile_size, n_tiles);
+    right_looking_cholesky_tiled(K_tiles, n_tile_size, n_tiles);
     // Triangular solve K_NxN * alpha = y
     forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
     backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
@@ -515,7 +515,7 @@ hpx::shared_future<std::vector<double>> optimize_hpx(const std::vector<double> &
 
         //////////////////////////////////////////////////////////////////////////////
         // Cholesky decomposition
-        right_looking_cholesky_tiled_mkl(K_tiles, n_tile_size, n_tiles);
+        right_looking_cholesky_tiled(K_tiles, n_tile_size, n_tiles);
         // Compute K^-1 through L*L^T*X = I
         forward_solve_tiled_matrix(K_tiles, grad_I_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
         backward_solve_tiled_matrix(K_tiles, grad_I_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
@@ -532,7 +532,7 @@ hpx::shared_future<std::vector<double>> optimize_hpx(const std::vector<double> &
         losses[iter] = loss_value.get();
 
         // Compute I-y*y^T*inv(K) -> NxN matrix
-        // update_grad_K_tiled_mkl(grad_K_tiles, y_tiles, alpha_tiles, n_tile_size, n_tiles);
+        // update_grad_K_tiled(grad_K_tiles, y_tiles, alpha_tiles, n_tile_size, n_tiles);
 
         // Compute K^-1 *(I - y*y^T*K^-1)
         // forward_solve_tiled_matrix(K_tiles, grad_K_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
@@ -667,7 +667,7 @@ hpx::shared_future<double> optimize_step_hpx(const std::vector<double> &training
     }
     //////////////////////////////////////////////////////////////////////////////
     // Cholesky decomposition
-    right_looking_cholesky_tiled_mkl(K_tiles, n_tile_size, n_tiles);
+    right_looking_cholesky_tiled(K_tiles, n_tile_size, n_tiles);
     // Triangular solve K_NxN * alpha = y
     forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
     backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
@@ -680,7 +680,7 @@ hpx::shared_future<double> optimize_step_hpx(const std::vector<double> &training
     compute_loss_tiled(K_tiles, alpha_tiles, y_tiles, loss_value, n_tile_size, n_tiles);
 
     // // Fill I-y*y^T*inv(K)
-    // update_grad_K_tiled_mkl(grad_K_tiles, y_tiles, alpha_tiles, n_tile_size, n_tiles);
+    // update_grad_K_tiled(grad_K_tiles, y_tiles, alpha_tiles, n_tile_size, n_tiles);
 
     // // Compute K^-1 * (I-y*y^T*K^-1)
     // forward_solve_tiled_matrix(K_tiles, grad_K_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
@@ -745,7 +745,7 @@ hpx::shared_future<std::vector<std::vector<double>>> cholesky_hpx(const std::vec
 
     //////////////////////////////////////////////////////////////////////////////
     //// Compute Cholesky decomposition
-    right_looking_cholesky_tiled_mkl(K_tiles, n_tile_size, n_tiles);
+    right_looking_cholesky_tiled(K_tiles, n_tile_size, n_tiles);
 
     //// Get predictions and uncertainty to return them
     std::vector<std::vector<double>> result(n_tiles * n_tiles);

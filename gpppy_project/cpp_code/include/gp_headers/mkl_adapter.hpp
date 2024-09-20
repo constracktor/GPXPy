@@ -7,7 +7,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // BLAS operations for tiled cholkesy
 // in-place Cholesky decomposition of A -> return factorized matrix L
-std::vector<double> mkl_potrf(std::vector<double> A,
+std::vector<double> potrf(std::vector<double> A,
                               std::size_t N)
 {
   // use ?potrf2 recursive version for better stability
@@ -18,7 +18,7 @@ std::vector<double> mkl_potrf(std::vector<double> A,
 }
 
 // in-place solve X * L^T = A where L lower triangular
-std::vector<double> mkl_trsm(std::vector<double> L,
+std::vector<double> trsm(std::vector<double> L,
                              std::vector<double> A,
                              std::size_t N)
 {
@@ -31,7 +31,7 @@ std::vector<double> mkl_trsm(std::vector<double> L,
 }
 
 // A = A - B * B^T
-std::vector<double> mkl_syrk(std::vector<double> A,
+std::vector<double> syrk(std::vector<double> A,
                              std::vector<double> B,
                              std::size_t N)
 {
@@ -46,7 +46,7 @@ std::vector<double> mkl_syrk(std::vector<double> A,
 }
 
 // C = C - A * B^T
-std::vector<double> mkl_gemm(std::vector<double> A,
+std::vector<double> gemm(std::vector<double> A,
                              std::vector<double> B,
                              std::vector<double> C,
                              std::size_t N)
@@ -62,7 +62,7 @@ std::vector<double> mkl_gemm(std::vector<double> A,
 }
 
 // in-place solve L * x = a where L lower triangular
-std::vector<double> mkl_trsv_l(std::vector<double> L,
+std::vector<double> trsv_l(std::vector<double> L,
                                std::vector<double> a,
                                std::size_t N)
 {
@@ -74,7 +74,7 @@ std::vector<double> mkl_trsv_l(std::vector<double> L,
 }
 
 // b = b - A * a
-std::vector<double> mkl_gemv_l(std::vector<double> A,
+std::vector<double> gemv_l(std::vector<double> A,
                                std::vector<double> a,
                                std::vector<double> b,
                                std::size_t N)
@@ -90,7 +90,7 @@ std::vector<double> mkl_gemv_l(std::vector<double> A,
 }
 
 // in-place solve L^T * x = a where L lower triangular
-std::vector<double> mkl_trsv_u(std::vector<double> L,
+std::vector<double> trsv_u(std::vector<double> L,
                                std::vector<double> a,
                                std::size_t N)
 {
@@ -103,7 +103,7 @@ std::vector<double> mkl_trsv_u(std::vector<double> L,
 }
 
 // b = b - A^T * a
-std::vector<double> mkl_gemv_u(std::vector<double> A,
+std::vector<double> gemv_u(std::vector<double> A,
                                std::vector<double> a,
                                std::vector<double> b,
                                std::size_t N)
@@ -119,7 +119,7 @@ std::vector<double> mkl_gemv_u(std::vector<double> A,
 }
 
 // A = y*beta^T + A
-std::vector<double> mkl_ger(std::vector<double> A,
+std::vector<double> ger(std::vector<double> A,
                             std::vector<double> x,
                             std::vector<double> y,
                             std::size_t N)
@@ -133,7 +133,7 @@ std::vector<double> mkl_ger(std::vector<double> A,
 }
 
 // C = C + A * B^T
-std::vector<double> mkl_gemm_diag(std::vector<double> A,
+std::vector<double> gemm_diag(std::vector<double> A,
                                   std::vector<double> B,
                                   std::vector<double> C,
                                   std::size_t N)
@@ -150,7 +150,7 @@ std::vector<double> mkl_gemm_diag(std::vector<double> A,
 
 // BLAS operations for tiled prediction
 // b = b + A * a where A(N_row, N_col), a(N_col) and b(N_row)
-std::vector<double> mkl_gemv_p(std::vector<double> A,
+std::vector<double> gemv_p(std::vector<double> A,
                                std::vector<double> a,
                                std::vector<double> b,
                                std::size_t N_row,
@@ -169,7 +169,7 @@ std::vector<double> mkl_gemv_p(std::vector<double> A,
 ////////////////////////////////////////////////////////////////////////////////
 // BLAS operations used in uncertainty computation
 // in-place solve X * L = A where L lower triangular
-std::vector<double> mkl_trsm_l_KcK(std::vector<double> L,
+std::vector<double> trsm_l_KcK(std::vector<double> L,
                                    std::vector<double> A,
                                    std::size_t N,
                                    std::size_t M)
@@ -183,7 +183,7 @@ std::vector<double> mkl_trsm_l_KcK(std::vector<double> L,
 }
 
 // C = C - A * B
-std::vector<double> mkl_gemm_l_KcK(std::vector<double> A,
+std::vector<double> gemm_l_KcK(std::vector<double> A,
                                    std::vector<double> B,
                                    std::vector<double> C,
                                    std::size_t N,
@@ -200,7 +200,7 @@ std::vector<double> mkl_gemm_l_KcK(std::vector<double> A,
 }
 
 // C = C - A^T * B
-std::vector<double> mkl_gemm_cross_tcross_matrix(std::vector<double> A,
+std::vector<double> gemm_cross_tcross_matrix(std::vector<double> A,
                                                  std::vector<double> B,
                                                  std::vector<double> C,
                                                  std::size_t N,
@@ -219,7 +219,7 @@ std::vector<double> mkl_gemm_cross_tcross_matrix(std::vector<double> A,
 ////////////////////////////////////////////////////////////////////////////////
 // BLAS operations used in optimization step
 // in-place solve L * X = A where L lower triangular
-std::vector<double> mkl_trsm_l_matrix(std::vector<double> L,
+std::vector<double> trsm_l_matrix(std::vector<double> L,
                                       std::vector<double> A,
                                       std::size_t N,
                                       std::size_t M)
@@ -233,7 +233,7 @@ std::vector<double> mkl_trsm_l_matrix(std::vector<double> L,
 }
 
 // C = C - A * B
-std::vector<double> mkl_gemm_l_matrix(std::vector<double> A,
+std::vector<double> gemm_l_matrix(std::vector<double> A,
                                       std::vector<double> B,
                                       std::vector<double> C,
                                       std::size_t N,
@@ -250,7 +250,7 @@ std::vector<double> mkl_gemm_l_matrix(std::vector<double> A,
 }
 
 // in-place solve L^T * X = A where L upper triangular
-std::vector<double> mkl_trsm_u_matrix(std::vector<double> L,
+std::vector<double> trsm_u_matrix(std::vector<double> L,
                                       std::vector<double> A,
                                       std::size_t N,
                                       std::size_t M)
@@ -264,7 +264,7 @@ std::vector<double> mkl_trsm_u_matrix(std::vector<double> L,
 }
 
 // C = C - A^T * B
-std::vector<double> mkl_gemm_u_matrix(std::vector<double> A,
+std::vector<double> gemm_u_matrix(std::vector<double> A,
                                       std::vector<double> B,
                                       std::vector<double> C,
                                       std::size_t N,
@@ -289,7 +289,7 @@ double dot(std::size_t N,
 }
 
 // C = C - A * B
-std::vector<double> mkl_dot_uncertainty(std::vector<double> A,
+std::vector<double> dot_uncertainty(std::vector<double> A,
                                         std::vector<double> R,
                                         std::size_t N,
                                         std::size_t M)
@@ -304,7 +304,7 @@ std::vector<double> mkl_dot_uncertainty(std::vector<double> A,
 }
 
 // C = C - A * B
-std::vector<double> mkl_gemm_grad(std::vector<double> A,
+std::vector<double> gemm_grad(std::vector<double> A,
                                   std::vector<double> B,
                                   std::vector<double> R,
                                   std::size_t N,
