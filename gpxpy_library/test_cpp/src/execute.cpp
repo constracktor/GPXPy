@@ -20,9 +20,9 @@ int main(int argc, char *argv[])
     const int n_tiles = 32;
     const int n_reg = 128;
 
-    std::string train_path = "/home/strackar/git_workpace/GPXPy/data/training/training_input.txt";
-    std::string out_path = "/home/strackar/git_workpace/GPXPy/data/training/training_output.txt";
-    std::string test_path = "/home/strackar/git_workpace/GPXPy/data/test/test_input.txt";
+    std::string train_path = "../../../data/training/training_input.txt";
+    std::string out_path = "../../../data/training/training_output.txt";
+    std::string test_path = "../../../data/test/test_input.txt";
 
     for (std::size_t core = 2; core <= pow(2, N_CORES); core = core * 2)
     {
