@@ -8,6 +8,7 @@ set -x  # Print each command before executing it.
 ################################################################################
 # Load GCC compiler
 module load gcc/13.2.0
+module load cmake
 # Activate spack environment
 spack env activate gpxpy
 # Set cmake command
@@ -23,7 +24,7 @@ export MKL_CONFIG='-DMKL_ARCH=intel64 -DMKL_LINK=dynamic -DMKL_INTERFACE_FULL=in
 rm -rf build && mkdir build && cd build
 # Configure the project
 $CMAKE_COMMAND .. -DCMAKE_BUILD_TYPE=Release \
-                  -DPYTHON_LIBRARY_DIR=$(python3 -c "import site; print(site.getsitepackages()[1])") \
+                  -DPYTHON_LIBRARY_DIR=$(python3 -c "import site; print(site.getsitepackages()[0])") \
                   -DPYTHON_EXECUTABLE=$(which python3) \
                   -DHPX_WITH_DYNAMIC_HPX_MAIN=ON \
                   -DCMAKE_C_COMPILER=$(which gcc) \

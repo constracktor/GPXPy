@@ -50,8 +50,6 @@ source_group("Source Files" FILES ${SOURCE_FILES})
 source_group("Header Files" FILES ${HEADER_FILES})
 source_group("Python Files" FILES ${PYTHON_FILES})
 
-# find_package(pybind11 REQUIRED)
-# include(pybind11.cmake)
 pybind11_add_module(gaussian_process 
 	${SOURCE_FILES}
 	${HEADER_FILES}
