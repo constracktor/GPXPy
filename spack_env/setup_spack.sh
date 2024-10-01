@@ -4,9 +4,9 @@ set -ex
 # clone git repository
 DIR=$(pwd)
 cd
-git clone -c feature.manyFiles=true https://github.com/spack/spack.git
+#git clone -c feature.manyFiles=true https://github.com/spack/spack.git
 # configure spack (add this to your .bashrc file)
-source $HOME/spack/share/spack/setup-env.sh
+#source $HOME/spack/share/spack/setup-env.sh
 # find external gcc
 module load gcc/13.2.0
 spack compiler find
