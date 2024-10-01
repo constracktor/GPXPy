@@ -1,4 +1,4 @@
-#include "../include/gp_headers/utils_c.hpp"
+#include "../include/utils_c.hpp"
 
 #include <cstdio>
 #include <iostream>

@@ -4,7 +4,7 @@
 #include <vector>
 #include <hpx/future.hpp>
 
-namespace gpppy_hyper
+namespace gpxpy_hyper
 {
     struct Hyperparameters
     {
@@ -51,13 +51,13 @@ hpx::shared_future<double> compute_loss_hpx(const std::vector<double> &training_
 // Perform optimization for a given number of iterations
 hpx::shared_future<std::vector<double>> optimize_hpx(const std::vector<double> &training_input, const std::vector<double> &training_output,
                                                      int n_tiles, int n_tile_size, double &lengthscale, double &vertical_lengthscale,
-                                                     double &noise_variance, int n_regressors, const gpppy_hyper::Hyperparameters &hyperparams,
+                                                     double &noise_variance, int n_regressors, const gpxpy_hyper::Hyperparameters &hyperparams,
                                                      std::vector<bool> trainable_params);
 
 // Perform a single optimization step
 hpx::shared_future<double> optimize_step_hpx(const std::vector<double> &training_input, const std::vector<double> &training_output,
                                              int n_tiles, int n_tile_size, double &lengthscale, double &vertical_lengthscale,
-                                             double &noise_variance, int n_regressors, gpppy_hyper::Hyperparameters &hyperparams,
+                                             double &noise_variance, int n_regressors, gpxpy_hyper::Hyperparameters &hyperparams,
                                              std::vector<bool> trainable_params, int iter);
 
 // Compute Cholesky decomposition

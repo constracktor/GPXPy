@@ -1,12 +1,12 @@
-#include "../include/gp_headers/gpppy_c.hpp"
-#include "../include/gp_headers/utils_c.hpp"
+#include "../include/gpxpy_c.hpp"
+#include "../include/utils_c.hpp"
 
 #include <stdexcept>
 #include <iomanip>
 #include <cstdio>
 #include <sstream>
 
-namespace gpppy
+namespace gpxpy
 {
     // Initialize of the Gaussian process data constructor
     GP_data::GP_data(const std::string &f_path, int n)
@@ -103,7 +103,7 @@ namespace gpppy
     }
 
     // Optimize hyperparameters for a specified number of iterations
-    std::vector<double> GP::optimize(const gpppy_hyper::Hyperparameters &hyperparams)
+    std::vector<double> GP::optimize(const gpxpy_hyper::Hyperparameters &hyperparams)
     {
 
         std::vector<double> losses;
@@ -117,7 +117,7 @@ namespace gpppy
     }
 
     // Perform a single optimization step
-    double GP::optimize_step(gpppy_hyper::Hyperparameters &hyperparams, int iter)
+    double GP::optimize_step(gpxpy_hyper::Hyperparameters &hyperparams, int iter)
     {
 
         double loss;

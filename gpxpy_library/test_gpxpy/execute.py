@@ -7,30 +7,30 @@ from csv import writer
 from config import get_config
 from hpx_logger import setup_logging
 
-import gaussian_process as gpppy
+import gpxpy as gpx
 
 
 logger = logging.getLogger()
 log_filename = "./hpx_logs.log"
 
-def gpppy_run(config, output_csv_obj, n_train, l, cores):
+def gpx_run(config, output_csv_obj, n_train, l, cores):
     
     total_t = time.time()
     
-    n_tile_size = gpppy.compute_train_tile_size(n_train, config["N_TILES"])
-    m_tiles, m_tile_size = gpppy.compute_test_tiles(config["N_TEST"], config["N_TILES"], n_tile_size)
-    hpar = gpppy.Hyperparameters(learning_rate=0.1, opt_iter=config["OPT_ITER"], m_T=[0,0,0], v_T=[0,0,0])
-    train_in = gpppy.GP_data(config["train_in_file"], n_train)
-    train_out = gpppy.GP_data(config["train_out_file"], n_train)
-    test_in = gpppy.GP_data(config["test_in_file"], config["N_TEST"])
+    n_tile_size = gpx.compute_train_tile_size(n_train, config["N_TILES"])
+    m_tiles, m_tile_size = gpx.compute_test_tiles(config["N_TEST"], config["N_TILES"], n_tile_size)
+    hpar = gpx.Hyperparameters(learning_rate=0.1, opt_iter=config["OPT_ITER"], m_T=[0,0,0], v_T=[0,0,0])
+    train_in = gpx.GP_data(config["train_in_file"], n_train)
+    train_out = gpx.GP_data(config["train_out_file"], n_train)
+    test_in = gpx.GP_data(config["test_in_file"], config["N_TEST"])
     
     ###### GP object ######
     init_t = time.time()
-    gp = gpppy.GP(train_in.data, train_out.data, config["N_TILES"], n_tile_size, trainable=[True, True, True])
+    gp = gpx.GP(train_in.data, train_out.data, config["N_TILES"], n_tile_size, trainable=[True, True, True])
     init_t = time.time() - init_t
     
     # Init hpx runtime but do not start it yet
-    gpppy.start_hpx(sys.argv, cores)
+    gpx.start_hpx(sys.argv, cores)
     
     # Perform optmization
     opti_t = time.time()
@@ -38,8 +38,8 @@ def gpppy_run(config, output_csv_obj, n_train, l, cores):
     opti_t = time.time() - opti_t
     logger.info("Finished optimization.")
     
-    gpppy.suspend_hpx()
-    gpppy.resume_hpx()
+    gpx.suspend_hpx()
+    gpx.resume_hpx()
         
     # Predict
     pred_uncer_t = time.time()
@@ -60,7 +60,7 @@ def gpppy_run(config, output_csv_obj, n_train, l, cores):
     logger.info("Finished predictions.") 
     
     # Stop HPX runtime
-    gpppy.stop_hpx()
+    gpx.stop_hpx()
     
     TOTAL_TIME = time.time() - total_t
     INIT_TIME = init_t
@@ -111,7 +111,7 @@ def execute():
             for l in range(config["LOOP"]):
                 logger.info("*" * 40)
                 logger.info(f"Core: {2**core}, Train Size: {data_size}, Loop: {l}")
-                gpppy_run(config, output_csv_obj, data_size, l, 2**core)
+                gpx_run(config, output_csv_obj, data_size, l, 2**core)
         
     
 if __name__ == "__main__":

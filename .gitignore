@@ -190,13 +190,10 @@ cython_debug/
 *.app
 
 # Datafiles
-/build
-/gpppy_project/test/output.csv
-/gpflow_parallel/output.csv
-/gpytorch_parallel/output.csv
+*/build
+*/build_*/
+*/output.csv
+*/result.txt
+/gpxpy_library/test_cpp/install_cpp/
+/gpxpy_library/test_cpp/test_cpp
 /.vscode
-/gpflow_parallel/logs/
-/gpppy_project/cmake_cpp/
-/gpppy_project/cpp_code/tests/test_cpp
-/gpflow_parallel/venv_gpflow/
-/gpytorch_parallel/venv_gpy/

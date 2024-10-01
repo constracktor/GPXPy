@@ -21,14 +21,13 @@ export MKL_CONFIG='-DMKL_ARCH=intel64 -DMKL_LINK=dynamic -DMKL_INTERFACE_FULL=in
 ################################################################################
 # Compile code
 ################################################################################
-rm -rf build && mkdir build && cd build
+rm -rf build_cpp && mkdir build_cpp && cd build_cpp
 # Configure the project
-$CMAKE_COMMAND .. -DCMAKE_BUILD_TYPE=Release \
-                  -DPYTHON_LIBRARY_DIR=$(python3 -c "import site; print(site.getsitepackages()[0])") \
-                  -DPYTHON_EXECUTABLE=$(which python3) \
+$CMAKE_COMMAND ../core -DCMAKE_BUILD_TYPE=Release \
                   -DHPX_WITH_DYNAMIC_HPX_MAIN=ON \
                   -DCMAKE_C_COMPILER=$(which gcc) \
 		  -DCMAKE_CXX_COMPILER=$(which g++) \
                   ${MKL_CONFIG}
  # Build the project
 make -j all
+make install

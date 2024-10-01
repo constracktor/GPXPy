@@ -1,23 +1,24 @@
-#include <gaussian_process>
 #include <iostream>
 #include <chrono>
 #include <fstream>
 // #include <boost/program_options.hpp>
+#include "../install_cpp/include/gpxpy_c.hpp"
+#include "../install_cpp/include/utils_c.hpp"
 
 int main(int argc, char *argv[])
 {
     /////////////////////
     /////// configuration
-    int START = 200;
-    int END = 200;
-    int STEP = 10000;
+    int START = 1024;
+    int END = 1024;
+    int STEP = 128;
     int LOOP = 1;
-    const int OPT_ITER = 0;
+    const int OPT_ITER = 1;
 
-    int n_test = 10;
-    const std::size_t N_CORES = 1; // Set this to the number of threads
-    const int n_tiles = 1;
-    const int n_reg = 100;
+    int n_test = 1024;
+    const std::size_t N_CORES = 2; // Set this to the number of threads
+    const int n_tiles = 32;
+    const int n_reg = 128;
 
     std::string train_path = "/home/strackar/git_workpace/GPXPy/data/training/training_input.txt";
     std::string out_path = "/home/strackar/git_workpace/GPXPy/data/training/training_output.txt";
@@ -52,19 +53,19 @@ int main(int argc, char *argv[])
                 /////////////////////
                 ///// hyperparams
                 std::vector<double> M = {0.0, 0.0, 0.0};
-                gpppy_hyper::Hyperparameters hpar = {0.1, 0.9, 0.999, 1e-8, OPT_ITER, M};
+                gpxpy_hyper::Hyperparameters hpar = {0.1, 0.9, 0.999, 1e-8, OPT_ITER, M};
 
                 /////////////////////
                 ////// data loading
-                gpppy::GP_data training_input(train_path, n_train);
-                gpppy::GP_data training_output(out_path, n_train);
-                gpppy::GP_data test_input(test_path, n_test);
+                gpxpy::GP_data training_input(train_path, n_train);
+                gpxpy::GP_data training_output(out_path, n_train);
+                gpxpy::GP_data test_input(test_path, n_test);
 
                 /////////////////////
                 ///// GP
                 auto start_init = std::chrono::high_resolution_clock::now();
                 std::vector<bool> trainable = {false, false, true};
-                gpppy::GP gp(training_input.data, training_output.data, n_tiles, tile_size, 1.0, 1.0, 0.1, n_reg, trainable);
+                gpxpy::GP gp(training_input.data, training_output.data, n_tiles, tile_size, 1.0, 1.0, 0.1, n_reg, trainable);
                 auto end_init = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double> init_time = end_init - start_init;
 
@@ -105,7 +106,7 @@ int main(int argc, char *argv[])
                 std::chrono::duration<double> total_time = end_total - start_total;
 
                 // Save parameters and times to a .txt file with a header
-                std::ofstream outfile("results.txt", std::ios::app); // Append mode
+                std::ofstream outfile("../output.csv", std::ios::app); // Append mode
                 if (outfile.tellp() == 0)
                 {
                     // If file is empty, write the header

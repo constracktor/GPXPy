@@ -1,11 +1,11 @@
-#ifndef GPPPY_C_H
-#define GPPPY_C_H
+#ifndef gpxpy_C_H
+#define gpxpy_C_H
 
 #include <vector>
 #include <string>
 #include "gp_functions.hpp"
 
-namespace gpppy
+namespace gpxpy
 {
 
     struct GP_data
@@ -55,10 +55,10 @@ namespace gpppy
         std::vector<std::vector<double>> predict_with_full_cov(const std::vector<double> &test_data, int m_tiles, int m_tile_size);
 
         // Optimize hyperparameters for a specified number of iterations
-        std::vector<double> optimize(const gpppy_hyper::Hyperparameters &hyperparams);
+        std::vector<double> optimize(const gpxpy_hyper::Hyperparameters &hyperparams);
 
         // Perform a single optimization step
-        double optimize_step(gpppy_hyper::Hyperparameters &hyperparams, int iter);
+        double optimize_step(gpxpy_hyper::Hyperparameters &hyperparams, int iter);
 
         // Calculate loss for given data and Gaussian process model
         double calculate_loss();
