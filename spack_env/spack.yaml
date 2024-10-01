@@ -4,7 +4,7 @@
 # configuration settings.
 spack:
   specs:
-  - hpx@1.9.1%gcc@13.2.0 instrumentation=apex networking=none max_cpu_count=128
+  - hpx@1.9.1%gcc@13.2.0 instrumentation=apex networking=none max_cpu_count=256
   - intel-oneapi-mkl@2024.2.1%gcc@13.2.0
   view: true
   concretizer:
