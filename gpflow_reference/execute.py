@@ -95,7 +95,7 @@ def execute():
     # logger.info("Load config file.")
     config = get_config()
     
-    file_path = "./results.txt"
+    file_path = "./output.csv"
     file_exists = os.path.isfile(file_path)
 
     with open(file_path, "a") as output_file:
