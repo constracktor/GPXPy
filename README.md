@@ -1,39 +1,57 @@
+# [GPXPy: Leveraging HPX for Gaussian Processes in Python]()
 
-# [GPPPy: Leveraging HPX and BLAS to accelerate Gaussian Processes in Python]()
-This repository contains the source code for the master thesis: GPPPy: Leveraging HPX and BLAS to accelerate Gaussian
-Processes in Python
+This repository contains the source code for the GPXPy library, as well as two reference implementations based on Tensorflow ([GPflow](https://github.com/GPflow/GPflow)) and PyTorch ([GPyTorch](https://github.com/cornellius-gp/gpytorch)).
 
-## Abstract
-Gaussian processes, often referred to as Kriging, are a popular regression technique. 
-They are a widely used alternative to neural networks in various applications, e.g., non-linear system identification. Popular software packages in this domain, such as GPflow and GPyTorch, are based on Python and rely on NumPy or TensorFlow to achieve good performance and portability. Although the problem size continues to grow in the era of big data, the focus of development is primarily on additional features and not on the improvement of parallelization and performance portability.
-In this work, we address the aforementioned issues by developing a novel parallel library, GPPPy (Gaussian Processes Parallel in Python). Written in C++, it leverages the asynchronous many-task runtime system HPX, while providing the convenience of a Python API through pybind11. GPPPy includes hyperparameter optimization and the computation of predictions with uncertainty, offering both the marginal variance vector and, if desired, a full posterior covariance matrix computation, hereby making it comparable to existing software packages. We investigate the scaling performance of GPPPy on a dual-socket EPYC 7742 node and compare it against the pure HPX implementation as well as against high-level reference implementations that utilize GPflow and GPyTorch. Our results demonstrate that GPPPy’s performance is directly influenced by the chosen tile size. In addition, we show that there is no runtime overhead when using HPX with pybind11. Compared to GPflow and GPyTorch, our task-based implementation GPPPy is up to 10.5 times faster in our strong scaling benchmarks for prediction with uncertainty computations. Furthermore, GPPPy shows superior parallel efficiency to GPflow and GPyTorch.
-Additionally, GPPPy, which only computes predictions with uncertainties, outperforms GPyTorch used with LOVE by a factor of up to 2.8 when using 16 or more cores, despite the latter using an algorithm with superior asymptotic complexity.
+## Dependencies
 
-## Initial Implementations
+GPXPy utilizes two external libraries:
 - HPX: https://hpx-docs.stellar-group.org/latest/html/index.html
 - MKL: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
 
-Both libraries can be installed by executing [build-hpx.sh](dependencies/build-hpx.sh) and [build-mkl.sh](dependencies/build-mkl.sh).
+Both libraries can be installed using [Spack](https://github.com/spack/spack). A script to install a respective Spack environment is provided in [`spack_env`](spack_env).
 
-## Steps to follow to run the project
+## How To Run
 
-### To run the GPPPy C++ version
+Note that currently all scripts assume a `gcc/13.2.0` compiler and recent Cmake version to be present. However, the Spack environment and scripts can be modifified to match own compiler availability.
+We highly recommend to use the same compiler for HPX and GPXPy.
 
-- Go to [gpppy_project/cpp_code](gpppy_project/cpp_code)
-- Run `./run_cpp.sh` to build the C++ library
-- Go to [gpppy_project/cpp_code/tests/src](gpppy_project/cpp_code/tests/src/)
-- Set parameters in [../src/execute.py](gpppy_project/cpp_code/tests/src/execute.cpp)
-- Go to [../tests](gpppy_project/cpp_code/tests/) and execute `./run.sh`
+### Install dependencies
 
-### To run GPPPy
+- Run: 'spack_env/setup_spack.sh' in the `GPXPy` directory. This script will install Spack, create an environment for GPXPy and install all dependencies.
 
-- Go to [gpppy_project](gpppy_project/)
-- Run `./run.sh` to generate the executable
-- Go to [gpppy_project/test/](gpppy_project/test/)
-- Set parameters in [test/config.json](gpppy_project/test/config.json)
-- Run [../tests/execute.py](gpppy_project/test/execute.py) via `python execute.py`
+### To run the GPXPy C++ code
+
+- Go to [`gpxpy_library`](gpxpy_library/)
+- Run `./compile_cpp.sh` to build the C++ library
+- Set parameters in [`test_cpp/src/execute.cpp`](gpxpy_library/test_cpp/src/execute.cpp)
+- Run `./run_cpp.sh` to build and run example
+
+### To run GPXPy with Python
+
+- Go to [`gpxpy_library`](gpxpy_library/)
+- Run `./compile_gpxpy.sh` to build the binded Python library
+- Set parameters in [`test_gpxpy/config.json`](gpxpy_library/test_gpxpy/config.json)
+- Run `./run_gpxpy.sh` to run example
+
+### To run GPflow reference
+
+- Go to [`gpflow_reference`](gpflow_reference/)
+- Run `./run_gpflow.sh` to run example
+
+### To run GPflow reference
+
+- Go to [`gpytorch_reference`](gpytorch_reference/)
+- Run `./run_gpytorch.sh` to run example
 
 ## The Team
-Gaussian Processes Parallel in Python (GPPPy) devised by University of Stuttgart grad student [Maksim Helmann](https://de.linkedin.com/in/maksim-helmann-60b8701b1), under the supervision of [Prof. Dr. Dirk Pflüger](https://www.f05.uni-stuttgart.de/en/faculty/contactpersons/Pflueger-00005/) and [Mr. M.Sc. Alexander Strack](https://www.ipvs.uni-stuttgart.de/de/institut/team/Strack-00001/). Intial framework ([Scalability of Gaussian Processes Using Asynchronous Tasks: A Comparison Between HPX and PETSc](https://zenodo.org/records/7535794)) was developed by University of Stuttgart [Mr. M.Sc. Alexander Strack](https://www.ipvs.uni-stuttgart.de/de/institut/team/Strack-00001/).
 
+The GPXPy library is developed by the [Scientific Computing](https://www.ipvs.uni-stuttgart.de/departments/sc/) department at IPVS at the University of Stuttgart. The project is a joined effort of multiple undergraduate, graduate, and PhD students under the supervision of [Prof. Dr. Dirk Pflüger](https://www.f05.uni-stuttgart.de/en/faculty/contactpersons/Pflueger-00005/).
+We specifically thank the follow contributors:
 
+- [Alexander Strack](https://www.ipvs.uni-stuttgart.de/de/institut/team/Strack-00001/): Maintainer and [intial framework](https://doi.org/10.1007/978-3-031-32316-4_5).
+
+- [Maksim Helmann](https://de.linkedin.com/in/maksim-helmann-60b8701b1): [Optimization, Python bindings and reference implementations](tbd.).
+
+## How To Cite
+
+tbd.
