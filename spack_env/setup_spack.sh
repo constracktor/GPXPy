@@ -15,7 +15,7 @@ module load cmake
 spack external find
 # install HPX, MKL and all its dependencies
 spack env create gpxpy
-cp $DIR/spack.yaml $HOME/spack/var/spack/environments/gpxpy/spack.yaml
+cp $DIR/spack_env/spack.yaml $HOME/spack/var/spack/environments/gpxpy/spack.yaml
 spack env activate gpxpy
 spack concretize -f
 spack install
