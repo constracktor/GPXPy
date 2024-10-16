@@ -7,8 +7,9 @@ set -x  # Print each command before executing it.
 # Configurations
 ################################################################################
 # Load GCC compiler
-module load gcc/13.2.0
+# module load gcc/13.2.0
 module load cmake
+module load cuda/12.2.2
 # Activate spack environment
 spack env activate gpxpy
 # Set cmake command
