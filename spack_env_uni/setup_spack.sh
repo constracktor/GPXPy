@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 
 ################################################################################
-# script for installing spack with HPX+CUDA with Intel-OneAPI-MKL
-# on generic system
+# Script to install Spack and HPX on pcsgs02-05 (Version: 14.10.24)
 #
 # - add `source $HOME/spack/share/spack/setup-env.sh` to your .bashrc file to
 #   automatically load `spack` when opening a new terminal
+# - currently, does not work (with CUDA)
 ################################################################################
 
-# exit on error; print each command
+# exit on error, print each command
 set -ex
 
-# clone Spack repo in $HOME/spack
+# clone spack git repository into $HOME/spack
 DIR=$(pwd)
 cd $HOME
 git clone -c feature.manyFiles=true https://github.com/spack/spack.git
@@ -19,7 +19,14 @@ git clone -c feature.manyFiles=true https://github.com/spack/spack.git
 # setup `spack` command
 source $HOME/spack/share/spack/setup-env.sh
 
-# intentionally not locating system-local packages
+# load necessary modules on pcsgs02-05
+module load cuda/12.2.2
+module load cmake
+
+# find compilers, external packages, and CUDA
+spack compiler find
+spack external find
+spack external find cuda
 
 # install dependencies into `gpxpy` spack environment
 # (see spack.yaml in same directory for details)
