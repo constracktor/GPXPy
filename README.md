@@ -7,7 +7,7 @@ reference implementations based on TensorFlow
 
 ## Dependencies
 
-GPXPy utilizes two external libraries:
+GPXPy utilizes three external libraries:
 - [HPX](https://hpx-docs.stellar-group.org/latest/html/index.html)
 - [CUDA]()
 - [MKL](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html)
