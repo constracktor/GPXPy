@@ -17,6 +17,7 @@ spack:
       +cuda
   - intel-oneapi-mkl
   - cuda
+  - gcc@13.3.0
 
   view: true
 

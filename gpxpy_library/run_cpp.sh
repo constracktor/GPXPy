@@ -1,39 +1,49 @@
 #!/bin/bash
-################################################################################
-set -e  # Exit immediately if a command exits with a non-zero status.
-set -x  # Print each command before executing it.
 
 ################################################################################
-# Configurations
+# Run C++ test code (see test_cpp/)
 ################################################################################
-# Load GCC compiler
-# module load gcc/13.2.0
-module load cmake
-module load cuda/12.2.2
-# Activate spack environment
+
+# exit on error (non-zero status); print each command before executing it
+set -ex
+
+# Configurations ---------------------------------------------------------------
+
+# load spack environment
+source $HOME/spack/share/spack/setup-env.sh
 spack env activate gpxpy
-# Set cmake command
+
+# set cmake command
 export CMAKE_COMMAND=$(which cmake)
-# Configure APEX
+
+# activate APEX output to stdout
 export APEX_SCREEN_OUTPUT=1
-# Configure MKL
+
+# configure MKL
 export MKL_CONFIG='-DMKL_ARCH=intel64 -DMKL_LINK=dynamic -DMKL_INTERFACE_FULL=intel_lp64 -DMKL_THREADING=sequential'
 
-################################################################################
-# Compile code
-################################################################################
+# Compile code -----------------------------------------------------------------
+
+# goto project directory
 cd test_cpp
+
+# reset build directory
 rm -rf build && mkdir build && cd build
-# Configure the project
+
+# configure project
 $CMAKE_COMMAND .. -DCMAKE_BUILD_TYPE=Release \
-                  -DHPX_WITH_DYNAMIC_HPX_MAIN=ON \
-                  -DCMAKE_C_COMPILER=$(which gcc) \
-		  -DCMAKE_CXX_COMPILER=$(which g++) \
-                  ${MKL_CONFIG}
- # Build the project
+    -DHPX_WITH_DYNAMIC_HPX_MAIN=ON \
+    -DCMAKE_C_COMPILER=$(which gcc) \
+    -DCMAKE_CXX_COMPILER=$(which g++) \
+    ${MKL_CONFIG}
+
+# build project
 make -j VERBOSE=1 all
 
-################################################################################
-# Run code
-################################################################################
+# ------------------------------------------------------------------------------
+
+# Run test code ----------------------------------------------------------------
+
 ../test_cpp
+
+# ------------------------------------------------------------------------------
