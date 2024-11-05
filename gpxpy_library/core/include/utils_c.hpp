@@ -1,9 +1,6 @@
 #ifndef UTILS_C_H
 #define UTILS_C_H
 
-#include <stdio.h>
-#include <tuple>
-#include <stdexcept>
 #include <vector>
 #include <string>
 
@@ -35,8 +32,8 @@ namespace utils
     void resume_hpx_runtime();
 
     // Wait for all tasks to finish, and suspend the HPX runtime
-    void suspend_hpx_runtime();    
-    
+    void suspend_hpx_runtime();
+
     // Stop HPX runtime
     void stop_hpx_runtime();
 }

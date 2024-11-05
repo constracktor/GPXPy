@@ -8,41 +8,89 @@
 namespace gpxpy
 {
 
+    /**
+     * @brief Data structure for Gaussian process data
+     *
+     * It includes the file path to the data, the number of samples, and the
+     * data itself.
+     */
     struct GP_data
     {
-        int n_samples;
-        std::string file_path;
-        std::vector<double> data;
+        std::string file_path; ///< Path to the file containing the data
+        int n_samples; ///< Number of samples in the data
+        std::vector<double> data; ///< Vector containing the data
 
-        // Initialize of the Gaussian process data constructor
-        GP_data(const std::string &f_path, int n);
+        /**
+        * @brief Construct a new GP_data object
+        *
+        * @param file_path Path to the file containing the data
+        * @param n Number of samples to read from the file
+        */
+        GP_data(const std::string& file_path, int n);
     };
 
+
+    /**
+     * @brief Gaussian Process class for regression tasks
+     *
+     * This class provides methods for training a Gaussian Process model, making
+     * predictions, optimizing hyperparameters, and calculating loss. It also
+     * includes methods for computing the Cholesky decomposition.
+     */
     class GP
     {
     private:
-        std::vector<double> _training_input;
-        std::vector<double> _training_output;
-        int _n_tiles;
-        int _n_tile_size;
+        std::vector<double> _training_input; ///< Input data for training
+        std::vector<double> _training_output; ///< Output data for given input data
+        int _n_tiles; ///< Number of tiles
+        int _n_tile_size; ///< Size of each square tile in each dimension
 
     public:
-        double lengthscale;
-        double vertical_lengthscale;
+        double lengthscale; ///< "l" parameter of squared exponential kernel
+        double vertical_lengthscale; ///< "v" parameter of squared exponential kernel
+
+        /**
+         * "sigma" parameter of squared exponential kernel, also referred to
+         * as `n`
+         */
         double noise_variance;
-        int n_regressors;
+
+        int n_regressors; ///< Number of regressors
+
+        ///< True bools indicate trainable parameters, else not trainable
         std::vector<bool> trainable_params;
 
-        // Initialize of the Gaussian process constructor
-        GP(std::vector<double> input, std::vector<double> output, int n_tiles, int n_tile_size, double l, double v, double n, int n_r, std::vector<bool> trainable_bool);
 
-        // Print Gausian process attributes
+        /**
+         * @brief Constructs a Gaussian Process (GP)
+         *
+         * @param input Input data for training of the GP
+         * @param output Expected output data for training of the GP
+         * @param n_tiles Number of tiles
+         * @param n_tile_size Size of each tile in each dimension
+         * @param l Lengthscale Parameter of squared exponential kernel: l
+         * @param v Vertical Lengthscale parameter of squared exponential kernel: v
+         * @param n Noise Variance parameter of squared exponential kernel: n
+         * @param n_regressors Number of regressors
+         * @param trainable_bool Vector indicating which parameters are trainable
+         */
+        GP(std::vector<double> input, std::vector<double> output, int n_tiles,
+           int n_tile_size, double l, double v, double n, int n_regressors,
+           std::vector<bool> trainable_bool);
+
+        /**
+         * Print Gausian process attributes
+         */
         std::string repr() const;
 
-        // Return training input data
+        /**
+         * Returns size of input data for training
+         */
         std::vector<double> get_training_input() const;
 
-        // Return training output data
+        /**
+         * Returns size of output data for training
+         */
         std::vector<double> get_training_output() const;
 
         // Predict output for test input
@@ -67,7 +115,6 @@ namespace gpxpy
         // is to measure performance to compare against PyTorch torch.linalg.cholesky()
         std::vector<std::vector<double>> cholesky();
     };
-
 }
 
 #endif

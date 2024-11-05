@@ -5,14 +5,21 @@
 
 namespace py = pybind11;
 
+/**
+ * @brief Adds classes `GP_data`, `Hyperparameters`, `GP` to Python module.
+ */
 void init_gpxpy(py::module &m)
 {
+    // set training data with `GP_data` class
     py::class_<gpxpy::GP_data>(m, "GP_data")
         .def(py::init<std::string, int>(), py::arg("file_path"), py::arg("n_samples"))
         .def_readonly("n_samples", &gpxpy::GP_data::n_samples)
         .def_readonly("file_path", &gpxpy::GP_data::file_path)
         .def_readonly("data", &gpxpy::GP_data::data);
 
+    // Set hyperparameters to default values in `Hyperparameters` class, unless
+    // specified. Python object has full access to each hyperparameter and a
+    // string representation `__repr__`.
     py::class_<gpxpy_hyper::Hyperparameters>(m, "Hyperparameters")
         .def(py::init<double, double, double, double, int, std::vector<double>, std::vector<double>>(),
              py::arg("learning_rate") = 0.001,
@@ -32,11 +39,16 @@ void init_gpxpy(py::module &m)
         .def("__repr__", &gpxpy_hyper::Hyperparameters::repr);
     ;
 
+    // Initializes Gaussian Process with `GP` class. Sets default parameters for
+    // squared exponential kernel, number of regressors and trainable, unless
+    // specified. Instance object hast full access to parameters for squared
+    // exponental kernel and number of regressors. Also adds some member
+    // functions.
     py::class_<gpxpy::GP>(m, "GP")
         .def(py::init<std::vector<double>, std::vector<double>, int, int, double, double, double, int, std::vector<bool>>(),
-             py::arg("input_data"), 
+             py::arg("input_data"),
              py::arg("output_data"),
-             py::arg("n_tiles"), 
+             py::arg("n_tiles"),
              py::arg("n_tile_size"),
              py::arg("lengthscale") = 1.0,
              py::arg("v_lengthscale") = 1.0,

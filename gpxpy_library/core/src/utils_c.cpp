@@ -1,11 +1,16 @@
 #include "../include/utils_c.hpp"
 
 #include <cstdio>
-#include <iostream>
 
 namespace utils
 {
-    // Compute number of train tiles
+    /**
+     * @brief Compute the number of tiles for training data, given the number of
+     * samples and the size of each tile.
+     *
+     * @param n_samples Number of samples
+     * @param n_tile_size Size of each tile
+     */
     int compute_train_tiles(int n_samples, int n_tile_size)
     {
         if (n_tile_size > 0)
@@ -21,7 +26,13 @@ namespace utils
         }
     }
 
-    // Compute size of train tile
+    /**
+     * @brief Compute the number of tiles for training data, given the number of
+     * samples and the size of each tile.
+     *
+     * @param n_samples Number of samples
+     * @param n_tile_size Size of each tile
+     */
     int compute_train_tile_size(int n_samples, int n_tiles)
     {
         if (n_tiles > 0)
@@ -37,7 +48,13 @@ namespace utils
         }
     }
 
-    // Compute number of test tiles and the size of a test tile
+    /**
+     * @brief Compute the number of test tiles and the size of a test tile.
+     *
+     * @param n_test Number of test samples
+     * @param n_tiles Number of tiles
+     * @param n_tile_size Size of each tile
+     */
     std::pair<int, int> compute_test_tiles(int n_test, int n_tiles, int n_tile_size)
     {
         std::size_t _n_test = static_cast<std::size_t>(n_test);
