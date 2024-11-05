@@ -16,9 +16,14 @@ set -ex
 # Install Spack ----------------------------------------------------------------
 
 # Clone spack git repository into $HOME/spack
-DIR=$(pwd)
-cd $HOME
-git clone -c feature.manyFiles=true https://github.com/spack/spack.git
+
+# check if current directory is spack_env_simcl1
+if [[ $(basename "$(pwd)") != "spack_env_simcl1" ]]; then
+    echo "Please run this script from the spack_env_simcl1 directory"
+    exit 1
+fi
+
+git clone -c feature.manyFiles=true https://github.com/spack/spack.git ~/spack
 
 # use custom HPX package.py: added some CMake options at the end
 cp ./hpx_package.py $HOME/spack/var/spack/repos/builtin/packages/hpx/package.py
@@ -45,9 +50,10 @@ spack external find cuda
 # Install dependencies into `gpxpy` spack environment
 # (see ./spack.yaml for details)
 spack env create gpxpy
-cp $DIR/spack_env/spack.yaml $HOME/spack/var/spack/environments/gpxpy/spack.yaml
+cp ./spack.yaml $HOME/spack/var/spack/environments/gpxpy/spack.yaml
 spack env activate gpxpy
 spack concretize -f
+mkdir -p /home/mllmanhk/spack/var/spack/environments/gpxpy/.spack-env/view/include
 spack install
 
 # ------------------------------------------------------------------------------
