@@ -10,14 +10,15 @@ spack:
 
   specs:
   - >
-      hpx@1.9.1
+      hpx@1.10.0
+      %clang
       instrumentation=apex
       networking=none
       max_cpu_count=256
       +cuda
   - intel-oneapi-mkl
-  - cuda
-  - gcc@13.3.0
+    %clang
+  - cuda %clang
 
   view: true
 
