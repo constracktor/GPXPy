@@ -4,46 +4,58 @@
 # Run C++ test code (see test_cpp/)
 ################################################################################
 
-# exit on error (non-zero status); print each command before executing it
+# Exit on error (non-zero status); Print each command before executing it
 set -ex
 
-# Configurations ---------------------------------------------------------------
+# Configuration ------------------------------------------------------------ {{{
 
-# load spack environment
+# Load spack environment
 source $HOME/spack/share/spack/setup-env.sh
 spack env activate gpxpy
 
-# set cmake command
+# Set cmake command
 export CMAKE_COMMAND=$(which cmake)
 
-# activate APEX output to stdout
+# Activate APEX output to stdout
 export APEX_SCREEN_OUTPUT=1
 
-# configure MKL
-export MKL_CONFIG='-DMKL_ARCH=intel64 -DMKL_LINK=dynamic -DMKL_INTERFACE_FULL=intel_lp64 -DMKL_THREADING=sequential'
+# Configure MKL
+export MKL_CONFIG='-DMKL_ARCH=intel64 -DMKL_LINK=dynamic \
+                   -DMKL_INTERFACE_FULL=intel_lp64 -DMKL_THREADING=sequential'
 
-# Compile code -----------------------------------------------------------------
+# Get CUDA architecture
+export CUDA_ARCH=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader | \
+                   awk -F '.' '{print $1$2}')
 
-# goto project directory
+# }}} ----------------------------------------------------- end of Configuration
+
+# Compilation ------------------------------------------------------------------
+
+# Goto project directory
 cd test_cpp
 
-# reset build directory
+# Reset build directory
 rm -rf build && mkdir build && cd build
 
-# configure project
-$CMAKE_COMMAND .. -DCMAKE_BUILD_TYPE=Release \
+# Configure project
+$CMAKE_COMMAND .. \
+    -DCMAKE_BUILD_TYPE=Release \
     -DHPX_WITH_DYNAMIC_HPX_MAIN=ON \
-    -DCMAKE_C_COMPILER=$(which gcc) \
-    -DCMAKE_CXX_COMPILER=$(which g++) \
+    -DCMAKE_C_COMPILER=$(which clang) \
+    -DCMAKE_CXX_COMPILER=$(which clang++) \
+    -DCMAKE_CUDA_COMPILER=$(which clang++) \
+    -DCMAKE_CUDA_FLAGS="--cuda-gpu-arch=sm_${CUDA_ARCH} \
+                        --cuda-path=${CUDA_HOME}" \
+    -DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCH} \
     ${MKL_CONFIG}
 
-# build project
+# Build project
 make -j VERBOSE=1 all
 
-# ------------------------------------------------------------------------------
+# ----------------------------------------------------------- end of Compilation
 
-# Run test code ----------------------------------------------------------------
+# Running test code ------------------------------------------------------------
 
 ../test_cpp
 
-# ------------------------------------------------------------------------------
+# ----------------------------------------------------- end of Running test code
