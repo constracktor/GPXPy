@@ -15,21 +15,25 @@ include_directories(${MKL_INCLUDE_DIRS})
 
 # Source files
 set(SOURCE_FILES
+    src/cublas_adapter.cpp
+    src/gp_functions.cpp
     src/gpxpy_c.cpp
     src/utils_c.cpp
-    src/gp_functions.cpp
 )
 
 # Headers (to be installed)
 set(HEADER_FILES
-    include/gpxpy_c.hpp
-    include/utils_c.hpp
-    include/gp_functions.hpp
-    include/tiled_algorithms_cpu.hpp
-    include/gp_helper_functions.hpp
+    include/cublas_adapter.hpp
     include/gp_functions_grad.hpp
+    include/gp_functions.hpp
+    include/gp_helper_functions.hpp
+    include/gpxpy_c.hpp
+    include/hpx_cholesky_gpu.cpp
     include/mkl_adapter.hpp
+    include/tiled_algorithms_cpu.hpp
+    include/tiled_algorithms_gpu.hpp
     include/uncertainty.hpp
+    include/utils_c.hpp
 )
 
 # Add library
