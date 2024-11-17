@@ -10,10 +10,22 @@
 
 namespace utils
 {
-    // Compute number of train tiles
+    /**
+     * @brief Compute the number of tiles for training data, given the number of
+     * samples and the size of each tile.
+     *
+     * @param n_samples Number of samples
+     * @param n_tile_size Size of each tile
+     */
     int compute_train_tiles(int n_samples, int n_tile_size);
 
-    // Compute size of train tile
+    /**
+     * @brief Compute the number of tiles for training data, given the number of
+     * samples and the size of each tile.
+     *
+     * @param n_samples Number of samples
+     * @param n_tile_size Size of each tile
+     */
     int compute_train_tile_size(int n_samples, int n_tiles);
 
     // Compute number of test tiles and the size of a test tile

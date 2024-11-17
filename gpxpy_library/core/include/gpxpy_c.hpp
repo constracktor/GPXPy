@@ -111,7 +111,7 @@ namespace gpxpy
         // Calculate loss for given data and Gaussian process model
         double calculate_loss();
 
-        // Compute Cholesky decomposition (Returns L) <- not usuable yet. Only purpose right now
+        // Compute Cholesky decomposition (Returns L) <- not usable yet. Only purpose right now
         // is to measure performance to compare against PyTorch torch.linalg.cholesky()
         std::vector<std::vector<double>> cholesky();
     };

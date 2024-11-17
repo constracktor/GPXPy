@@ -2,8 +2,10 @@
 
 #include <cstdio>
 
+
 namespace utils
 {
+
     /**
      * @brief Compute the number of tiles for training data, given the number of
      * samples and the size of each tile.
@@ -25,6 +27,7 @@ namespace utils
             throw std::runtime_error("Error: Please specify a valid value for train_tile_size.\n");
         }
     }
+
 
     /**
      * @brief Compute the number of tiles for training data, given the number of
@@ -48,8 +51,12 @@ namespace utils
         }
     }
 
+
     /**
      * @brief Compute the number of test tiles and the size of a test tile.
+     *
+     * Uses n_tiles_size if n_test is divisible by n_tile_size. Otherwise uses
+     * n_tiles for calculation.
      *
      * @param n_test Number of test samples
      * @param n_tiles Number of tiles
@@ -76,7 +83,13 @@ namespace utils
         return {static_cast<int>(m_tiles), static_cast<int>(m_tile_size)};
     }
 
-    // Load data from file
+
+    /**
+     * @brief Load data from file
+     *
+     * @param file_path Path to the file
+     * @param n_samples Number of samples to load
+     */
     std::vector<double> load_data(const std::string &file_path, int n_samples)
     {
         std::vector<double> _data;
@@ -99,13 +112,24 @@ namespace utils
 
         if (scanned_elements != n_samples)
         {
-            throw std::runtime_error("Error: Data not correctly read. Expected " + std::to_string(n_samples) + " elements, but read " + std::to_string(scanned_elements));
+            throw std::runtime_error("Error: Data not correctly read. Expected "
+                                     + std::to_string(n_samples)
+                                     + " elements, but read "
+                                     + std::to_string(scanned_elements));
         }
 
         return std::move(_data);
     }
 
-    // Print a vector
+
+    /**
+     * @brief Print a vector
+     *
+     * @param vec Vector to print
+     * @param start Start index
+     * @param end End index
+     * @param separator Separator between elements
+     */
     void print(const std::vector<double> &vec, int start, int end, const std::string &separator)
     {
         // Convert negative indices to positive
@@ -137,6 +161,7 @@ namespace utils
         }
         std::cout << std::endl;
     }
+
 
     // Start HPX runtime
     void start_hpx_runtime(int argc, char **argv)
