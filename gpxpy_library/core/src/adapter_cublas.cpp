@@ -1,3 +1,4 @@
+
 #include <mkl_cblas.h>
 #include <mkl_lapacke.h>
 
@@ -14,31 +15,42 @@
 using hpx::cuda::experimental::check_cuda_error;
 using cublas_future = hpx::cuda::experimental::cuda_executor::future_type;
 
+// =============================================================================
 // BLAS operations on GPU with cuBLAS (and cuSOLVER)
+// =============================================================================
 
 // BLAS operations for tiled cholkesy -------------------------------------- {{{
 
 /**
- * In-place Cholesky decomposition of A to calculate factorized lower triangular
- * matrix L: L*L^T = A
+ * @brief In-place Cholesky decomposition of A to calculate factorized lower
+ *        triangular matrix L: L*L^T = A
  */
-std::vector<double> potrf(std::vector<double> A, std::size_t N)
+hpx::shared_future<std::vector<double>>
+potrf(hpx::cuda::experimental::cublas_executor& cublas,
+      hpx::shared_future<std::vector<double>> A, std::size_t N)
 {
     // <t>potrf2's recursive version offers better stability
     // caution with dpotrf
-    LAPACKE_dpotrf2(LAPACK_ROW_MAJOR, 'L', N, A.data(), N);
+    // LAPACKE_dpotrf2(LAPACK_ROW_MAJOR, 'L', N, A.data(), N);
 
     return A;
 }
 
 /**
- * Solve the triangular linear system with multiple right-hand-sides (TRSM)
- * inplace for lower triangular L: X * L^T = A
+ * @brief Solve the triangular linear system with multiple right-hand-sides
+ *        (TRSM) inplace for lower triangular L: X * L^T = A
+ *
+ * @param cublas cuBLAS executor
+ * @param L lower triangular matrix
+ * @param A right-hand-side matrix
+ * @param N size of the square matrices
+ *
+ * @return future with the result of the TRSM operation (X, returned within A)
  */
-hpx::shared_future<std::vector<double>> trsm(
-    hpx::cuda::experimental::cublas_executor &cublas,
-    hpx::shared_future<std::vector<double>> L,
-    hpx::shared_future<std::vector<double>> A, std::size_t N)
+hpx::shared_future<std::vector<double>>
+trsm(hpx::cuda::experimental::cublas_executor& cublas,
+     hpx::shared_future<std::vector<double>> L,
+     hpx::shared_future<std::vector<double>> A, std::size_t N)
 {
     // TRSM constants
     const double alpha = 1.0;
@@ -46,8 +58,8 @@ hpx::shared_future<std::vector<double>> trsm(
 
     // Allocate device memory
     double *d_L, *d_A;
-    check_cuda_error(cudaMalloc((void **)&d_L, matrixSize * sizeof(double)));
-    check_cuda_error(cudaMalloc((void **)&d_A, matrixSize * sizeof(double)));
+    check_cuda_error(cudaMalloc((void**)&d_L, matrixSize * sizeof(double)));
+    check_cuda_error(cudaMalloc((void**)&d_A, matrixSize * sizeof(double)));
 
     // Copy data from host to device
     std::vector<double> h_L = L.get();
@@ -58,7 +70,7 @@ hpx::shared_future<std::vector<double>> trsm(
     hpx::post(cublas, cudaMemcpyAsync, d_A, h_A.data(),
               matrixSize * sizeof(double), cudaMemcpyHostToDevice);
 
-    // Compute SYRK on device
+    // Compute TRSM on device (X, returned as A)
     // formula here:      X * L^T = alpha * A
     // formula in cublas: X * A^T = alpha * B
     hpx::post(cublas, cublasDtrsm, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER,
@@ -79,12 +91,12 @@ hpx::shared_future<std::vector<double>> trsm(
 }
 
 /**
- * Calculate symmetric rank-k update (SYRK): A = A - B * B^T
+ * @brief Calculate symmetric rank-k update (SYRK): A = A - B * B^T
  */
-hpx::shared_future<std::vector<double>> syrk(
-    hpx::cuda::experimental::cublas_executor &cublas,
-    hpx::shared_future<std::vector<double>> A,
-    hpx::shared_future<std::vector<double>> B, std::size_t N)
+hpx::shared_future<std::vector<double>>
+syrk(hpx::cuda::experimental::cublas_executor& cublas,
+     hpx::shared_future<std::vector<double>> A,
+     hpx::shared_future<std::vector<double>> B, std::size_t N)
 {
     // GEMM constants
     const double alpha = -1.0;
@@ -93,8 +105,8 @@ hpx::shared_future<std::vector<double>> syrk(
 
     // Allocate device memory
     double *d_A, *d_B;
-    check_cuda_error(cudaMalloc((void **)&d_A, matrixSize * sizeof(double)));
-    check_cuda_error(cudaMalloc((void **)&d_B, matrixSize * sizeof(double)));
+    check_cuda_error(cudaMalloc((void**)&d_A, matrixSize * sizeof(double)));
+    check_cuda_error(cudaMalloc((void**)&d_B, matrixSize * sizeof(double)));
 
     // Copy data from host to device
     std::vector<double> h_A = A.get();
@@ -128,11 +140,11 @@ hpx::shared_future<std::vector<double>> syrk(
 /**
  * Calculate general matrix-matrix multiplication (GEMM): C = C - A * B^T
  */
-hpx::shared_future<std::vector<double>> gemm(
-    hpx::cuda::experimental::cublas_executor &cublas,
-    hpx::shared_future<std::vector<double>> A,
-    hpx::shared_future<std::vector<double>> B,
-    hpx::shared_future<std::vector<double>> C, std::size_t N)
+hpx::shared_future<std::vector<double>>
+gemm(hpx::cuda::experimental::cublas_executor& cublas,
+     hpx::shared_future<std::vector<double>> A,
+     hpx::shared_future<std::vector<double>> B,
+     hpx::shared_future<std::vector<double>> C, std::size_t N)
 {
     // GEMM constants
     const double alpha = -1.0;
@@ -141,9 +153,9 @@ hpx::shared_future<std::vector<double>> gemm(
 
     // Allocate device memory
     double *d_A, *d_B, *d_C;
-    check_cuda_error(cudaMalloc((void **)&d_A, matrixSize * sizeof(double)));
-    check_cuda_error(cudaMalloc((void **)&d_B, matrixSize * sizeof(double)));
-    check_cuda_error(cudaMalloc((void **)&d_C, matrixSize * sizeof(double)));
+    check_cuda_error(cudaMalloc((void**)&d_A, matrixSize * sizeof(double)));
+    check_cuda_error(cudaMalloc((void**)&d_B, matrixSize * sizeof(double)));
+    check_cuda_error(cudaMalloc((void**)&d_C, matrixSize * sizeof(double)));
 
     // Copy data from host to device
     std::vector<double> h_A = A.get();

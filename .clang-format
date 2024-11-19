@@ -18,6 +18,6 @@ BraceWrapping:
   SplitEmptyRecord: false
   SplitEmptyNamespace: false
 PointerAlignment: Left
-BinPackArguments: false
+BinPackArguments: true
 BinPackParameters: false
 PackConstructorInitializers: CurrentLine
