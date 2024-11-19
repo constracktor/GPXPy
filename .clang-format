@@ -20,4 +20,7 @@ BraceWrapping:
 PointerAlignment: Left
 BinPackArguments: true
 BinPackParameters: false
-PackConstructorInitializers: CurrentLine
+PackConstructorInitializers: NextLine
+AccessModifierOffset: -4
+IndentAccessModifiers: false
+EmptyLineAfterAccessModifier: Leave

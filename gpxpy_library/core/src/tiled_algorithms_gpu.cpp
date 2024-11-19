@@ -1,7 +1,7 @@
 #ifndef TILED_ALGORITHMS_GPU_H
 #define TILED_ALGORITHMS_GPU_H
 
-#include "adapter_cublas.hpp"
+#include "cublas_adapter.hpp"  // includes other headers
 
 /**
  * Right-looking tiled Cholesky algorithm using cuBLAS
@@ -53,4 +53,4 @@ void right_looking_cholesky_tiled(
     }
 }
 
-#endif // end of TILED_ALGORITHMS_GPU_H
+#endif

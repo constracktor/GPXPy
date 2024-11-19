@@ -6,12 +6,12 @@
 #include <sstream>
 #include <vector>
 
-#include "gp_helper_functions.hpp"
+#include "gp_algorithms_cpu.hpp"
 
 #ifndef GPXPY_WITH_CUBLAS
-#include "tiled_algorithms_cpu.hpp" // algorithms with CPU-only
+    #include "tiled_algorithms_cpu.hpp" // algorithms with CPU-only
 #else
-#include "tiled_algorithms_gpu.hpp" // algorithms with GPU
+    #include "tiled_algorithms_gpu.hpp" // algorithms with GPU
 #endif
 
 namespace gpxpy_hyper
@@ -28,12 +28,20 @@ namespace gpxpy_hyper
      * @param M_T_init initial values for first moment vector
      * @param V_T_init initial values for second moment vector
      */
-    Hyperparameters::Hyperparameters(double lr, double b1, double b2,
-                                     double eps, int opt_i,
+    Hyperparameters::Hyperparameters(double lr,
+                                     double b1,
+                                     double b2,
+                                     double eps,
+                                     int opt_i,
                                      std::vector<double> M_T_init,
                                      std::vector<double> V_T_init)
-        : learning_rate(lr), beta1(b1), beta2(b2), epsilon(eps),
-          opt_iter(opt_i), M_T(M_T_init), V_T(V_T_init)
+        : learning_rate(lr),
+          beta1(b1),
+          beta2(b2),
+          epsilon(eps),
+          opt_iter(opt_i),
+          M_T(M_T_init),
+          V_T(V_T_init)
     {}
 
     /**
@@ -69,9 +77,14 @@ namespace gpxpy_hyper
 hpx::shared_future<std::vector<double>>
 predict_hpx(const std::vector<double>& training_input,
             const std::vector<double>& training_output,
-            const std::vector<double>& test_input, int n_tiles, int n_tile_size,
-            int m_tiles, int m_tile_size, double lengthscale,
-            double vertical_lengthscale, double noise_variance,
+            const std::vector<double>& test_input,
+            int n_tiles,
+            int n_tile_size,
+            int m_tiles,
+            int m_tile_size,
+            double lengthscale,
+            double vertical_lengthscale,
+            double noise_variance,
             int n_regressors)
 {
     double hyperparameters[3];
@@ -153,10 +166,15 @@ predict_hpx(const std::vector<double>& training_input,
 hpx::shared_future<std::vector<std::vector<double>>>
 predict_with_uncertainty_hpx(const std::vector<double>& training_input,
                              const std::vector<double>& training_output,
-                             const std::vector<double>& test_input, int n_tiles,
-                             int n_tile_size, int m_tiles, int m_tile_size,
-                             double lengthscale, double vertical_lengthscale,
-                             double noise_variance, int n_regressors)
+                             const std::vector<double>& test_input,
+                             int n_tiles,
+                             int n_tile_size,
+                             int m_tiles,
+                             int m_tile_size,
+                             double lengthscale,
+                             double vertical_lengthscale,
+                             double noise_variance,
+                             int n_regressors)
 {
     double hyperparameters[3];
     hyperparameters[0] =
@@ -298,10 +316,15 @@ predict_with_uncertainty_hpx(const std::vector<double>& training_input,
 hpx::shared_future<std::vector<std::vector<double>>>
 predict_with_full_cov_hpx(const std::vector<double>& training_input,
                           const std::vector<double>& training_output,
-                          const std::vector<double>& test_input, int n_tiles,
-                          int n_tile_size, int m_tiles, int m_tile_size,
-                          double lengthscale, double vertical_lengthscale,
-                          double noise_variance, int n_regressors)
+                          const std::vector<double>& test_input,
+                          int n_tiles,
+                          int n_tile_size,
+                          int m_tiles,
+                          int m_tile_size,
+                          double lengthscale,
+                          double vertical_lengthscale,
+                          double noise_variance,
+                          int n_regressors)
 {
     double hyperparameters[3];
     hyperparameters[0] =
@@ -439,8 +462,11 @@ predict_with_full_cov_hpx(const std::vector<double>& training_input,
 // Compute loss for given data and Gaussian process model
 hpx::shared_future<double>
 compute_loss_hpx(const std::vector<double>& training_input,
-                 const std::vector<double>& training_output, int n_tiles,
-                 int n_tile_size, int n_regressors, double* hyperparameters)
+                 const std::vector<double>& training_output,
+                 int n_tiles,
+                 int n_tile_size,
+                 int n_regressors,
+                 double* hyperparameters)
 {
     // declare data structures
     // tiled future data structures
@@ -492,9 +518,13 @@ compute_loss_hpx(const std::vector<double>& training_input,
 // Perform optimization for a given number of iterations
 hpx::shared_future<std::vector<double>>
 optimize_hpx(const std::vector<double>& training_input,
-             const std::vector<double>& training_output, int n_tiles,
-             int n_tile_size, double& lengthscale, double& vertical_lengthscale,
-             double& noise_variance, int n_regressors,
+             const std::vector<double>& training_output,
+             int n_tiles,
+             int n_tile_size,
+             double& lengthscale,
+             double& vertical_lengthscale,
+             double& noise_variance,
+             int n_regressors,
              const gpxpy_hyper::Hyperparameters& hyperparams,
              std::vector<bool> trainable_params)
 {
@@ -695,11 +725,16 @@ optimize_hpx(const std::vector<double>& training_input,
 // Perform a single optimization step
 hpx::shared_future<double>
 optimize_step_hpx(const std::vector<double>& training_input,
-                  const std::vector<double>& training_output, int n_tiles,
-                  int n_tile_size, double& lengthscale,
-                  double& vertical_lengthscale, double& noise_variance,
-                  int n_regressors, gpxpy_hyper::Hyperparameters& hyperparams,
-                  std::vector<bool> trainable_params, int iter)
+                  const std::vector<double>& training_output,
+                  int n_tiles,
+                  int n_tile_size,
+                  double& lengthscale,
+                  double& vertical_lengthscale,
+                  double& noise_variance,
+                  int n_regressors,
+                  gpxpy_hyper::Hyperparameters& hyperparams,
+                  std::vector<bool> trainable_params,
+                  int iter)
 {
     double hyperparameters[7];
     hyperparameters[0] = lengthscale;               // lengthscale
@@ -869,9 +904,13 @@ optimize_step_hpx(const std::vector<double>& training_input,
 
 hpx::shared_future<std::vector<std::vector<double>>>
 cholesky_hpx(const std::vector<double>& training_input,
-             const std::vector<double>& training_output, int n_tiles,
-             int n_tile_size, double lengthscale, double vertical_lengthscale,
-             double noise_variance, int n_regressors)
+             const std::vector<double>& training_output,
+             int n_tiles,
+             int n_tile_size,
+             double lengthscale,
+             double vertical_lengthscale,
+             double noise_variance,
+             int n_regressors)
 {
     double hyperparameters[3];
 
