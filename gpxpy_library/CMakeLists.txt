@@ -68,8 +68,8 @@ set_target_properties(gpxpy PROPERTIES
 
 
 target_link_libraries(gpxpy PUBLIC
-                      HPX::hpx 
-                      HPX::wrap_main 
+                      HPX::hpx
+                      HPX::wrap_main
                       HPX::iostreams_component
                       MKL::mkl_intel_lp64
                       MKL::mkl_core

@@ -9,6 +9,10 @@ set -ex
 
 # Configuration ------------------------------------------------------------ {{{
 
+# Load modules
+module load clang/17.0.1
+module load cuda/12.2.2
+
 # Load spack environment
 source $HOME/spack/share/spack/setup-env.sh
 spack env activate gpxpy
@@ -16,7 +20,7 @@ spack env activate gpxpy
 # Set cmake command
 export CMAKE_COMMAND=$(which cmake)
 
-# Activate APEX output to stdout
+# Configure APEX
 export APEX_SCREEN_OUTPUT=1
 
 # Configure MKL
@@ -37,22 +41,20 @@ cd test_cpp
 # Reset build directory
 rm -rf build && mkdir build && cd build
 
-# Configure project
+# Configure the project
 $CMAKE_COMMAND .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DHPX_WITH_DYNAMIC_HPX_MAIN=ON \
     -DCMAKE_C_COMPILER=$(which clang) \
     -DCMAKE_CXX_COMPILER=$(which clang++) \
     -DCMAKE_CUDA_COMPILER=$(which clang++) \
-    -DCMAKE_CUDA_FLAGS="--cuda-gpu-arch=sm_${CUDA_ARCH} \
-                        --cuda-path=${CUDA_HOME}" \
-    -DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCH} \
+    -DCMAKE_CUDA_FLAGS="--cuda-gpu-arch=sm_80 \
+                        --cuda-path=/usr/local.nfs/sw/cuda/cuda-12.2.2" \
+    -DCMAKE_CUDA_ARCHITECTURES=80 \
     ${MKL_CONFIG}
 
-# Build project
+# Build the project
 make -j VERBOSE=1 all
-
-# ----------------------------------------------------------- end of Compilation
 
 # Running test code ------------------------------------------------------------
 

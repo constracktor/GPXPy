@@ -4,30 +4,14 @@
 
 namespace py = pybind11;
 
-int compute_train_tiles_wrap(int n_samples, int n_tile_size)
-{
-    if (n_tile_size > 0)
-    {
-        return utils::compute_train_tiles(n_samples, n_tile_size);
-    }
-    else
-    {
-        throw std::runtime_error("Error: Please specify a valid value for train_tile_size.\n");
-    }
-}
-
-int compute_train_tile_size_wrap(int n_samples, int n_tiles)
-{
-    if (n_tiles > 0)
-    {
-        return utils::compute_train_tile_size(n_samples, n_tiles);
-    }
-    else
-    {
-        throw std::runtime_error("Error: Please specify a valid value for train_tiles.\n");
-    }
-}
-
+/**
+ * @brief Start HPX runtime on `n_cores` many cores with `args` as arguments
+ *
+ * The HPX runtime keeps running after executing this function.
+ *
+ * @param args List of arguments for HPX runtime
+ * @param n_cores Number of cores that hpx may use for its threads
+ */
 void start_hpx_wrapper(std::vector<std::string> args, std::size_t n_cores)
 {
     // Add the --hpx:threads argument to the args vector
@@ -42,9 +26,14 @@ void start_hpx_wrapper(std::vector<std::string> args, std::size_t n_cores)
     utils::start_hpx_runtime(argc, argv.data());
 }
 
+/**
+ * @brief Add utility functions `compute_train_tiles`,
+ * `compute_train_tile_size`, `compute_test_tiles`, `print`, `start_hpx`,
+ * `resume_hpx`, `suspend_hpx`, `stop_hpx` to the module
+ */
 void init_utils(py::module &m)
 {
-    m.def("compute_train_tiles", &compute_train_tiles_wrap,
+    m.def("compute_train_tiles", &utils::compute_train_tiles,
           py::arg("n_samples"),
           py::arg("n_tile_size"),
           R"pbdoc(
@@ -58,7 +47,7 @@ void init_utils(py::module &m)
               int: Number of tiles per dimension.
           )pbdoc");
 
-    m.def("compute_train_tile_size", &compute_train_tile_size_wrap,
+    m.def("compute_train_tile_size", &utils::compute_train_tile_size,
           py::arg("n_samples"),
           py::arg("n_tiles"),
           R"pbdoc(

@@ -1,0 +1,58 @@
+################################################################################
+# Specification for Packages installed with Spack on simcl1n1 or simcl1n2:
+#
+# - mainly installs HPX+CUDA with APEX and MKL
+# - uses HPX 1.10.0 for compatability with other packages
+#   - requires custom CMake Flag `-DHPX_WITH_FETCH_APEX=ON`
+# - uses local cuda 12.2.2
+#   - allow-unsupported-compilers because cuda is already installed but
+#     remaining packages are installed with conflicting clang version
+# - uses clang 17.0.1 as compiler, also as NVCC wrapper (for CUDA)
+# - uses local python (Spack installation not working)
+# - uses local Boost installation for HPX (Spack installation takes forever)
+# - uses ~/.spack/stage instead of /tmp for when installing packages against
+#   full memory errors
+# - unified & view for easier configuration
+################################################################################
+
+spack:
+
+  specs:
+  - >
+      hpx@1.10.0
+      %clang@17.0.1
+      instrumentation=apex
+      networking=none
+      max_cpu_count=256
+      +cuda
+  - >
+      intel-oneapi-mkl@2024.2.2
+      %clang@17.0.1
+  - cuda +allow-unsupported-compilers
+
+  # unified view towards packages
+  view: true
+
+  concretizer:
+    unify: true
+
+  packages:
+    cuda:
+      externals:
+      - spec: cuda@12.2.2
+        prefix: /usr/local.nfs/sw/cuda/cuda-12.2.2
+      buildable: false
+    boost:
+      externals:
+      - spec: boost@1.86.0
+        prefix: ${HOME}/local
+      buildable: false
+    python:
+      externals:
+      - spec: python@3.10.12
+        prefix: /usr
+      buildable: false
+
+  config:
+    build_stage:
+    - ~/.spack/stage
