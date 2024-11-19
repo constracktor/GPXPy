@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+// namespace for GPXPy library entities
 namespace gpxpy
 {
 
@@ -12,19 +13,27 @@ namespace gpxpy
      * @brief Data structure for Gaussian process data
      *
      * It includes the file path to the data, the number of samples, and the
-     * data itself.
+     * data itself which contains this many samples.
      */
     struct GP_data
     {
-        std::string file_path;    ///< Path to the file containing the data
-        int n_samples;            ///< Number of samples in the data
-        std::vector<double> data; ///< Vector containing the data
+        /** @brief Path to the file containing the data */
+        std::string file_path;
+
+        /** @brief Number of samples in the data */
+        int n_samples;
+
+        /** @brief Vector containing the data */
+        std::vector<double> data;
 
         /**
-         * @brief Construct a new GP_data object
+         * @brief Initialize of Gaussian process data by loading data from a
+         * file.
          *
-         * @param file_path Path to the file containing the data
-         * @param n Number of samples to read from the file
+         * The file specified by `f_path` must contain `n` samples.
+         *
+         * @param f_path Path to the file
+         * @param n Number of samples
          */
         GP_data(const std::string& file_path, int n);
     };
@@ -38,33 +47,51 @@ namespace gpxpy
      */
     class GP
     {
-      private:
-        std::vector<double> _training_input; ///< Input data for training
-        std::vector<double>
-            _training_output; ///< Output data for given input data
-        int _n_tiles;         ///< Number of tiles
-        int _n_tile_size;     ///< Size of each square tile in each dimension
+    private:
 
-      public:
-        double lengthscale; ///< "l" parameter of squared exponential kernel
-        double vertical_lengthscale; ///< "v" parameter of squared exponential
-                                     ///< kernel
+        /** @brief Input data for training */
+        std::vector<double> _training_input;
+
+        /** @brief Output data for given input data */
+        std::vector<double> _training_output;
+
+        /** @brief Number of tiles */
+        int _n_tiles;
+
+        /** @brief Size of each tile in each dimension */
+        int _n_tile_size;
+
+    public:
+
+        /** @brief Lengthscale parameter `l` of squared exponential kernel */
+        double lengthscale;
 
         /**
-         * "sigma" parameter of squared exponential kernel, also referred to
-         * as `n`
+         * @brief Vertical lengthscale parameter `v` of squared exponential
+         * kernel
+         */
+        double vertical_lengthscale;
+
+        /**
+         * @brief Noise variance parameter `sigma` / `n` of squared exponential
+         * kernel
          */
         double noise_variance;
 
-        int n_regressors; ///< Number of regressors
+        /** @brief Number of regressors */
+        int n_regressors;
 
-        ///< True bools indicate trainable parameters, else not trainable
+        /**
+         * @brief List of bools indicating trainable parameters: lengthscale,
+         * vertical lengthscale, noise variance
+         */
         std::vector<bool> trainable_params;
 
         /**
          * @brief Flag to indicate whether to use GPU for computations
          *
-         * May only be enabled on initialization, and is disabled by default.
+         * May only be enabled on initialization, and is disabled by
+         * default.
          */
         bool use_gpu;
 
@@ -77,11 +104,11 @@ namespace gpxpy
          * @param n_tile_size Size of each tile in each dimension
          * @param l Lengthscale Parameter of squared exponential kernel: l
          * @param v Vertical Lengthscale parameter of squared exponential
-         * kernel: v
+         *     kernel: v
          * @param n Noise Variance parameter of squared exponential kernel: n
          * @param n_regressors Number of regressors
          * @param trainable_bool Vector indicating which parameters are
-         * trainable
+         *     trainable
          */
         GP(std::vector<double> input,
            std::vector<double> output,
@@ -95,49 +122,78 @@ namespace gpxpy
            bool use_gpu);
 
         /**
-         * Print Gausian process attributes
+         * Returns Gaussian process attributes as string.
          */
         std::string repr() const;
 
         /**
-         * Returns size of input data for training
+         * @brief Returns training input data
          */
         std::vector<double> get_training_input() const;
 
         /**
-         * Returns size of output data for training
+         * @brief Returns training output data
          */
         std::vector<double> get_training_output() const;
 
-        // Predict output for test input
+        /**
+         * @brief Predict output for test input
+         */
         std::vector<double> predict(const std::vector<double>& test_data,
                                     int m_tiles,
                                     int m_tile_size);
 
-        // Predict output for test input and additionally provide uncertainty
-        // for the predictions
+        /**
+         * @brief Predict output for test input and additionally provide
+         * uncertainty for the predictions.
+         */
         std::vector<std::vector<double>> predict_with_uncertainty(
             const std::vector<double>& test_data, int m_tiles, int m_tile_size);
 
-        // Predict output for test input and additionally compute full posterior
-        // covariance matrix
+        /**
+         * @brief Predict output for test input and additionally compute full
+         * posterior covariance matrix.
+         *
+         * @param test_input Test input data
+         * @param m_tiles Number of tiles
+         * @param m_tile_size Size of each tile
+         *
+         * @return Full covariance matrix
+         */
         std::vector<std::vector<double>> predict_with_full_cov(
             const std::vector<double>& test_data, int m_tiles, int m_tile_size);
 
-        // Optimize hyperparameters for a specified number of iterations
+        /**
+         * @brief Optimize hyperparameters
+         *
+         * @param hyperparams Hyperparameters of squared exponential kernel:
+         *        lengthscale, vertical_lengthscale, noise_variance
+         *
+         * @return losses
+         */
         std::vector<double>
         optimize(const gpxpy_hyper::Hyperparameters& hyperparams);
 
-        // Perform a single optimization step
+        /**
+         * @brief Perform a single optimization step
+         *
+         * @param hyperparams Hyperparameters of squared exponential kernel:
+         *        lengthscale, vertical_lengthscale, noise_variance
+         * @param iter number of iterations
+         *
+         * @return loss
+         */
         double optimize_step(gpxpy_hyper::Hyperparameters& hyperparams,
                              int iter);
 
-        // Calculate loss for given data and Gaussian process model
+        /**
+         * @brief Calculate loss for given data and Gaussian process model
+         */
         double calculate_loss();
 
-        // Compute Cholesky decomposition (Returns L) <- not usable yet. Only
-        // purpose right now is to measure performance to compare against
-        // PyTorch torch.linalg.cholesky()
+        /**
+         * @brief Computes & returns cholesky decomposition
+         */
         std::vector<std::vector<double>> cholesky();
     };
 } // namespace gpxpy
