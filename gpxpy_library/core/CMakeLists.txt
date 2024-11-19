@@ -6,6 +6,19 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 project(gpxpy VERSION 0.1.0)
 
+# Option for GPU support with cuBLAS
+option(GPXPY_WITH_CUBLAS "Enable GPU support with cuBLAS" OFF)
+# Pass variable to C++ code
+add_compile_definitions(GPXPY_WITH_CUBLAS=$<BOOL:${GPXPY_WITH_CUBLAS}>)
+
+if(NOT GPXPY_WITH_CUBLAS)
+    # TODO: configuration without GPU support
+else()
+    # TODO: configuration with GPU support
+    # find_package(CUDA REQUIRED)
+    # target_link_libraries(gpxpy PRIVATE CUDA::cublas)
+endif()
+
 find_package(HPX REQUIRED)
 find_package(MKL CONFIG REQUIRED)
 
@@ -15,27 +28,33 @@ include_directories(${MKL_INCLUDE_DIRS})
 
 # Source files
 set(SOURCE_FILES
-    src/cublas_adapter.cpp
-    src/gp_functions.cpp
-    src/gp_functions_grad.cpp
-    src/gp_helper_functions.cpp
-    src/gpxpy_c.cpp
-    src/utils_c.cpp
+    adapter_cublas.cpp
+    adapter_mkl.cpp
+    gp_algorithms_cuda.cpp
+    gp_algorithms_mkl.cpp
+    gp_functions.cpp
+    gp_gradient_descent.cpp
+    gp_uncertainty.cpp
+    gpxpy_c.cpp
+    hpx_cholesky_gpu.cpp
+    tiled_algorithms_cpu.cpp
+    tiled_algorithms_gpu.cpp
+    utils_c.cpp
 )
 
 # Headers (to be installed)
 set(HEADER_FILES
-    include/cublas_adapter.hpp
-    include/gp_functions_grad.hpp
-    include/gp_functions.hpp
-    include/gp_helper_functions.hpp
-    include/gpxpy_c.hpp
-    include/hpx_cholesky_gpu.cpp
-    include/mkl_adapter.hpp
-    include/tiled_algorithms_cpu.hpp
-    include/tiled_algorithms_gpu.hpp
-    include/uncertainty.hpp
-    include/utils_c.hpp
+    adapter_cublas.hpp
+    adapter_mkl.hpp
+    gp_algorithms_cpu.hpp
+    gp_algorithms_cuda.hpp
+    gp_functions.hpp
+    gp_gradient_descent.hpp
+    gp_uncertainty.hpp
+    gpxpy_c.hpp
+    tiled_algorithms_cpu.hpp
+    tiled_algorithms_gpu.hpp
+    utils_c.hpp
 )
 
 # Add library
@@ -55,8 +74,8 @@ set_target_properties(gpxpy PROPERTIES
 
 # Set default installation prefix if not specified by user
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  get_filename_component(PARENT_DIR "${CMAKE_CURRENT_LIST_DIR}" DIRECTORY)
-  set(CMAKE_INSTALL_PREFIX "${PARENT_DIR}/test_cpp/install_cpp" CACHE PATH "Installation Directory" FORCE)
+    get_filename_component(PARENT_DIR "${CMAKE_CURRENT_LIST_DIR}" DIRECTORY)
+    set(CMAKE_INSTALL_PREFIX "${PARENT_DIR}/test_cpp/install_cpp" CACHE PATH "Installation Directory" FORCE)
 endif()
 
 # Install

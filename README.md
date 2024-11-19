@@ -45,7 +45,9 @@ suffix `_simcl1` (if available).
 ### To run the GPXPy C++ code
 
 - Go to [`gpxpy_library`](gpxpy_library/)
-- Run `./compile_cpp.sh` to build the C++ library
+- Run `./compile_cpp.sh` to build the C++ library (CPU-only)
+  - Use `./compile_cpp.sh -DGPXPY_WITH_CUBLAS=ON` instead to compile with GPU
+    support using cuBLAS
 - Set parameters in [`test_cpp/src/execute.cpp`](gpxpy_library/test_cpp/src/execute.cpp)
 - Run `./run_cpp.sh` to build and run example
 
