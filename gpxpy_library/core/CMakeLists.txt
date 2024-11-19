@@ -17,6 +17,8 @@ include_directories(${MKL_INCLUDE_DIRS})
 set(SOURCE_FILES
     src/cublas_adapter.cpp
     src/gp_functions.cpp
+    src/gp_functions_grad.cpp
+    src/gp_helper_functions.cpp
     src/gpxpy_c.cpp
     src/utils_c.cpp
 )
