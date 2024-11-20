@@ -1,6 +1,3 @@
-#ifndef UNCERTAINTY_H
-#define UNCERTAINTY_H
-
 #include <cmath>
 #include <vector>
 
@@ -46,5 +43,3 @@ std::vector<double> diag_tile(const std::vector<double>& A, std::size_t M)
 
     return std::move(tile);
 }
-
-#endif

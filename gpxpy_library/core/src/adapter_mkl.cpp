@@ -1,6 +1,3 @@
-#ifndef MKL_ADAPTER_H
-#define MKL_ADAPTER_H
-
 #include "mkl_cblas.h"
 #include "mkl_lapacke.h"
 
@@ -318,5 +315,3 @@ std::vector<double> gemm_grad(std::vector<double> A,
   }
   return R;
 }
-
-#endif

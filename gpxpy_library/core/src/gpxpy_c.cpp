@@ -61,7 +61,7 @@ namespace gpxpy
     {}
 
     /**
-     * Returns Gaussian process attributes as string.
+     * @brief Returns Gaussian process attributes as string.
      */
     std::string GP::repr() const
     {

@@ -13,35 +13,38 @@
 /**
  * @brief In-place cholesky decomposition on tile of A
  */
-hpx::shared_future<std::vector<double>> potrf(
-    hpx::cuda::experimental::cublas_executor& cublas,
-    hpx::shared_future<std::vector<double>> A, std::size_t N);
+std::vector<double> potrf(hpx::cuda::experimental::cublas_executor& cublas,
+                          std::vector<double> A,
+                          std::size_t N);
 
 /**
  * @brief Solve the triangular linear system with multiple right-hand-sides
  *        (TRSM) inplace for lower triangular L: X * L^T = A
  */
-hpx::shared_future<std::vector<double>> trsm(
-    hpx::cuda::experimental::cublas_executor& cublas,
-    hpx::shared_future<std::vector<double>> L,
-    hpx::shared_future<std::vector<double>> A, std::size_t N);
+hpx::shared_future<std::vector<double>>
+trsm(hpx::cuda::experimental::cublas_executor& cublas,
+     hpx::shared_future<std::vector<double>> L,
+     hpx::shared_future<std::vector<double>> A,
+     std::size_t N);
 
 /**
  * @brief Calculate symmetric rank-k update (SYRK): A = A - B * B^T
  */
-hpx::shared_future<std::vector<double>> syrk(
-    hpx::cuda::experimental::cublas_executor& cublas,
-    hpx::shared_future<std::vector<double>> A,
-    hpx::shared_future<std::vector<double>> B, std::size_t N);
+hpx::shared_future<std::vector<double>>
+syrk(hpx::cuda::experimental::cublas_executor& cublas,
+     hpx::shared_future<std::vector<double>> A,
+     hpx::shared_future<std::vector<double>> B,
+     std::size_t N);
 
 /**
  * @brief Calculate general matrix-matrix multiplication (GEMM): C = C - A * B^T
  */
-hpx::shared_future<std::vector<double>> gemm(
-    hpx::cuda::experimental::cublas_executor& cublas,
-    hpx::shared_future<std::vector<double>> A,
-    hpx::shared_future<std::vector<double>> B,
-    hpx::shared_future<std::vector<double>> C, std::size_t N);
+hpx::shared_future<std::vector<double>>
+gemm(hpx::cuda::experimental::cublas_executor& cublas,
+     hpx::shared_future<std::vector<double>> A,
+     hpx::shared_future<std::vector<double>> B,
+     hpx::shared_future<std::vector<double>> C,
+     std::size_t N);
 
 // in-place solve L * x = a where L lower triangular
 std::vector<double>
