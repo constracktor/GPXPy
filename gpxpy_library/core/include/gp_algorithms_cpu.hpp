@@ -1,5 +1,5 @@
-#ifndef GP_HELPER_FUNCTIONS_H
-#define GP_HELPER_FUNCTIONS_H
+#ifndef GP_ALGORITHMS_CPU_H
+#define GP_ALGORITHMS_CPU_H
 
 #include <cmath>
 #include <vector>
@@ -61,6 +61,4 @@ double compute_error_norm(std::size_t n_tiles, std::size_t tile_size,
 // generate an empty tile
 std::vector<double> gen_tile_zeros(std::size_t N);
 
-void assemble_tiled_K();
-
-#endif // end of GP_HELPER_FUNCTIONS_H
+#endif // end of GP_ALGORITHMS_CPU_H

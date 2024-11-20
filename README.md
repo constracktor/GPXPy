@@ -7,40 +7,17 @@ reference implementations based on TensorFlow
 
 ## Dependencies
 
-GPXPy utilizes three external libraries:
-- [HPX](https://hpx-docs.stellar-group.org/latest/html/index.html) for highly
-  parallelized computation
-- [MKL](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html) for CPU-only computation
-- [CUDA]() for GPU support (optional)
+GPXPy utilizes two external libraries:
+- [HPX](https://hpx-docs.stellar-group.org/latest/html/index.html) for asynchronous task-based parallelization
+- [MKL](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html) for CPU-only BLAS computations
 
 ### Install dependencies
 
 All dependencies can be installed using [Spack](https://github.com/spack/spack).
-A script to install a respective Spack environment `gpxpy` is provided in
-[`spack_env`](spack_env).
-
-- Go to the `spack_env` directory and run `setup_spack.sh` in the `GPXPy`
-  directory. This script will install Spack in `$HOME`, create a spack
-  environment `gpxpy` and install all dependencies.
-
-- For installation on the simcl1 computers of the IPVS institute at the
-  University of Stuttgart, use go to the directory
-  [`spack_env_simcl1`](spack_env_simcl1) instead.
-
-- If you encounter any issues, we recommend having a look at the
-  `setup_spack.sh` and `spack.yaml` files in the respective directories and
-  editing them to your needs. The other files in the folder fix minor issues.
-  Spack also offers using locally installed packages. The generic install
-  script does not look for externally installed programs, as this may result in
-  some conflicts. We generally recommend using a new compiler (e.g. GCC for
-  CPU-only computation). For GPU support, we recommend using the Clang-Wrapper
-  for CUDA instead of NVCC.
+A script to install and setup spack for `GPXPy` is provided in [`spack-repo`](spack-repo).
+Spack environment configurations and setup scripts for CPU and GPU use are provided in [`spack-repo/environments`](spack-repo/environments).
 
 ## How To Run
-
-To install and run the library on the simcl1 computers of the IPVS institute at
-the University of Stuttgart, we recommend using the scripts provided with the
-suffix `_simcl1` (if available).
 
 ### To run the GPXPy C++ code
 
@@ -65,27 +42,6 @@ suffix `_simcl1` (if available).
 
 - Go to [`gpytorch_reference`](gpytorch_reference/)
 - Run `./run_gpytorch.sh` to run example
-
-## Project Structure
-
-- [gpxpy_library](./gpxpy_library/): Source code of this library, also compile-
-  and test-scripts.
-  - [core](./gpxpy_library/core): Source Code for C++ Library
-  - [bindings](./gpxpy_library/bindings/): Source Code for Python bindings to
-    C++ library.
-
-- [gpflow_reference](./gpflow_reference): Reference implementation with GPflow.
-- [gpytorch_reference](./gpytorch_reference): Reference implementation with GPyTorch.
-
-- [data](./data): Files with data for training and testing.
-
-- [spack_env](./spack_env/): Script & Files for Installing Dependencies using
-  Spack.
-- [spack_env_simcl1](./spack_env_simcl1): Script & Files for Installing
-  Dependencies using Spack on simcl1 computers.
-
-- [README.md](./README.md): This file.
-- [LICENSE](./LICENSE): MIT License.
 
 ## The Team
 

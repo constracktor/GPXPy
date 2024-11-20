@@ -46,8 +46,7 @@ namespace gpxpy
            double v,
            double n,
            int n_r,
-           std::vector<bool> trainable_bool,
-           bool use_gpu)
+           std::vector<bool> trainable_bool)
         : _training_input(input),
           _training_output(output),
           _n_tiles(n_tiles),
@@ -56,8 +55,7 @@ namespace gpxpy
           vertical_lengthscale(v),
           noise_variance(n),
           n_regressors(n_r),
-          trainable_params(trainable_bool),
-          use_gpu(use_gpu)
+          trainable_params(trainable_bool)
     {}
 
     /**

@@ -1,6 +1,6 @@
-#ifndef UNCERTAINTY_H
-#define UNCERTAINTY_H
-
+#ifndef GP_UNCERTAINTY_H
+#define GP_UNCERTAINTY_H
+#pragma once
 #include <cmath>
 #include <vector>
 
@@ -27,4 +27,4 @@ std::vector<double> diag_posterior(const std::vector<double>& A,
  */
 std::vector<double> diag_tile(const std::vector<double>& A, std::size_t M);
 
-#endif
+#endif // GP_UNCERTAINTY_H

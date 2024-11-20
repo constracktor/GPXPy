@@ -1,18 +1,13 @@
-#include "gp_functions.hpp"
+#include "../include/gp_functions.hpp"
+#include "../include/gp_algorithms_cpu.hpp"
+#include "../include/gp_optimizer.hpp"
+#include "../include/tiled_algorithms_cpu.hpp"
 
 #include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <vector>
-
-#include "gp_algorithms_cpu.hpp"
-
-#ifndef GPXPY_WITH_CUBLAS
-    #include "tiled_algorithms_cpu.hpp" // algorithms with CPU-only
-#else
-    #include "tiled_algorithms_gpu.hpp" // algorithms with GPU
-#endif
 
 namespace gpxpy_hyper
 {
@@ -100,7 +95,6 @@ predict_hpx(const std::vector<double>& training_input,
     std::vector<hpx::shared_future<std::vector<double>>> cross_covariance_tiles;
     std::vector<hpx::shared_future<std::vector<double>>> prediction_tiles;
 
-    assemble_tiled_K();
     // Assemble covariance matrix vector
     K_tiles.resize(n_tiles * n_tiles);
     for (std::size_t i = 0; i < n_tiles; i++) {

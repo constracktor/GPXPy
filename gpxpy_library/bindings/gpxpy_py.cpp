@@ -86,15 +86,8 @@ void init_gpxpy(py::module& m)
              py::arg("noise_var") = 0.1,
              py::arg("n_reg") = 100,
              py::arg("trainable") = std::vector<bool>{true, true, true},
-             py::arg("use_gpu") = false,
              R"pbdoc(
 Create Gaussian Process including its data, hyperparameters.
-
-Note: If `use_gpu` is set to `True`, the GP will be initialized
-with GPU support: data and computations are performed on the GPU.
-This requires that the gpxpy library has been compiled with
-GPXPY_WITH_CUBLAS. Otherwise the GP will be initialized with CPU
-support only.
 
 Parameters:
     input_data (list): Input data for the GP.
@@ -110,13 +103,11 @@ Parameters:
     n_reg (int): Number of regressors. Default is 100.
     trainable (list): List of booleans for trainable hyperparameters. Default is
         {true, true, true}.
-    use_gpu (bool): Use GPU for computations. Default is False.
              )pbdoc")
         .def_readwrite("lengthscale", &gpxpy::GP::lengthscale)
         .def_readwrite("v_lengthscale", &gpxpy::GP::vertical_lengthscale)
         .def_readwrite("noise_var", &gpxpy::GP::noise_variance)
         .def_readwrite("n_reg", &gpxpy::GP::n_regressors)
-        .def_readonly("use_gpu", &gpxpy::GP::use_gpu)
         .def("__repr__", &gpxpy::GP::repr)
         .def("get_input_data", &gpxpy::GP::get_training_input)
         .def("get_output_data", &gpxpy::GP::get_training_output)

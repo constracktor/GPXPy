@@ -1,11 +1,6 @@
-/**
- * @file
- * @brief
- */
+#include "../include/gp_optimizer.hpp"
+#include "../include/adapter_mkl.hpp"
 
-#include "gp_gradient_descent.hpp"
-
-#include "adapter_mkl.hpp"
 #include <numeric>
 
 /**

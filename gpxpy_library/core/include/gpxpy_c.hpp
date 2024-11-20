@@ -88,14 +88,6 @@ namespace gpxpy
         std::vector<bool> trainable_params;
 
         /**
-         * @brief Flag to indicate whether to use GPU for computations
-         *
-         * May only be enabled on initialization, and is disabled by
-         * default.
-         */
-        bool use_gpu;
-
-        /**
          * @brief Constructs a Gaussian Process (GP)
          *
          * @param input Input data for training of the GP
@@ -118,8 +110,8 @@ namespace gpxpy
            double v,
            double n,
            int n_regressors,
-           std::vector<bool> trainable_bool,
-           bool use_gpu);
+           std::vector<bool> trainable_bool
+           );
 
         /**
          * Returns Gaussian process attributes as string.

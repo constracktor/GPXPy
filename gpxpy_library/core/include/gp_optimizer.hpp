@@ -1,5 +1,5 @@
-#ifndef GP_FUNCTIONS_GRAD_H
-#define GP_FUNCTIONS_GRAD_H
+#ifndef GP_OPTIMIZER_H
+#define GP_OPTIMIZER_H
 
 #include <cmath>
 #include <vector>
@@ -181,4 +181,4 @@ double sum_noise_gradright(const std::vector<double>& alpha,
                            double* hyperparameters,
                            std::size_t N);
 
-#endif // end of GP_FUNCTIONS_GRAD_H
+#endif // end of GP_OPTIMIZER_H

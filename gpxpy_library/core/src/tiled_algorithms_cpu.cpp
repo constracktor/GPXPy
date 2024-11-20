@@ -1,10 +1,10 @@
+#include "../include/tiled_algorithms_cpu.hpp"
+#include "../include/adapter_mkl.hpp"
+#include "../include/gp_optimizer.hpp"
+#include "../include/gp_uncertainty.hpp"
+
 #include <cmath>
-
 #include <hpx/future.hpp>
-
-#include "adapter_mkl.hpp"
-#include "gp_gradient_descent.hpp"
-#include "gp_uncertainty.hpp"
 
 // Tiled Cholesky Algorithm ------------------------------------------------ {{{
 
@@ -447,7 +447,7 @@ void update_hyperparameter(
             hyperparameters[param_idx], false);
         // update moments
         m_T[param_idx] = hpx::dataflow(
-            hpx::annotated_function(hpx::unwrapping(&update_fist_moment),
+            hpx::annotated_function(hpx::unwrapping(&update_first_moment),
                                     "gradient_tiled"),
             gradient, m_T[param_idx], hyperparameters[4]);
         v_T[param_idx] = hpx::dataflow(
@@ -520,7 +520,7 @@ void update_noise_variance(
                       hyperparameters[2], true);
     // update moments
     m_T[2] = hpx::dataflow(
-        hpx::annotated_function(hpx::unwrapping(&update_fist_moment),
+        hpx::annotated_function(hpx::unwrapping(&update_first_moment),
                                 "gradient_tiled"),
         gradient, m_T[2], hyperparameters[4]);
     v_T[2] = hpx::dataflow(

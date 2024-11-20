@@ -1,4 +1,4 @@
-#include "../include/gp_helper_functions.hpp"
+#include "../include/gp_algorithms_cpu.hpp"
 
 /**
  * @brief Compute the squared exponential kernel of two feature vectors.
