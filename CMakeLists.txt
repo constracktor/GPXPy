@@ -61,9 +61,9 @@ get_filename_component(PARENT_BINARY_DIR "${CMAKE_BINARY_DIR}" DIRECTORY)
 
 # Set the output directory for the automobile target
 set_target_properties(gpxpy PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY "${PARENT_BINARY_DIR}/test_gpxpy"
-    ARCHIVE_OUTPUT_DIRECTORY "${PARENT_BINARY_DIR}/test_gpxpy"
-    RUNTIME_OUTPUT_DIRECTORY "${PARENT_BINARY_DIR}/test_gpxpy"
+    LIBRARY_OUTPUT_DIRECTORY "${PARENT_BINARY_DIR}/examples/gpxpy_python/install_python"
+    ARCHIVE_OUTPUT_DIRECTORY "${PARENT_BINARY_DIR}/examples/gpxpy_python/install_python"
+    RUNTIME_OUTPUT_DIRECTORY "${PARENT_BINARY_DIR}/examples/gpxpy_python/install_python"
 )
 
 
