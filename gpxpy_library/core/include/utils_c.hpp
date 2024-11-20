@@ -1,9 +1,6 @@
 #ifndef UTILS_C_H
 #define UTILS_C_H
 
-#include <stdio.h>
-#include <tuple>
-#include <stdexcept>
 #include <vector>
 #include <string>
 
@@ -13,10 +10,22 @@
 
 namespace utils
 {
-    // Compute number of train tiles
+    /**
+     * @brief Compute the number of tiles for training data, given the number of
+     * samples and the size of each tile.
+     *
+     * @param n_samples Number of samples
+     * @param n_tile_size Size of each tile
+     */
     int compute_train_tiles(int n_samples, int n_tile_size);
 
-    // Compute size of train tile
+    /**
+     * @brief Compute the number of tiles for training data, given the number of
+     * samples and the size of each tile.
+     *
+     * @param n_samples Number of samples
+     * @param n_tile_size Size of each tile
+     */
     int compute_train_tile_size(int n_samples, int n_tiles);
 
     // Compute number of test tiles and the size of a test tile
@@ -35,8 +44,8 @@ namespace utils
     void resume_hpx_runtime();
 
     // Wait for all tasks to finish, and suspend the HPX runtime
-    void suspend_hpx_runtime();    
-    
+    void suspend_hpx_runtime();
+
     // Stop HPX runtime
     void stop_hpx_runtime();
 }

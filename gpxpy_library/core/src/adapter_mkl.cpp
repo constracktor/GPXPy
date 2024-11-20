@@ -1,8 +1,8 @@
-#ifndef MKL_ADAPTER_H
-#define MKL_ADAPTER_H
-
+#include "../include/adapter_mkl.hpp"
 #include "mkl_cblas.h"
 #include "mkl_lapacke.h"
+
+#include <vector>
 
 ////////////////////////////////////////////////////////////////////////////////
 // BLAS operations for tiled cholkesy
@@ -316,5 +316,3 @@ std::vector<double> gemm_grad(std::vector<double> A,
   }
   return R;
 }
-
-#endif

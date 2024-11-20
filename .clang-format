@@ -1,0 +1,26 @@
+ColumnLimit: 80
+IndentWidth: 4
+NamespaceIndentation: All
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: true
+  AfterControlStatement: false
+  AfterEnum: false
+  AfterFunction: true
+  AfterNamespace: true
+  AfterObjCDeclaration: true
+  AfterStruct: true
+  AfterUnion: true
+  BeforeCatch: true
+  BeforeElse: true
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+PointerAlignment: Left
+BinPackArguments: true
+BinPackParameters: false
+PackConstructorInitializers: NextLine
+AccessModifierOffset: -4
+IndentAccessModifiers: false
+EmptyLineAfterAccessModifier: Leave

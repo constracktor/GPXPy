@@ -15,21 +15,26 @@ include_directories(${MKL_INCLUDE_DIRS})
 
 # Source files
 set(SOURCE_FILES
-    src/gpxpy_c.cpp
-    src/utils_c.cpp
+    src/gp_optimizer.cpp
     src/gp_functions.cpp
+    src/gp_algorithms_mkl.cpp
+    src/gpxpy_c.cpp
+    src/adapter_mkl.cpp
+    src/tiled_algorithms_cpu.cpp
+    src/gp_uncertainty.cpp
+    src/utils_c.cpp
 )
 
 # Headers (to be installed)
 set(HEADER_FILES
-    include/gpxpy_c.hpp
-    include/utils_c.hpp
+    include/gp_optimizer.hpp
     include/gp_functions.hpp
+    include/gp_algorithms_cpu.hpp
+    include/gpxpy_c.hpp
+    include/adapter_mkl.hpp
     include/tiled_algorithms_cpu.hpp
-    include/gp_helper_functions.hpp
-    include/gp_functions_grad.hpp
-    include/mkl_adapter.hpp
-    include/uncertainty.hpp
+    include/gp_uncertainty.hpp
+    include/utils_c.hpp
 )
 
 # Add library

@@ -198,3 +198,7 @@ cython_debug/
 /gpxpy_library/test_cpp/output.csv
 /gpxpy_library/test_gpxpy/output.csv
 /.vscode
+
+# Editor related files
+ltex*
+compile_commands.json

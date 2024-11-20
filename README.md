@@ -1,23 +1,23 @@
 # [GPXPy: Leveraging HPX for Gaussian Processes in Python]()
 
-This repository contains the source code for the GPXPy library, as well as two reference implementations based on Tensorflow ([GPflow](https://github.com/GPflow/GPflow)) and PyTorch ([GPyTorch](https://github.com/cornellius-gp/gpytorch)).
+This repository contains the source code for the GPXPy library, as well as two
+reference implementations based on TensorFlow
+([GPflow](https://github.com/GPflow/GPflow)) and PyTorch
+([GPyTorch](https://github.com/cornellius-gp/gpytorch)).
 
 ## Dependencies
 
 GPXPy utilizes two external libraries:
-- HPX: https://hpx-docs.stellar-group.org/latest/html/index.html
-- MKL: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
-
-Both libraries can be installed using [Spack](https://github.com/spack/spack). A script to install a respective Spack environment is provided in [`spack_env`](spack_env).
-
-## How To Run
-
-Note that currently all scripts assume a `gcc/13.2.0` compiler and recent Cmake version to be present. However, the Spack environment and scripts can be modifified to match own compiler availability.
-We highly recommend to use the same compiler for HPX and GPXPy.
+- [HPX](https://hpx-docs.stellar-group.org/latest/html/index.html) for asynchronous task-based parallelization
+- [MKL](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html) for CPU-only BLAS computations
 
 ### Install dependencies
 
-- Run: 'spack_env/setup_spack.sh' in the `GPXPy` directory. This script will install Spack, create an environment for GPXPy and install all dependencies.
+All dependencies can be installed using [Spack](https://github.com/spack/spack).
+A script to install and setup spack for `GPXPy` is provided in [`spack-repo`](spack-repo).
+Spack environment configurations and setup scripts for CPU and GPU use are provided in [`spack-repo/environments`](spack-repo/environments).
+
+## How To Run
 
 ### To run the GPXPy C++ code
 
@@ -29,7 +29,7 @@ We highly recommend to use the same compiler for HPX and GPXPy.
 ### To run GPXPy with Python
 
 - Go to [`gpxpy_library`](gpxpy_library/)
-- Run `./compile_gpxpy.sh` to build the binded Python library
+- Run `./compile_gpxpy.sh` to build the bound Python library
 - Set parameters in [`test_gpxpy/config.json`](gpxpy_library/test_gpxpy/config.json)
 - Run `./run_gpxpy.sh` to run example
 
@@ -45,13 +45,23 @@ We highly recommend to use the same compiler for HPX and GPXPy.
 
 ## The Team
 
-The GPXPy library is developed by the [Scientific Computing](https://www.ipvs.uni-stuttgart.de/departments/sc/) department at IPVS at the University of Stuttgart. The project is a joined effort of multiple undergraduate, graduate, and PhD students under the supervision of [Prof. Dr. Dirk Pflüger](https://www.f05.uni-stuttgart.de/en/faculty/contactpersons/Pflueger-00005/).
+The GPXPy library is developed by the
+[Scientific Computing](https://www.ipvs.uni-stuttgart.de/departments/sc/)
+department at IPVS at the University of Stuttgart.
+The project is a joined effort of multiple undergraduate, graduate, and PhD
+students under the supervision of
+[Prof. Dr. Dirk Pflüger](https://www.f05.uni-stuttgart.de/en/faculty/contactpersons/Pflueger-00005/).
 We specifically thank the follow contributors:
 
-- [Alexander Strack](https://www.ipvs.uni-stuttgart.de/de/institut/team/Strack-00001/): Maintainer and [intial framework](https://doi.org/10.1007/978-3-031-32316-4_5).
+- [Alexander Strack](https://www.ipvs.uni-stuttgart.de/de/institut/team/Strack-00001/):
+  Maintainer and [initial framework](https://doi.org/10.1007/978-3-031-32316-4_5).
 
-- [Maksim Helmann](https://de.linkedin.com/in/maksim-helmann-60b8701b1): [Optimization, Python bindings and reference implementations](tbd.).
+- [Maksim Helmann](https://de.linkedin.com/in/maksim-helmann-60b8701b1):
+  [Optimization, Python bindings and reference implementations](tbd.).
+
+- [Henrik Möllmann](https://www.linkedin.com/in/moellh/):
+  [Accelerator Support for GPXPy: A Task-based Gaussian Process Library in Python]().
 
 ## How To Cite
 
-tbd.
+TBD.
