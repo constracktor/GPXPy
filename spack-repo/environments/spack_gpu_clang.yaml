@@ -1,0 +1,8 @@
+spack:
+  specs:
+  - hpx@1.10.0%clang@17.0.1 +cuda cuda_arch=80 networking=none max_cpu_count=256 instrumentation=apex ^apex@2.6.5%clang@17.0.1~openmp+cuda ^cmake@3.30
+  - cuda +allow-unsupported-compilers
+  - intel-oneapi-mkl@2024.2.1%clang@17.0.1
+  view: true
+  concretizer:
+    unify: true
