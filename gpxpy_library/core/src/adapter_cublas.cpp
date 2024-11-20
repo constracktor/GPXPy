@@ -1,7 +1,7 @@
-
 #include <mkl_cblas.h>
 #include <mkl_lapacke.h>
 
+#include <cusolverDn.h>
 #include <hpx/async_cuda/cublas_executor.hpp>
 #include <hpx/future.hpp>
 #include <hpx/modules/async_cuda.hpp>
@@ -26,14 +26,77 @@ using cublas_future = hpx::cuda::experimental::cuda_executor::future_type;
  *        triangular matrix L: L*L^T = A
  */
 hpx::shared_future<std::vector<double>>
-potrf(hpx::cuda::experimental::cublas_executor& cublas,
-      hpx::shared_future<std::vector<double>> A, std::size_t N)
+potrf(hpx::shared_future<cudaStream_t> stream_f,
+      hpx::shared_future<std::vector<double>> A_f,
+      hpx::shared_future<std::size_t> N_f)
 {
     // <t>potrf2's recursive version offers better stability
     // caution with dpotrf
     // LAPACKE_dpotrf2(LAPACK_ROW_MAJOR, 'L', N, A.data(), N);
 
-    return A;
+    cusolverDnHandle_t cusolver;
+    cusolverDnCreate(&cusolver);
+    // NOTE: assumes that stream has already been created with
+    // cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking)
+    cudaStream_t stream = stream_f.get();
+    cusolverDnSetStream(cusolver, stream);
+
+    cusolverDnParams_t params;
+    cusolverDnCreateParams(&params);
+
+    cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
+
+    int* d_info = nullptr;
+    size_t workspaceInBytesOnDevice;
+    void* d_work = nullptr;
+    size_t workspaceInBytesOnHost;
+    void* h_work = nullptr;
+
+    std::vector<double> h_A = A_f.get();
+    double* d_A;
+    check_cuda_error(cudaMalloc(reinterpret_cast<void**>(&d_A),
+                                h_A.size() * sizeof(double)));
+    check_cuda_error(cudaMemcpyAsync(d_A, h_A.data(),
+                                     h_A.size() * sizeof(double),
+                                     cudaMemcpyHostToDevice, stream));
+
+    std::size_t N = N_f.get();
+    cusolverDnXpotrf_bufferSize(cusolver, params, uplo, N, CUDA_R_64F, d_A, N,
+                                CUDA_R_64F, &workspaceInBytesOnDevice,
+                                &workspaceInBytesOnHost);
+
+    check_cuda_error(cudaMalloc(reinterpret_cast<void**>(&d_work),
+                                workspaceInBytesOnDevice));
+
+    if (0 < workspaceInBytesOnHost) {
+        h_work = reinterpret_cast<void*>(malloc(workspaceInBytesOnHost));
+        if (h_work == nullptr) {
+            throw std::runtime_error("Error: h_work not allocated.");
+        }
+    }
+    cusolverDnXpotrf(cusolver, params, uplo, N, CUDA_R_64F, d_A, N, CUDA_R_64F,
+                     d_work, workspaceInBytesOnDevice, h_work,
+                     workspaceInBytesOnHost, d_info);
+
+    check_cuda_error(cudaMemcpyAsync(h_A.data(), d_A,
+                                     sizeof(double) * h_A.size(),
+                                     cudaMemcpyDeviceToHost, stream));
+    check_cuda_error(cudaMemcpyAsync(&d_info, d_info, sizeof(int),
+                                     cudaMemcpyDeviceToHost, stream));
+
+    check_cuda_error(cudaStreamSynchronize(stream));
+
+    check_cuda_error(cudaFree(d_A));
+    check_cuda_error(cudaFree(d_work));
+    if (h_work != nullptr) {
+        free(h_work);
+    }
+    check_cuda_error(cudaFree(d_info));
+
+    // NOTE: cuda stream still exists, an must be destroyed sometime by callee
+    cusolverDnDestroy(cusolver);
+
+    return hpx::make_ready_future(h_A);
 }
 
 /**
@@ -50,7 +113,8 @@ potrf(hpx::cuda::experimental::cublas_executor& cublas,
 hpx::shared_future<std::vector<double>>
 trsm(hpx::cuda::experimental::cublas_executor& cublas,
      hpx::shared_future<std::vector<double>> L,
-     hpx::shared_future<std::vector<double>> A, std::size_t N)
+     hpx::shared_future<std::vector<double>> A,
+     std::size_t N)
 {
     // TRSM constants
     const double alpha = 1.0;
@@ -96,7 +160,8 @@ trsm(hpx::cuda::experimental::cublas_executor& cublas,
 hpx::shared_future<std::vector<double>>
 syrk(hpx::cuda::experimental::cublas_executor& cublas,
      hpx::shared_future<std::vector<double>> A,
-     hpx::shared_future<std::vector<double>> B, std::size_t N)
+     hpx::shared_future<std::vector<double>> B,
+     std::size_t N)
 {
     // GEMM constants
     const double alpha = -1.0;
@@ -144,7 +209,8 @@ hpx::shared_future<std::vector<double>>
 gemm(hpx::cuda::experimental::cublas_executor& cublas,
      hpx::shared_future<std::vector<double>> A,
      hpx::shared_future<std::vector<double>> B,
-     hpx::shared_future<std::vector<double>> C, std::size_t N)
+     hpx::shared_future<std::vector<double>> C,
+     std::size_t N)
 {
     // GEMM constants
     const double alpha = -1.0;
@@ -192,8 +258,8 @@ gemm(hpx::cuda::experimental::cublas_executor& cublas,
 /**
  * in-place solve L * x = a where L lower triangular
  */
-std::vector<double> trsv_l(std::vector<double> L, std::vector<double> a,
-                           std::size_t N)
+std::vector<double>
+trsv_l(std::vector<double> L, std::vector<double> a, std::size_t N)
 {
     // TRSV kernel
     cblas_dtrsv(CblasRowMajor, CblasLower, CblasNoTrans, CblasNonUnit, N,
@@ -205,8 +271,10 @@ std::vector<double> trsv_l(std::vector<double> L, std::vector<double> a,
 /**
  * b = b - A * a
  */
-std::vector<double> gemv_l(std::vector<double> A, std::vector<double> a,
-                           std::vector<double> b, std::size_t N)
+std::vector<double> gemv_l(std::vector<double> A,
+                           std::vector<double> a,
+                           std::vector<double> b,
+                           std::size_t N)
 {
     // GEMV constants
     const double alpha = -1.0;
@@ -221,8 +289,8 @@ std::vector<double> gemv_l(std::vector<double> A, std::vector<double> a,
 /**
  * in-place solve L^T * x = a where L lower triangular
  */
-std::vector<double> trsv_u(std::vector<double> L, std::vector<double> a,
-                           std::size_t N)
+std::vector<double>
+trsv_u(std::vector<double> L, std::vector<double> a, std::size_t N)
 {
     // TRSV kernel
     cblas_dtrsv(CblasRowMajor, CblasLower, CblasTrans, CblasNonUnit, N,
@@ -234,8 +302,10 @@ std::vector<double> trsv_u(std::vector<double> L, std::vector<double> a,
 /**
  * b = b - A^T * a
  */
-std::vector<double> gemv_u(std::vector<double> A, std::vector<double> a,
-                           std::vector<double> b, std::size_t N)
+std::vector<double> gemv_u(std::vector<double> A,
+                           std::vector<double> a,
+                           std::vector<double> b,
+                           std::size_t N)
 {
     // GEMV constants
     const double alpha = -1.0;
@@ -250,8 +320,10 @@ std::vector<double> gemv_u(std::vector<double> A, std::vector<double> a,
 /**
  * A = y*beta^T + A
  */
-std::vector<double> ger(std::vector<double> A, std::vector<double> x,
-                        std::vector<double> y, std::size_t N)
+std::vector<double> ger(std::vector<double> A,
+                        std::vector<double> x,
+                        std::vector<double> y,
+                        std::size_t N)
 {
     // GER constants
     const double alpha = -1.0;
@@ -265,8 +337,10 @@ std::vector<double> ger(std::vector<double> A, std::vector<double> x,
 /**
  * C = C + A * B^T
  */
-std::vector<double> gemm_diag(std::vector<double> A, std::vector<double> B,
-                              std::vector<double> C, std::size_t N)
+std::vector<double> gemm_diag(std::vector<double> A,
+                              std::vector<double> B,
+                              std::vector<double> C,
+                              std::size_t N)
 {
     // GEMM constants
     const double alpha = 1.0;
@@ -285,8 +359,10 @@ std::vector<double> gemm_diag(std::vector<double> A, std::vector<double> B,
 /**
  * b = b + A * a where A(N_row, N_col), a(N_col) and b(N_row)
  */
-std::vector<double> gemv_p(std::vector<double> A, std::vector<double> a,
-                           std::vector<double> b, std::size_t N_row,
+std::vector<double> gemv_p(std::vector<double> A,
+                           std::vector<double> a,
+                           std::vector<double> b,
+                           std::size_t N_row,
                            std::size_t N_col)
 {
     // GEMV constants
@@ -306,8 +382,10 @@ std::vector<double> gemv_p(std::vector<double> A, std::vector<double> a,
 /**
  * in-place solve X * L = A where L lower triangular
  */
-std::vector<double> trsm_l_KcK(std::vector<double> L, std::vector<double> A,
-                               std::size_t N, std::size_t M)
+std::vector<double> trsm_l_KcK(std::vector<double> L,
+                               std::vector<double> A,
+                               std::size_t N,
+                               std::size_t M)
 {
     // TRSM constants
     const double alpha = 1.0;
@@ -321,8 +399,10 @@ std::vector<double> trsm_l_KcK(std::vector<double> L, std::vector<double> A,
 /**
  * C = C - A * B
  */
-std::vector<double> gemm_l_KcK(std::vector<double> A, std::vector<double> B,
-                               std::vector<double> C, std::size_t N,
+std::vector<double> gemm_l_KcK(std::vector<double> A,
+                               std::vector<double> B,
+                               std::vector<double> C,
+                               std::size_t N,
                                std::size_t M)
 {
     // GEMM constants
@@ -341,7 +421,8 @@ std::vector<double> gemm_l_KcK(std::vector<double> A, std::vector<double> B,
 std::vector<double> gemm_cross_tcross_matrix(std::vector<double> A,
                                              std::vector<double> B,
                                              std::vector<double> C,
-                                             std::size_t N, std::size_t M)
+                                             std::size_t N,
+                                             std::size_t M)
 {
     // GEMM constants
     const double alpha = -1.0;
@@ -360,8 +441,10 @@ std::vector<double> gemm_cross_tcross_matrix(std::vector<double> A,
 /**
  * in-place solve L * X = A where L lower triangular
  */
-std::vector<double> trsm_l_matrix(std::vector<double> L, std::vector<double> A,
-                                  std::size_t N, std::size_t M)
+std::vector<double> trsm_l_matrix(std::vector<double> L,
+                                  std::vector<double> A,
+                                  std::size_t N,
+                                  std::size_t M)
 {
     // TRSM constants
     const double alpha = 1.0;
@@ -375,8 +458,10 @@ std::vector<double> trsm_l_matrix(std::vector<double> L, std::vector<double> A,
 /**
  * C = C - A * B
  */
-std::vector<double> gemm_l_matrix(std::vector<double> A, std::vector<double> B,
-                                  std::vector<double> C, std::size_t N,
+std::vector<double> gemm_l_matrix(std::vector<double> A,
+                                  std::vector<double> B,
+                                  std::vector<double> C,
+                                  std::size_t N,
                                   std::size_t M)
 {
     // GEMM constants
@@ -392,8 +477,10 @@ std::vector<double> gemm_l_matrix(std::vector<double> A, std::vector<double> B,
 /**
  * in-place solve L^T * X = A where L upper triangular
  */
-std::vector<double> trsm_u_matrix(std::vector<double> L, std::vector<double> A,
-                                  std::size_t N, std::size_t M)
+std::vector<double> trsm_u_matrix(std::vector<double> L,
+                                  std::vector<double> A,
+                                  std::size_t N,
+                                  std::size_t M)
 {
     // TRSM constants
     const double alpha = 1.0;
@@ -407,8 +494,10 @@ std::vector<double> trsm_u_matrix(std::vector<double> L, std::vector<double> A,
 /**
  * C = C - A^T * B
  */
-std::vector<double> gemm_u_matrix(std::vector<double> A, std::vector<double> B,
-                                  std::vector<double> C, std::size_t N,
+std::vector<double> gemm_u_matrix(std::vector<double> A,
+                                  std::vector<double> B,
+                                  std::vector<double> C,
+                                  std::size_t N,
                                   std::size_t M)
 {
     // GEMM constants
@@ -433,7 +522,8 @@ double dot(std::size_t N, std::vector<double> A, std::vector<double> B)
  * C = C - A * B
  */
 std::vector<double> dot_uncertainty(std::vector<double> A,
-                                    std::vector<double> R, std::size_t N,
+                                    std::vector<double> R,
+                                    std::size_t N,
                                     std::size_t M)
 {
     for (int j = 0; j < M; ++j) {
@@ -447,8 +537,10 @@ std::vector<double> dot_uncertainty(std::vector<double> A,
 /**
  * C = C - A * B
  */
-std::vector<double> gemm_grad(std::vector<double> A, std::vector<double> B,
-                              std::vector<double> R, std::size_t N,
+std::vector<double> gemm_grad(std::vector<double> A,
+                              std::vector<double> B,
+                              std::vector<double> R,
+                              std::size_t N,
                               std::size_t M)
 {
     for (std::size_t i = 0; i < N; ++i) {
