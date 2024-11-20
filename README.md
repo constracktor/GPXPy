@@ -19,9 +19,9 @@ All dependencies can be installed using [Spack](https://github.com/spack/spack).
 A script to install a respective Spack environment `gpxpy` is provided in
 [`spack_env`](spack_env).
 
-- Go to the `spack_env` directory and run `setup_spack.sh` in the `GPXPy`
-  directory. This script will install Spack in `$HOME`, create a spack
-  environment `gpxpy` and install all dependencies.
+- Go to the `spack_env` directory and run `setup_spack.sh`. This script will
+  install Spack in `$HOME`, create a spack environment `gpxpy` and install all
+  dependencies.
 
 - For installation on the simcl1 computers of the IPVS institute at the
   University of Stuttgart, use go to the directory
