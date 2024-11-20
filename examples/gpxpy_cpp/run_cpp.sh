@@ -28,7 +28,6 @@ export MKL_CONFIG='-DMKL_ARCH=intel64 -DMKL_LINK=dynamic -DMKL_INTERFACE_FULL=in
 ################################################################################
 # Compile code
 ################################################################################
-cd test_cpp
 rm -rf build && mkdir build && cd build
 # Configure the project
 $CMAKE_COMMAND .. -DCMAKE_BUILD_TYPE=Release \
@@ -42,4 +41,4 @@ make -j VERBOSE=1 all
 ################################################################################
 # Run code
 ################################################################################
-../test_cpp
+./gpxpy_cpp

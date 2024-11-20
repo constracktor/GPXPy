@@ -55,7 +55,7 @@ set_target_properties(gpxpy PROPERTIES
 # Set default installation prefix if not specified by user
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   get_filename_component(PARENT_DIR "${CMAKE_CURRENT_LIST_DIR}" DIRECTORY)
-  set(CMAKE_INSTALL_PREFIX "${PARENT_DIR}/test_cpp/install_cpp" CACHE PATH "Installation Directory" FORCE)
+  set(CMAKE_INSTALL_PREFIX "${PARENT_DIR}/examples/gpxpy_cpp/install_cpp" CACHE PATH "Installation Directory" FORCE)
 endif()
 
 # Install
