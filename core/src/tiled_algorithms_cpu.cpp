@@ -23,25 +23,25 @@ void right_looking_cholesky_tiled(
 
 {
     for (std::size_t k = 0; k < n_tiles; k++) {
-        // POTRF
+        // POTRF: Compute Cholesky factor L
         ft_tiles[k * n_tiles + k] = hpx::dataflow(
             hpx::annotated_function(&potrf, "cholesky_tiled"),
             ft_tiles[k * n_tiles + k], N);
         for (std::size_t m = k + 1; m < n_tiles; m++) {
-            // TRSM
+            // TRSM:  Solve X * L^T = A
             ft_tiles[m * n_tiles + k] = hpx::dataflow(
                 hpx::annotated_function(&trsm,
                                         "cholesky_tiled"),
                 ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N);
         }
         for (std::size_t m = k + 1; m < n_tiles; m++) {
-            // SYRK
+            // SYRK:  A = A - B * B^T
             ft_tiles[m * n_tiles + m] = hpx::dataflow(
                 hpx::annotated_function(&syrk,
                                         "cholesky_tiled"),
                 ft_tiles[m * n_tiles + m], ft_tiles[m * n_tiles + k], N);
             for (std::size_t n = k + 1; n < m; n++) {
-                // GEMM
+                // GEMM: C = C - A * B^T
                 ft_tiles[m * n_tiles + n] = hpx::dataflow(
                     hpx::annotated_function(&gemm,
                                             "cholesky_tiled"),
@@ -63,17 +63,17 @@ void forward_solve_tiled(
     std::size_t n_tiles)
 {
     for (std::size_t k = 0; k < n_tiles; k++) {
-        // TRSM
+        // TRSM: Solve L * x = a
         ft_rhs[k] =
-            hpx::dataflow(hpx::annotated_function(&trsv_l,
+            hpx::dataflow(hpx::annotated_function(&trsv,
                                                   "triangular_solve_tiled"),
-                          ft_tiles[k * n_tiles + k], ft_rhs[k], N);
+                          ft_tiles[k * n_tiles + k], ft_rhs[k], N, Blas_no_trans);
         for (std::size_t m = k + 1; m < n_tiles; m++) {
-            // GEMV
+            // GEMV: b = b - A * a
             ft_rhs[m] = hpx::dataflow(
-                hpx::annotated_function(&gemv_l,
+                hpx::annotated_function(&gemv,
                                         "triangular_solve_tiled"),
-                ft_tiles[m * n_tiles + k], ft_rhs[k], ft_rhs[m], N);
+                ft_tiles[m * n_tiles + k], ft_rhs[k], ft_rhs[m], N, Blas_no_trans);
         }
     }
 }
@@ -87,19 +87,19 @@ void backward_solve_tiled(
     for (int k = n_tiles - 1; k >= 0;
          k--) // int instead of std::size_t for last comparison
     {
-        // TRSM
+       // TRSM: Solve L^T * x = a
         ft_rhs[k] =
-            hpx::dataflow(hpx::annotated_function(&trsv_u,
+            hpx::dataflow(hpx::annotated_function(&trsv,
                                                   "triangular_solve_tiled"),
-                          ft_tiles[k * n_tiles + k], ft_rhs[k], N);
+                          ft_tiles[k * n_tiles + k], ft_rhs[k], N, Blas_trans);
         for (int m = k - 1; m >= 0;
              m--) // int instead of std::size_t for last comparison
         {
-            // GEMV
+            // GEMV:b = b - A^T * a
             ft_rhs[m] = hpx::dataflow(
-                hpx::annotated_function(&gemv_u,
+                hpx::annotated_function(&gemv,
                                         "triangular_solve_tiled"),
-                ft_tiles[k * n_tiles + m], ft_rhs[k], ft_rhs[m], N);
+                ft_tiles[k * n_tiles + m], ft_rhs[k], ft_rhs[m], N, Blas_trans);
         }
     }
 }
