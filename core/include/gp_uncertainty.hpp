@@ -13,8 +13,8 @@
  *
  * @return Diagonal elements of posterior covariance matrix
  */
-std::vector<double> diag_posterior(const std::vector<double>& A,
-                                   const std::vector<double>& B,
+std::vector<double> diag_posterior(const std::vector<double> &A,
+                                   const std::vector<double> &B,
                                    std::size_t M);
 
 /**
@@ -25,6 +25,6 @@ std::vector<double> diag_posterior(const std::vector<double>& A,
  *
  * @return Diagonal elements of posterior covariance matrix
  */
-std::vector<double> diag_tile(const std::vector<double>& A, std::size_t M);
+std::vector<double> diag_tile(const std::vector<double> &A, std::size_t M);
 
-#endif // GP_UNCERTAINTY_H
+#endif  // GP_UNCERTAINTY_H
