@@ -1,6 +1,6 @@
-#include <iostream>
 #include <chrono>
 #include <fstream>
+#include <iostream>
 // #include <boost/program_options.hpp>
 #include "../install_cpp/include/gpxpy_c.hpp"
 #include "../install_cpp/include/utils_c.hpp"
@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
     const int OPT_ITER = 1;
 
     int n_test = 1024;
-    const std::size_t N_CORES = 2; // Set this to the number of threads
+    const std::size_t N_CORES = 2;  // Set this to the number of threads
     const int n_tiles = 32;
     const int n_reg = 128;
 
@@ -52,8 +52,8 @@ int main(int argc, char *argv[])
                 auto result = utils::compute_test_tiles(n_test, n_tiles, tile_size);
                 /////////////////////
                 ///// hyperparams
-                std::vector<double> M = {0.0, 0.0, 0.0};
-                gpxpy_hyper::Hyperparameters hpar = {0.1, 0.9, 0.999, 1e-8, OPT_ITER, M};
+                std::vector<double> M = { 0.0, 0.0, 0.0 };
+                gpxpy_hyper::Hyperparameters hpar = { 0.1, 0.9, 0.999, 1e-8, OPT_ITER, M };
 
                 /////////////////////
                 ////// data loading
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
                 /////////////////////
                 ///// GP
                 auto start_init = std::chrono::high_resolution_clock::now();
-                std::vector<bool> trainable = {false, false, true};
+                std::vector<bool> trainable = { false, false, true };
                 gpxpy::GP gp(training_input.data, training_output.data, n_tiles, tile_size, 1.0, 1.0, 0.1, n_reg, trainable);
                 auto end_init = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double> init_time = end_init - start_init;
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
                 std::chrono::duration<double> total_time = end_total - start_total;
 
                 // Save parameters and times to a .txt file with a header
-                std::ofstream outfile("../output.csv", std::ios::app); // Append mode
+                std::ofstream outfile("../output.csv", std::ios::app);  // Append mode
                 if (outfile.tellp() == 0)
                 {
                     // If file is empty, write the header

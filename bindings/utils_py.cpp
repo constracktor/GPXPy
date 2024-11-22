@@ -1,6 +1,6 @@
 #include "../core/include/utils_c.hpp"
-#include <pybind11/stl.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
 
@@ -20,7 +20,9 @@ void start_hpx_wrapper(std::vector<std::string> args, std::size_t n_cores)
     // Convert std::vector<std::string> to char* array
     std::vector<char *> argv;
     for (auto &arg : args)
+    {
         argv.push_back(&arg[0]);
+    }
     argv.push_back(nullptr);
     int argc = args.size();
     utils::start_hpx_runtime(argc, argv.data());
@@ -33,9 +35,7 @@ void start_hpx_wrapper(std::vector<std::string> args, std::size_t n_cores)
  */
 void init_utils(py::module &m)
 {
-    m.def("compute_train_tiles", &utils::compute_train_tiles,
-          py::arg("n_samples"),
-          py::arg("n_tile_size"),
+    m.def("compute_train_tiles", &utils::compute_train_tiles, py::arg("n_samples"), py::arg("n_tile_size"),
           R"pbdoc(
           Compute the number of tiles for training data.
 
@@ -47,9 +47,7 @@ void init_utils(py::module &m)
               int: Number of tiles per dimension.
           )pbdoc");
 
-    m.def("compute_train_tile_size", &utils::compute_train_tile_size,
-          py::arg("n_samples"),
-          py::arg("n_tiles"),
+    m.def("compute_train_tile_size", &utils::compute_train_tile_size, py::arg("n_samples"), py::arg("n_tiles"),
           R"pbdoc(
           Compute the tile size for training data.
 
@@ -61,10 +59,7 @@ void init_utils(py::module &m)
               int: Tile size
           )pbdoc");
 
-    m.def("compute_test_tiles", &utils::compute_test_tiles,
-          py::arg("m_samples"),
-          py::arg("n_tiles"),
-          py::arg("n_tile_size"),
+    m.def("compute_test_tiles", &utils::compute_test_tiles, py::arg("m_samples"), py::arg("n_tiles"), py::arg("n_tile_size"),
           R"pbdoc(
           Compute the number of tiles for test data and the respective size of test tiles.
 
@@ -77,14 +72,9 @@ void init_utils(py::module &m)
               tuple: A tuple containing the number of test tiles and the adjusted tile size.
           )pbdoc");
 
-    m.def("print", &utils::print,
-          py::arg("vec"),
-          py::arg("start") = 0,
-          py::arg("end") = -1,
-          py::arg("separator") = " ",
-          "Print elements of a vector with optional start, end, and separator parameters");
+    m.def("print", &utils::print, py::arg("vec"), py::arg("start") = 0, py::arg("end") = -1, py::arg("separator") = " ", "Print elements of a vector with optional start, end, and separator parameters");
 
-    m.def("start_hpx", &start_hpx_wrapper, py::arg("args"), py::arg("n_cores")); // Using the wrapper function
+    m.def("start_hpx", &start_hpx_wrapper, py::arg("args"), py::arg("n_cores"));  // Using the wrapper function
     m.def("resume_hpx", &utils::resume_hpx_runtime);
     m.def("suspend_hpx", &utils::suspend_hpx_runtime);
     m.def("stop_hpx", &utils::stop_hpx_runtime);
