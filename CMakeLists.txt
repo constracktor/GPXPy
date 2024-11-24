@@ -1,6 +1,6 @@
 message(STATUS "Building Python language bindings for GPXPy.")
 
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.23)
 
 project(gpxpy)
 
