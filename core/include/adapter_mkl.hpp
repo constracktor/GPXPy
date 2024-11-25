@@ -144,4 +144,4 @@ std::vector<double> gemm_grad(std::vector<double> A,
 
 // }}} --------------------------------------- end of BLAS for optimization step
 
-#endif // end of ADAPTER_MKL_H
+#endif  // end of ADAPTER_MKL_H

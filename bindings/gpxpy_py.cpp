@@ -8,7 +8,7 @@ namespace py = pybind11;
 /**
  * @brief Adds classes `GP_data`, `Hyperparameters`, `GP` to Python module.
  */
-void init_gpxpy(py::module& m)
+void init_gpxpy(py::module &m)
 {
     // set training data with `GP_data` class
     py::class_<gpxpy::GP_data>(
@@ -47,8 +47,8 @@ void init_gpxpy(py::module& m)
              py::arg("beta2") = 0.999,
              py::arg("epsilon") = 1e-8,
              py::arg("opt_iter") = 0,
-             py::arg("m_T") = std::vector<double>{0.0, 0.0, 0.0},
-             py::arg("v_T") = std::vector<double>{0.0, 0.0, 0.0})
+             py::arg("m_T") = std::vector<double>{ 0.0, 0.0, 0.0 },
+             py::arg("v_T") = std::vector<double>{ 0.0, 0.0, 0.0 })
         .def_readwrite("learning_rate",
                        &gpxpy_hyper::Hyperparameters::learning_rate)
         .def_readwrite("beta1", &gpxpy_hyper::Hyperparameters::beta1)
@@ -85,7 +85,7 @@ void init_gpxpy(py::module& m)
              py::arg("v_lengthscale") = 1.0,
              py::arg("noise_var") = 0.1,
              py::arg("n_reg") = 100,
-             py::arg("trainable") = std::vector<bool>{true, true, true},
+             py::arg("trainable") = std::vector<bool>{ true, true, true },
              R"pbdoc(
 Create Gaussian Process including its data, hyperparameters.
 
