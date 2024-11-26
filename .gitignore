@@ -190,13 +190,12 @@ cython_debug/
 *.app
 
 # Datafiles
-*/build
-*/build_*/
-*/output.csv
-/gpxpy_library/test_cpp/install_cpp/
-/gpxpy_library/test_cpp/test_cpp
-/gpxpy_library/test_cpp/output.csv
-/gpxpy_library/test_gpxpy/output.csv
+build_*/
+output.csv
+**/test_cpp/install_cpp/
+**/test_cpp/test_cpp
+**/test_cpp/output.csv
+**/test_gpxpy/output.csv
 /.vscode
 
 # Editor related files
