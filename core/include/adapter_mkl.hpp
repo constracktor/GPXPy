@@ -1,147 +1,196 @@
 #ifndef ADAPTER_MKL_H
 #define ADAPTER_MKL_H
 
+#include <hpx/future.hpp>
 #include <vector>
+
+// Constants that are compatible with CBLAS
+typedef enum BLAS_TRANSPOSE {
+    Blas_no_trans = 111,
+    Blas_trans = 112
+} BLAS_TRANSPOSE;
+typedef enum BLAS_SIDE { Blas_left = 141, Blas_right = 142 } BLAS_SIDE;
+// typedef enum BLAS_UPLO {Blas_upper=121, Blas_lower=122} BLAS_UPLO;
+// typedef enum BLAS_ORDERING {Blas_row_major=101, Blas_col_major=102}
+// BLAS_ORDERING;
+typedef enum BLAS_ALPHA { Blas_add = 1, Blas_substract = -1 } BLAS_ALPHA;
 
 // =============================================================================
 // BLAS operations on CPU with MKL
 // =============================================================================
 
-// BLAS operations for tiled cholkesy -------------------------------------- {{{
+// BLAS level 3 operations ------------------------------------------------- {{{
 
 /**
  * @brief In-place Cholesky decomposition of A
  *
- * @param A matrix to be factorized
- * @param N size of the matrix
- * @return factorized, lower triangular matrix L
+ * @param f_A matrix to be factorized
+ * @param N matrix dimension
+ *
+ * @return factorized, lower triangular matrix f_L
  */
-std::vector<double> potrf(std::vector<double> A, std::size_t N);
+hpx::shared_future<std::vector<double>>
+potrf(hpx::shared_future<std::vector<double>> f_A, const std::size_t N);
 
-// in-place solve X * L^T = A where L lower triangular
-std::vector<double>
-trsm(std::vector<double> L, std::vector<double> A, std::size_t N);
+/**
+ * @brief In-place solve L(^T) * X = A or X * L(^T) = A where L lower triangular
+ *
+ * @param f_L Cholesky factor matrix
+ * @param f_A right hand side matrix
+ * @param N first dimension
+ * @param M second dimension
+ *
+ * @return solution matrix f_X
+ */
+hpx::shared_future<std::vector<double>>
+trsm(hpx::shared_future<std::vector<double>> f_L,
+     hpx::shared_future<std::vector<double>> f_A,
+     const std::size_t N,
+     const std::size_t M,
+     const BLAS_TRANSPOSE transpose_L,
+     const BLAS_SIDE side_L);
 
-// A = A - B * B^T
-std::vector<double>
-syrk(std::vector<double> A, std::vector<double> B, std::size_t N);
+/**
+ * @brief Symmetric rank-k update: A = A - B * B^T
+ *
+ * @param f_A Base matrix
+ * @param f_B Symmetric update matrix
+ * @param N matrix dimension
+ *
+ * @return updated matrix f_A
+ */
+hpx::shared_future<std::vector<double>>
+syrk(hpx::shared_future<std::vector<double>> f_A,
+     hpx::shared_future<std::vector<double>> f_B,
+     const std::size_t N);
 
-// C = C - A * B^T
-std::vector<double> gemm(std::vector<double> A,
-                         std::vector<double> B,
-                         std::vector<double> C,
-                         std::size_t N);
+/**
+ * @brief General matrix-matrix multiplication: C = C - A(^T) * B(^T)
+ *
+ * @param f_C Base matrix
+ * @param f_B Right update matrix
+ * @param f_A Left update matrix
+ * @param N first matrix dimension
+ * @param M second matrix dimension
+ * @param K third matrix dimension
+ * @param transpose_A transpose left matrix
+ * @param transpose_B transpose right matrix
+ *
+ * @return updated matrix f_X
+ */
+hpx::shared_future<std::vector<double>>
+gemm(hpx::shared_future<std::vector<double>> f_A,
+     hpx::shared_future<std::vector<double>> f_B,
+     hpx::shared_future<std::vector<double>> f_C,
+     const std::size_t N,
+     const std::size_t M,
+     const std::size_t K,
+     const BLAS_TRANSPOSE transpose_A,
+     const BLAS_TRANSPOSE transpose_B);
 
-// in-place solve L * x = a where L lower triangular
-std::vector<double>
-trsv_l(std::vector<double> L, std::vector<double> a, std::size_t N);
+// }}} ------------------------------------------ end of BLAS level 3 operations
 
-// b = b - A * a
-std::vector<double> gemv_l(std::vector<double> A,
-                           std::vector<double> a,
-                           std::vector<double> b,
-                           std::size_t N);
+// BLAS level 2 operations ------------------------------------------------- {{{
 
-// in-place solve L^T * x = a where L lower triangular
-std::vector<double>
-trsv_u(std::vector<double> L, std::vector<double> a, std::size_t N);
+/**
+ * @brief In-place solve L(^T) * x = a where L lower triangular
+ *
+ * @param f_L Cholesky factor matrix
+ * @param f_a right hand side vector
+ * @param N matrix dimension
+ * @param transpose_L transpose Cholesky factor
+ *
+ * @return solution vector f_x
+ */
+hpx::shared_future<std::vector<double>>
+trsv(hpx::shared_future<std::vector<double>> f_L,
+     hpx::shared_future<std::vector<double>> f_a,
+     const std::size_t N,
+     const BLAS_TRANSPOSE transpose_L);
 
-// b = b - A^T * a
-std::vector<double> gemv_u(std::vector<double> A,
-                           std::vector<double> a,
-                           std::vector<double> b,
-                           std::size_t N);
+/**
+ * @brief General matrix-vector multiplication: b = b - A(^T) * a
+ *
+ * @param f_A update matrix
+ * @param f_a update vector
+ * @param f_b base vector
+ * @param N matrix dimension
+ * @param alpha add or substract update to base vector
+ * @param transpose_A transpose update matrix
+ *
+ * @return updated vector f_b
+ */
+hpx::shared_future<std::vector<double>>
+gemv(hpx::shared_future<std::vector<double>> f_A,
+     hpx::shared_future<std::vector<double>> f_a,
+     hpx::shared_future<std::vector<double>> f_b,
+     const std::size_t N,
+     const std::size_t M,
+     const BLAS_ALPHA alpha,
+     const BLAS_TRANSPOSE transpose_A);
 
-// A = y*beta^T + A
-std::vector<double> ger(std::vector<double> A,
-                        std::vector<double> x,
-                        std::vector<double> y,
-                        std::size_t N);
+/**
+ * @brief General matrix rank-1 update: A = A - x*y^T
+ *
+ * @param f_A base matrix
+ * @param f_x first update vector
+ * @param f_y second update vector
+ * @param N matrix dimension
+ *
+ * @return updated vector f_b
+ */
+hpx::shared_future<std::vector<double>>
+ger(hpx::shared_future<std::vector<double>> f_A,
+    hpx::shared_future<std::vector<double>> f_x,
+    hpx::shared_future<std::vector<double>> f_y,
+    const std::size_t N);
 
-// C = C + A * B^T
-std::vector<double> gemm_diag(std::vector<double> A,
-                              std::vector<double> B,
-                              std::vector<double> C,
-                              std::size_t N);
+/**
+ * @brief Vector update with diagonal SYRK: r = r + diag(A^T * A)
+ *
+ * @param f_A update matrix
+ * @param f_r base vector
+ * @param N first matrix dimension
+ * @param M second matrix dimension
+ *
+ * @return updated vector f_r
+ */
+hpx::shared_future<std::vector<double>>
+dot_diag_syrk(hpx::shared_future<std::vector<double>> f_A,
+              hpx::shared_future<std::vector<double>> f_r,
+              const std::size_t N,
+              const std::size_t M);
 
-// BLAS operations for tiled prediction
-// b = b + A * a where A(N_row, N_col), a(N_col) and b(N_row)
-std::vector<double> gemv_p(std::vector<double> A,
-                           std::vector<double> a,
-                           std::vector<double> b,
-                           std::size_t N_row,
-                           std::size_t N_col);
+/**
+ * @brief Vector update with diagonal GEMM: r = r + diag(A * B)
+ *
+ * @param f_A first update matrix
+ * @param f_B second update matrix
+ * @param f_r base vector
+ * @param N first matrix dimension
+ * @param M second matrix dimension
+ * @return updated vector f_r
+ */
+hpx::shared_future<std::vector<double>>
+dot_diag_gemm(hpx::shared_future<std::vector<double>> f_A,
+              hpx::shared_future<std::vector<double>> f_B,
+              hpx::shared_future<std::vector<double>> f_r,
+              const std::size_t N,
+              const std::size_t M);
 
-// }}} ------------------------------- end of BLAS operations for tiled cholkesy
+// }}} ------------------------------------------ end of BLAS level 2 operations
 
-// BLAS operations used in uncertainty computation ------------------------- {{{
+// BLAS level 1 operations ------------------------------------------------- {{{
 
-// in-place solve X * L = A where L lower triangular
-std::vector<double> trsm_l_KcK(std::vector<double> L,
-                               std::vector<double> A,
-                               std::size_t N,
-                               std::size_t M);
+/**
+ * @brief Dot product: a * b
+ * @param f_a left vector
+ * @param f_b right vector
+ * @param N vector length
+ * @return f_a * f_b
+ */
+double dot(std::vector<double> a, std::vector<double> b, const std::size_t N);
 
-// C = C - A * B
-std::vector<double> gemm_l_KcK(std::vector<double> A,
-                               std::vector<double> B,
-                               std::vector<double> C,
-                               std::size_t N,
-                               std::size_t M);
-
-// C = C - A^T * B
-std::vector<double> gemm_cross_tcross_matrix(std::vector<double> A,
-                                             std::vector<double> B,
-                                             std::vector<double> C,
-                                             std::size_t N,
-                                             std::size_t M);
-
-// }}} --------------------------------- end of BLAS for uncertainty computation
-
-// BLAS operations used in optimization step ------------------------------- {{{
-
-// in-place solve L * X = A where L lower triangular
-std::vector<double> trsm_l_matrix(std::vector<double> L,
-                                  std::vector<double> A,
-                                  std::size_t N,
-                                  std::size_t M);
-
-// C = C - A * B
-std::vector<double> gemm_l_matrix(std::vector<double> A,
-                                  std::vector<double> B,
-                                  std::vector<double> C,
-                                  std::size_t N,
-                                  std::size_t M);
-
-// in-place solve L^T * X = A where L upper triangular
-std::vector<double> trsm_u_matrix(std::vector<double> L,
-                                  std::vector<double> A,
-                                  std::size_t N,
-                                  std::size_t M);
-
-// C = C - A^T * B
-std::vector<double> gemm_u_matrix(std::vector<double> A,
-                                  std::vector<double> B,
-                                  std::vector<double> C,
-                                  std::size_t N,
-                                  std::size_t M);
-
-// Dot product used in dot calculation
-double dot(std::size_t N, std::vector<double> A, std::vector<double> B);
-
-// C = C - A * B
-std::vector<double> dot_uncertainty(std::vector<double> A,
-                                    std::vector<double> R,
-                                    std::size_t N,
-                                    std::size_t M);
-
-// C = C - A * B
-std::vector<double> gemm_grad(std::vector<double> A,
-                              std::vector<double> B,
-                              std::vector<double> R,
-                              std::size_t N,
-                              std::size_t M);
-
-// }}} --------------------------------------- end of BLAS for optimization step
+// }}} ------------------------------------------ end of BLAS level 1 operations
 
 #endif // end of ADAPTER_MKL_H
