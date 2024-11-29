@@ -1,0 +1,15 @@
+Comments about configuration parameters.
+
+General Parameters -
+	"input_file": File path to write control inputs,
+	"output_file": File path to write measured outputs,
+	"N_SAMPLES": Number of samples to generate,
+	"SAMPLING_FREQUENCY": Sampling frequency for data,
+	"NOISE": Measurement white noise,
+	"SIGNAL": Control signal type "sinus" or "aprbs"
+	"AMPLITUDE": Control signal amplitude
+	"PERIOD": Control signal period
+	"RANDOM_SEED": Random seed for reproducibility,
+	"RESCALE": Normalize data (rescale between [0,1]),
+	"VISUALIZE": Plot the control input and measured outputs to PDF,
+	"N_CARTS": Number of coupled mass-spring damper carts
