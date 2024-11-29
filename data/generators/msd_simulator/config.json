@@ -1,0 +1,15 @@
+{
+    "input_file": "./data/input_data.txt",
+    "output_file": "./data/output_data.txt",
+    "N_SAMPLES": 1024,
+    "SAMPLING_FREQUENCY": 0.05,
+    "NOISE": 0.05,
+    "SIGNAL": "sinus",
+    "AMPLITUDE": 4.0,
+    "PERIOD": 5,
+    "RANDOM_SEED": null,
+    "RESCALE": true,
+    "VISUALIZE": false,
+    "N_CARTS": 4
+}
+
