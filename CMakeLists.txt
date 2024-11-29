@@ -16,7 +16,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 project(gpxpy)
 
 include(CMakeDependentOption)
-include(cmake/CPM.cmake)
 
 # What to build?
 option(GPXPY_BUILD_CORE "Build the core library" ON)
@@ -27,7 +26,16 @@ option(GPXPY_ENABLE_FORMAT_TARGETS "Enable clang-format / cmake-format targets"
        ${PROJECT_IS_TOP_LEVEL})
 
 if(GPXPY_ENABLE_FORMAT_TARGETS)
-  cpmaddpackage("gh:TheLartians/Format.cmake@1.8.1")
+  find_package(format QUIET)
+  if(NOT format_FOUND)
+    include(FetchContent)
+    FetchContent_Declare(
+      format
+      GIT_REPOSITORY https://github.com/TheLartians/Format.cmake.git
+      GIT_TAG v1.8.1
+      QUIET)
+    FetchContent_MakeAvailable(format)
+  endif()
 endif()
 
 if(GPXPY_BUILD_CORE)
