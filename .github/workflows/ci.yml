@@ -57,6 +57,9 @@ jobs:
       run: spack -e . install --no-check-signature
 
     - name: Configure
+      env:
+        CC: gcc-14
+        CXX: g++-14
       run: cmake "--preset=ci-${{ matrix.os }}"
 
     - name: Build
