@@ -17,6 +17,9 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
+    permissions:
+      packages: write
+
     steps:
     - uses: actions/checkout@v4
 
@@ -42,6 +45,7 @@ jobs:
     - name: Choose environment
       run: |
         cp spack-repo/environments/spack_cpu_gcc.yaml spack.yaml
+        cat spack-repo/environments/ci_env_settings.yaml.tpl >> spack.yaml
 
     - name: Concretize
       run: spack -e . concretize
@@ -68,3 +72,10 @@ jobs:
         name: binaries-${{ matrix.os }}
         path: |
           prefix/
+
+    # See: https://github.com/spack/setup-spack?tab=readme-ov-file#example-caching-your-own-binaries-for-public-repositories
+    - name: Push packages and update index
+      run: |
+        spack -e . mirror set --push --oci-username ${{ github.actor }} --oci-password "${{ secrets.GITHUB_TOKEN }}" local-buildcache
+        spack -e . buildcache push --base-image ubuntu:24.04 --update-index local-buildcache
+      if: ${{ !cancelled() }}
