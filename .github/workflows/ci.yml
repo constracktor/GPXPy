@@ -42,6 +42,9 @@ jobs:
         color: true       # Force color output (SPACK_COLOR=always)
         path: spack
 
+    - name: Register repository
+      run: spack repo add spack-repo
+
     - name: Choose environment
       run: |
         cp spack-repo/environments/spack_cpu_gcc.yaml spack.yaml
