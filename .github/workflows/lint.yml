@@ -1,0 +1,65 @@
+name: Code linting
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with: { python-version: "3.12" }
+
+    - name: Install cmakelang
+      run: pip3 install cmakelang
+
+    - name: Configure dummy project
+      run: cmake -B build-fmt -DGPXPY_BUILD_CORE=OFF -D CLANG_FORMAT_PROGRAM=$(which clang-format-18)
+
+    - name: Check code formatting
+      id: clangformat
+      run: |
+        set +e
+        cmake --build build-fmt --target check-clang-format
+        status=$?
+        if [ $status -ne 0 ]; then
+          echo "Formatting errors found!"
+          cmake --build build-fmt --target clang-format > clang-format.patch
+          exit $status
+        else
+          echo "No formatting errors found!"
+        fi
+
+    - name: Check CMake formatting
+      # Let's run the CMake formatting checks even if our code is mis-formatted.
+      if: success() || steps.clangformat.conclusion == 'failure'
+      # Note that diff generation for cmake-format is somewhat broken in the upstream project.
+      # Diffs always end up with incorrect paths so manual fixes would be necessary, which we sidestep
+      # by re-formatting in-place and then using `git diff`.
+      run: |
+        set +e
+        cmake --build build-fmt --target check-cmake-format
+        status=$?
+        if [ $status -ne 0 ]; then
+          echo "Formatting errors found!"
+          cmake --build build-fmt --target fix-cmake-format
+          git diff > cmake-format.patch
+          exit $status
+        else
+          echo "No formatting errors found!"
+        fi
+
+    - name: Upload Patch
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: Formatting fix .patch files
+        path: |
+          clang-format.patch
+          cmake-format.patch
