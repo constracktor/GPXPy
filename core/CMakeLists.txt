@@ -19,7 +19,8 @@ set(SOURCE_FILES
     src/gp_functions.cpp
     src/gp_algorithms_mkl.cpp
     src/gpxpy_c.cpp
-    src/adapter_mkl.cpp
+    src/blas_adapters/adapter_cblas_fp32.cpp
+    src/blas_adapters/adapter_cblas_fp64.cpp
     src/tiled_algorithms_cpu.cpp
     src/gp_uncertainty.cpp
     src/utils_c.cpp)
@@ -30,7 +31,8 @@ set(HEADER_FILES
     include/gp_functions.hpp
     include/gp_algorithms_cpu.hpp
     include/gpxpy_c.hpp
-    include/adapter_mkl.hpp
+    include/blas_adapters/adapter_cblas_fp32.hpp
+    include/blas_adapters/adapter_cblas_fp64.hpp
     include/tiled_algorithms_cpu.hpp
     include/gp_uncertainty.hpp
     include/utils_c.hpp)
