@@ -10,13 +10,14 @@
  *
  * @return Diagonal elements of posterior covariance matrix
  */
-std::vector<double> diag_posterior(const std::vector<double>& A,
-                                   const std::vector<double>& B,
+std::vector<double> diag_posterior(const std::vector<double> &A,
+                                   const std::vector<double> &B,
                                    std::size_t M)
 {
     std::vector<double> tile(M);
 
-    for (std::size_t i = 0; i < M; ++i) {
+    for (std::size_t i = 0; i < M; ++i)
+    {
         tile.push_back(A[i] - B[i]);
     }
 
@@ -31,13 +32,14 @@ std::vector<double> diag_posterior(const std::vector<double>& A,
  *
  * @return Diagonal elements of posterior covariance matrix
  */
-std::vector<double> diag_tile(const std::vector<double>& A, std::size_t M)
+std::vector<double> diag_tile(const std::vector<double> &A, std::size_t M)
 {
     // Initialize tile
     std::vector<double> tile;
     tile.reserve(M);
 
-    for (std::size_t i = 0; i < M; ++i) {
+    for (std::size_t i = 0; i < M; ++i)
+    {
         tile.push_back(A[i * M + i]);
     }
 

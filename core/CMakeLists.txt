@@ -6,12 +6,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 project(gpxpy VERSION 0.1.0)
 
-# Option for GPU support with cuBLAS
-option(GPXPY_WITH_CUBLAS "Enable GPU support with cuBLAS" OFF)
+# Option for GPU support with CUDA/cuBLAS
+option(GPXPY_WITH_CUDA "Enable GPU support with CUDA/cuBLAS" OFF)
 # Pass variable to C++ code
-add_compile_definitions(GPXPY_WITH_CUBLAS=$<BOOL:${GPXPY_WITH_CUBLAS}>)
+add_compile_definitions(GPXPY_WITH_CUDA=$<BOOL:${GPXPY_WITH_CUDA}>)
 
-if(NOT GPXPY_WITH_CUBLAS)
+if(NOT GPXPY_WITH_CUDA)
     # TODO: configuration without GPU support
 else()
     # TODO: configuration with GPU support
@@ -28,33 +28,37 @@ include_directories(${MKL_INCLUDE_DIRS})
 
 # Source files
 set(SOURCE_FILES
-    adapter_cublas.cpp
-    adapter_mkl.cpp
-    gp_algorithms_cuda.cpp
-    gp_algorithms_mkl.cpp
-    gp_functions.cpp
-    gp_gradient_descent.cpp
-    gp_uncertainty.cpp
-    gpxpy_c.cpp
-    hpx_cholesky_gpu.cpp
-    tiled_algorithms_cpu.cpp
-    tiled_algorithms_gpu.cpp
-    utils_c.cpp
+    src/adapter_cublas.cpp
+    src/adapter_mkl.cpp
+    src/gp_algorithms_cpu.cpp
+    src/gp_algorithms_gpu.cpp
+    src/gp_functions.cpp
+    src/gp_kernel.cpp
+    src/gp_optimizer.cpp
+    src/gp_uncertainty.cpp
+    src/gpxpy_c.cpp
+    src/target.cpp
+    src/tiled_algorithms_cpu.cpp
+    src/tiled_algorithms_gpu.cpp
+    src/utils_c.cpp
 )
 
 # Headers (to be installed)
 set(HEADER_FILES
-    adapter_cublas.hpp
-    adapter_mkl.hpp
-    gp_algorithms_cpu.hpp
-    gp_algorithms_cuda.hpp
-    gp_functions.hpp
-    gp_gradient_descent.hpp
-    gp_uncertainty.hpp
-    gpxpy_c.hpp
-    tiled_algorithms_cpu.hpp
-    tiled_algorithms_gpu.hpp
-    utils_c.hpp
+    include/adapter_cublas.hpp
+    include/adapter_mkl.hpp
+    include/cuda_utils.hpp
+    include/gp_algorithms_cpu.hpp
+    include/gp_algorithms_gpu.hpp
+    include/gp_functions.hpp
+    include/gp_kernels.hpp
+    include/gp_optimizer.hpp
+    include/gp_uncertainty.hpp
+    include/gpxpy_c.hpp
+    include/target.hpp
+    include/tiled_algorithms_cpu.hpp
+    include/tiled_algorithms_gpu.hpp
+    include/utils_c.hpp
 )
 
 # Add library

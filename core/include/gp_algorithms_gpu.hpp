@@ -1,13 +1,14 @@
-#ifndef GP_ALGORITHMS_CPU_H
-#define GP_ALGORITHMS_CPU_H
+#ifndef GP_ALGORITHMS_GPU_H
+#define GP_ALGORITHMS_GPU_H
 
 #include "gp_kernels.hpp"
 #include "gp_optimizer.hpp"
+#include "target.hpp"
 #include <cmath>
 #include <hpx/future.hpp>
 #include <vector>
 
-namespace cpu
+namespace gpu
 {
 
 // compute the squared exponential kernel of two feature vectors
@@ -96,7 +97,8 @@ predict(const std::vector<double> &training_input,
         int m_tiles,
         int m_tile_size,
         int n_regressors,
-        gpxpy_hyper::SEKParams sek_params);
+        gpxpy_hyper::SEKParams sek_params,
+        gpxpy::Target &target);
 
 /**
  * @brief TODO: documentation
@@ -110,7 +112,8 @@ predict_with_uncertainty(const std::vector<double> &training_input,
                          int m_tiles,
                          int m_tile_size,
                          int n_regressors,
-                         gpxpy_hyper::SEKParams sek_params);
+                         gpxpy_hyper::SEKParams sek_params,
+                         gpxpy::Target &target);
 
 /**
  * @brief TODO: documentation
@@ -124,7 +127,8 @@ predict_with_full_cov(const std::vector<double> &training_input,
                       int m_tiles,
                       int m_tile_size,
                       int n_regressors,
-                      gpxpy_hyper::SEKParams sek_params);
+                      gpxpy_hyper::SEKParams sek_params,
+                      gpxpy::Target &target);
 
 /**
  * @brief TODO: documentation
@@ -135,7 +139,8 @@ compute_loss(const std::vector<double> &training_input,
              int n_tiles,
              int n_tile_size,
              int n_regressors,
-             gpxpy_hyper::SEKParams sek_params);
+             gpxpy_hyper::SEKParams sek_params,
+             gpxpy::Target &target);
 
 /**
  * @brief TODO: documentation
@@ -148,7 +153,8 @@ optimize(const std::vector<double> &training_input,
          int n_regressors,
          gpxpy_hyper::SEKParams &sek_params,
          std::vector<bool> trainable_params,
-         const gpxpy_hyper::AdamParams &adam_params);
+         const gpxpy_hyper::AdamParams &adam_params,
+         gpxpy::Target &target);
 
 /**
  * @brief TODO: documentation
@@ -162,7 +168,8 @@ optimize_step(const std::vector<double> &training_input,
               int iter,
               gpxpy_hyper::SEKParams &sek_params,
               std::vector<bool> trainable_params,
-              gpxpy_hyper::AdamParams &adam_params);
+              gpxpy_hyper::AdamParams &adam_params,
+              gpxpy::Target &target);
 
 /**
  * @brief TODO: documentation
@@ -173,8 +180,9 @@ cholesky(const std::vector<double> &training_input,
          int n_tiles,
          int n_tile_size,
          int n_regressors,
-         gpxpy_hyper::SEKParams sek_params);
+         gpxpy_hyper::SEKParams sek_params,
+         gpxpy::Target &target);
 
-}  // end of namespace cpu
+}  // end of namespace gpu
 
-#endif  // end of GP_ALGORITHMS_CPU_H
+#endif  // end of GP_ALGORITHMS_GPU_H

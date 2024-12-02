@@ -1,7 +1,7 @@
 #ifndef ADAPTER_CUBLAS_H
 #define ADAPTER_CUBLAS_H
 
-#include <hpx/local/future.hpp>
+#include <hpx/future.hpp>
 #include <hpx/modules/async_cuda.hpp>
 
 // Constants are compatible with cuBLAS
@@ -9,8 +9,14 @@ typedef enum BLAS_TRANSPOSE {
     Blas_no_trans = 0,
     Blas_trans = 1
 } BLAS_TRANSPOSE;
-typedef enum BLAS_SIDE { Blas_left = 0, Blas_right = 1 } BLAS_SIDE;
-typedef enum BLAS_ALPHA { Blas_add = 1, Blas_substract = -1 } BLAS_ALPHA;
+
+typedef enum BLAS_SIDE { Blas_left = 0,
+                         Blas_right = 1 } BLAS_SIDE;
+
+typedef enum BLAS_ALPHA { Blas_add = 1,
+                          Blas_substract = -1 } BLAS_ALPHA;
+
+using cublas_executor = hpx::cuda::experimental::cublas_executor;
 
 // =============================================================================
 // BLAS operations on GPU with cuBLAS (and cuSOLVER)
@@ -32,7 +38,7 @@ typedef enum BLAS_ALPHA { Blas_add = 1, Blas_substract = -1 } BLAS_ALPHA;
  * @return factorized, lower triangular matrix f_L
  */
 hpx::shared_future<std::vector<double>>
-potrf(cudaStream_t stream,
+potrf(cudaStream_t *stream,
       hpx::shared_future<std::vector<double>> f_A,
       const std::size_t N);
 
@@ -47,7 +53,7 @@ potrf(cudaStream_t stream,
  * @return solution matrix f_X
  */
 hpx::shared_future<std::vector<double>>
-trsm(hpx::cuda::experimental::cublas_executor& cublas,
+trsm(cublas_executor *cublas,
      hpx::shared_future<std::vector<double>> f_L,
      hpx::shared_future<std::vector<double>> f_A,
      const std::size_t N,
@@ -65,7 +71,7 @@ trsm(hpx::cuda::experimental::cublas_executor& cublas,
  * @return updated matrix f_A
  */
 hpx::shared_future<std::vector<double>>
-syrk(hpx::cuda::experimental::cublas_executor& cublas,
+syrk(cublas_executor *cublas,
      hpx::shared_future<std::vector<double>> f_A,
      hpx::shared_future<std::vector<double>> f_B,
      const std::size_t N);
@@ -85,7 +91,7 @@ syrk(hpx::cuda::experimental::cublas_executor& cublas,
  * @return updated matrix f_X
  */
 hpx::shared_future<std::vector<double>>
-gemm(hpx::cuda::experimental::cublas_executor& cublas,
+gemm(cublas_executor *cublas,
      hpx::shared_future<std::vector<double>> f_A,
      hpx::shared_future<std::vector<double>> f_B,
      hpx::shared_future<std::vector<double>> f_C,
@@ -110,7 +116,7 @@ gemm(hpx::cuda::experimental::cublas_executor& cublas,
  * @return solution vector f_x
  */
 hpx::shared_future<std::vector<double>>
-trsv(hpx::cuda::experimental::cublas_executor& cublas,
+trsv(cublas_executor *cublas,
      hpx::shared_future<std::vector<double>> f_L,
      hpx::shared_future<std::vector<double>> f_a,
      const std::size_t N,
@@ -129,7 +135,7 @@ trsv(hpx::cuda::experimental::cublas_executor& cublas,
  * @return updated vector f_b
  */
 hpx::shared_future<std::vector<double>>
-gemv(hpx::cuda::experimental::cublas_executor& cublas,
+gemv(cublas_executor *cublas,
      hpx::shared_future<std::vector<double>> f_A,
      hpx::shared_future<std::vector<double>> f_a,
      hpx::shared_future<std::vector<double>> f_b,
@@ -149,7 +155,7 @@ gemv(hpx::cuda::experimental::cublas_executor& cublas,
  * @return updated vector f_b
  */
 hpx::shared_future<std::vector<double>>
-ger(hpx::cuda::experimental::cublas_executor& cublas,
+ger(cublas_executor *cublas,
     hpx::shared_future<std::vector<double>> f_A,
     hpx::shared_future<std::vector<double>> f_x,
     hpx::shared_future<std::vector<double>> f_y,
@@ -166,7 +172,7 @@ ger(hpx::cuda::experimental::cublas_executor& cublas,
  * @return updated vector f_r
  */
 hpx::shared_future<std::vector<double>>
-dot_diag_syrk(hpx::cuda::experimental::cublas_executor& cublas,
+dot_diag_syrk(cublas_executor *cublas,
               hpx::shared_future<std::vector<double>> f_A,
               hpx::shared_future<std::vector<double>> f_r,
               const std::size_t N,
@@ -183,7 +189,7 @@ dot_diag_syrk(hpx::cuda::experimental::cublas_executor& cublas,
  * @return updated vector f_r
  */
 hpx::shared_future<std::vector<double>>
-dot_diag_gemm(hpx::cuda::experimental::cublas_executor& cublas,
+dot_diag_gemm(cublas_executor *cublas,
               hpx::shared_future<std::vector<double>> f_A,
               hpx::shared_future<std::vector<double>> f_B,
               hpx::shared_future<std::vector<double>> f_r,
@@ -201,7 +207,7 @@ dot_diag_gemm(hpx::cuda::experimental::cublas_executor& cublas,
  * @param N vector length
  * @return f_a * f_b
  */
-double dot(hpx::cuda::experimental::cublas_executor& cublas,
+double dot(cublas_executor *cublas,
            std::vector<double> a,
            std::vector<double> b,
            const std::size_t N);
@@ -229,4 +235,4 @@ inline BLAS_TRANSPOSE invert_transpose(BLAS_TRANSPOSE trans)
 
 // }}} ------------------------------------------------- end of Helper functions
 
-#endif // end of ADAPTER_CUBLAS_H
+#endif  // end of ADAPTER_CUBLAS_H

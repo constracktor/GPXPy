@@ -1,7 +1,7 @@
 #include "../include/adapter_mkl.hpp"
+
 #include "mkl_cblas.h"
 #include "mkl_lapacke.h"
-
 #include <vector>
 
 // BLAS level 3 operations ------------------------------------------------- {{{
@@ -32,9 +32,7 @@ trsm(hpx::shared_future<std::vector<double>> f_L,
     const double alpha = 1.0;
     // TRSM: in-place solve L(^T) * X = A or X * L(^T) = A where L lower
     // triangular
-    cblas_dtrsm(CblasRowMajor, static_cast<CBLAS_SIDE>(side_L), CblasLower,
-                static_cast<CBLAS_TRANSPOSE>(transpose_L), CblasNonUnit, N, M,
-                alpha, L.data(), N, A.data(), M);
+    cblas_dtrsm(CblasRowMajor, static_cast<CBLAS_SIDE>(side_L), CblasLower, static_cast<CBLAS_TRANSPOSE>(transpose_L), CblasNonUnit, N, M, alpha, L.data(), N, A.data(), M);
     // return vector
     return hpx::make_ready_future(A);
 }
@@ -50,8 +48,7 @@ syrk(hpx::shared_future<std::vector<double>> f_A,
     const double alpha = -1.0;
     const double beta = 1.0;
     // SYRK:A = A - B * B^T
-    cblas_dsyrk(CblasRowMajor, CblasLower, CblasNoTrans, N, N, alpha, B.data(),
-                N, beta, A.data(), N);
+    cblas_dsyrk(CblasRowMajor, CblasLower, CblasNoTrans, N, N, alpha, B.data(), N, beta, A.data(), N);
     // return updated matrix A
     return hpx::make_ready_future(A);
 }
@@ -73,9 +70,7 @@ gemm(hpx::shared_future<std::vector<double>> f_A,
     const double alpha = -1.0;
     const double beta = 1.0;
     // GEMM: C = C - A(^T) * B(^T)
-    cblas_dgemm(CblasRowMajor, static_cast<CBLAS_TRANSPOSE>(transpose_A),
-                static_cast<CBLAS_TRANSPOSE>(transpose_B), K, M, N, alpha,
-                A.data(), K, B.data(), M, beta, C.data(), M);
+    cblas_dgemm(CblasRowMajor, static_cast<CBLAS_TRANSPOSE>(transpose_A), static_cast<CBLAS_TRANSPOSE>(transpose_B), K, M, N, alpha, A.data(), K, B.data(), M, beta, C.data(), M);
     // return updated matrix C
     return hpx::make_ready_future(C);
 }
@@ -93,9 +88,7 @@ trsv(hpx::shared_future<std::vector<double>> f_L,
     auto L = f_L.get();
     auto a = f_a.get();
     // TRSV: In-place solve L(^T) * x = a where L lower triangular
-    cblas_dtrsv(CblasRowMajor, CblasLower,
-                static_cast<CBLAS_TRANSPOSE>(transpose_L), CblasNonUnit, N,
-                L.data(), N, a.data(), 1);
+    cblas_dtrsv(CblasRowMajor, CblasLower, static_cast<CBLAS_TRANSPOSE>(transpose_L), CblasNonUnit, N, L.data(), N, a.data(), 1);
     // return solution vector x
     return hpx::make_ready_future(a);
 }
@@ -116,8 +109,7 @@ gemv(hpx::shared_future<std::vector<double>> f_A,
     // const double alpha = -1.0;
     const double beta = 1.0;
     // GEMV:  b{N} = b{N} - A(^T){NxM} * a{M}
-    cblas_dgemv(CblasRowMajor, static_cast<CBLAS_TRANSPOSE>(transpose_A), N, M,
-                alpha, A.data(), M, a.data(), 1, beta, b.data(), 1);
+    cblas_dgemv(CblasRowMajor, static_cast<CBLAS_TRANSPOSE>(transpose_A), N, M, alpha, A.data(), M, a.data(), 1, beta, b.data(), 1);
     // return updated vector b
     return hpx::make_ready_future(b);
 }
@@ -134,8 +126,7 @@ ger(hpx::shared_future<std::vector<double>> f_A,
     // GER constants
     const double alpha = -1.0;
     // GER:  A = A - x*y^T
-    cblas_dger(CblasRowMajor, N, N, alpha, x.data(), 1, y.data(), 1, A.data(),
-               N);
+    cblas_dger(CblasRowMajor, N, N, alpha, x.data(), 1, y.data(), 1, A.data(), N);
     // return updated A
     return hpx::make_ready_future(A);
 }
@@ -149,7 +140,8 @@ dot_diag_syrk(hpx::shared_future<std::vector<double>> f_A,
     auto A = f_A.get();
     auto r = f_r.get();
     // r = r + diag(A^T * A)
-    for (int j = 0; j < M; ++j) {
+    for (int j = 0; j < M; ++j)
+    {
         // Extract the j-th column and compute the dot product with itself
         r[j] += cblas_ddot(N, &A[j], M, &A[j], M);
     }
@@ -167,7 +159,8 @@ dot_diag_gemm(hpx::shared_future<std::vector<double>> f_A,
     auto B = f_B.get();
     auto r = f_r.get();
     // r = r + diag(A * B)
-    for (std::size_t i = 0; i < N; ++i) {
+    for (std::size_t i = 0; i < N; ++i)
+    {
         r[i] += cblas_ddot(M, &A[i * M], 1, &B[i], N);
     }
     return hpx::make_ready_future(r);

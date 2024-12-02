@@ -1,9 +1,10 @@
-#include "../include/gp_algorithms_cpu.hpp"
+#include "../include/gp_algorithms_gpu.hpp"
 
-#include "../include/tiled_algorithms_cpu.hpp"
-#include <hpx/future.hpp>
+#include "../include/gp_kernels.hpp"
+#include "../include/target.hpp"
+#include "../include/tiled_algorithms_gpu.hpp"
 
-namespace cpu
+namespace gpu
 {
 
 double compute_covariance_function(std::size_t i_global,
@@ -230,7 +231,8 @@ predict(const std::vector<double> &training_input,
         int m_tiles,
         int m_tile_size,
         int n_regressors,
-        gpxpy_hyper::SEKParams sek_params)
+        gpxpy_hyper::SEKParams sek_params,
+        gpxpy::Target &target)
 {
     // declare tiled future data structures
     std::vector<hpx::shared_future<std::vector<double>>> K_tiles;
@@ -296,14 +298,14 @@ predict(const std::vector<double> &training_input,
     }
 
     // Compute Cholesky decomposition
-    right_looking_cholesky_tiled(K_tiles, n_tile_size, n_tiles);
+    right_looking_cholesky_tiled(target.cublas_executors, K_tiles, n_tile_size, n_tiles);
 
     // Triangular solve K_NxN * alpha = y
-    forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
-    backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
+    forward_solve_tiled(target.cublas_executors, K_tiles, alpha_tiles, n_tile_size, n_tiles);
+    backward_solve_tiled(target.cublas_executors, K_tiles, alpha_tiles, n_tile_size, n_tiles);
 
     // Compute predictions
-    prediction_tiled(cross_covariance_tiles, alpha_tiles, prediction_tiles, m_tile_size, n_tile_size, n_tiles, m_tiles);
+    prediction_tiled(target.cublas_executors, cross_covariance_tiles, alpha_tiles, prediction_tiles, m_tile_size, n_tile_size, n_tiles, m_tiles);
 
     // Get predictions and uncertainty to return them
     std::vector<double> pred;
@@ -319,7 +321,7 @@ predict(const std::vector<double> &training_input,
 }
 
 hpx::shared_future<std::vector<std::vector<double>>>
-predict_with_uncertainty(const std::vector<double> &training_input, const std::vector<double> &training_output, const std::vector<double> &test_input, int n_tiles, int n_tile_size, int m_tiles, int m_tile_size, int n_regressors, gpxpy_hyper::SEKParams sek_params)
+predict_with_uncertainty(const std::vector<double> &training_input, const std::vector<double> &training_output, const std::vector<double> &test_input, int n_tiles, int n_tile_size, int m_tiles, int m_tile_size, int n_regressors, gpxpy_hyper::SEKParams sek_params, gpxpy::Target &target)
 {
     // declare tiled future data structures
     std::vector<hpx::shared_future<std::vector<double>>> K_tiles;
@@ -429,24 +431,24 @@ predict_with_uncertainty(const std::vector<double> &training_input, const std::v
 
     //////////////////////////////////////////////////////////////////////////////
     //// Compute Cholesky decomposition
-    right_looking_cholesky_tiled(K_tiles, n_tile_size, n_tiles);
+    right_looking_cholesky_tiled(target.cublas_executors, K_tiles, n_tile_size, n_tiles);
     //// Triangular solve K_NxN * alpha = y
-    forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
-    backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
+    forward_solve_tiled(target.cublas_executors, K_tiles, alpha_tiles, n_tile_size, n_tiles);
+    backward_solve_tiled(target.cublas_executors, K_tiles, alpha_tiles, n_tile_size, n_tiles);
 
     //// Triangular solve A_M,N * K_NxN = K_MxN -> A_MxN = K_MxN * K^-1_NxN
-    forward_solve_KcK_tiled(K_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
+    forward_solve_KcK_tiled(target.cublas_executors, K_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
     // backward_solve_KK_tiled(K_tiles, cross_covariance_tiles, n_tile_size,
     // m_tile_size, n_tiles, m_tiles);
 
     //////////////////////////////////////////////////////////////////////////////
     //// Compute predictions
-    prediction_tiled(cross_covariance_tiles, alpha_tiles, prediction_tiles, m_tile_size, n_tile_size, n_tiles, m_tiles);
+    prediction_tiled(target.cublas_executors, cross_covariance_tiles, alpha_tiles, prediction_tiles, m_tile_size, n_tile_size, n_tiles, m_tiles);
     // posterior covariance matrix - (K_MxN * K^-1_NxN) * K_NxM
-    posterior_covariance_tiled(t_cross_covariance_tiles, prior_inter_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
+    posterior_covariance_tiled(target.cublas_executors, t_cross_covariance_tiles, prior_inter_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
 
     //// Compute predicition uncertainty
-    prediction_uncertainty_tiled(prior_K_tiles, prior_inter_tiles, prediction_uncertainty_tiles, m_tile_size, m_tiles);
+    prediction_uncertainty_tiled(target.cublas_executors, prior_K_tiles, prior_inter_tiles, prediction_uncertainty_tiles, m_tile_size, m_tiles);
 
     //// Get predictions and uncertainty to return them
     std::vector<double> pred_full;
@@ -479,7 +481,8 @@ predict_with_full_cov(const std::vector<double> &training_input,
                       int m_tiles,
                       int m_tile_size,
                       int n_regressors,
-                      gpxpy_hyper::SEKParams sek_params)
+                      gpxpy_hyper::SEKParams sek_params,
+                      gpxpy::Target &target)
 {
     double hyperparameters[3];
 
@@ -595,21 +598,21 @@ predict_with_full_cov(const std::vector<double> &training_input,
     }
     //////////////////////////////////////////////////////////////////////////////
     //// Compute Cholesky decomposition
-    right_looking_cholesky_tiled(K_tiles, n_tile_size, n_tiles);
+    right_looking_cholesky_tiled(target.cublas_executors, K_tiles, n_tile_size, n_tiles);
     //// Triangular solve K_NxN * alpha = y
-    forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
-    backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
+    forward_solve_tiled(target.cublas_executors, K_tiles, alpha_tiles, n_tile_size, n_tiles);
+    backward_solve_tiled(target.cublas_executors, K_tiles, alpha_tiles, n_tile_size, n_tiles);
 
     //// Triangular solve A_M,N * K_NxN = K_MxN -> A_MxN = K_MxN * K^-1_NxN
-    forward_solve_KcK_tiled(K_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
+    forward_solve_KcK_tiled(target.cublas_executors, K_tiles, t_cross_covariance_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
 
     //////////////////////////////////////////////////////////////////////////////
     //// Compute predictions
-    prediction_tiled(cross_covariance_tiles, alpha_tiles, prediction_tiles, m_tile_size, n_tile_size, n_tiles, m_tiles);
+    prediction_tiled(target.cublas_executors, cross_covariance_tiles, alpha_tiles, prediction_tiles, m_tile_size, n_tile_size, n_tiles, m_tiles);
     // posterior covariance matrix K_MxM - (K_MxN * K^-1_NxN) * K_NxM
-    full_cov_tiled(t_cross_covariance_tiles, prior_K_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
+    full_cov_tiled(target.cublas_executors, t_cross_covariance_tiles, prior_K_tiles, n_tile_size, m_tile_size, n_tiles, m_tiles);
     //// Compute predicition uncertainty
-    pred_uncer_tiled(prior_K_tiles, prediction_uncertainty_tiles, m_tile_size, m_tiles);
+    pred_uncer_tiled(target.cublas_executors, prior_K_tiles, prediction_uncertainty_tiles, m_tile_size, m_tiles);
 
     //// Get predictions and uncertainty to return them
     std::vector<double> pred;
@@ -639,7 +642,8 @@ compute_loss(const std::vector<double> &training_input,
              int n_tiles,
              int n_tile_size,
              int n_regressors,
-             gpxpy_hyper::SEKParams sek_params)
+             gpxpy_hyper::SEKParams sek_params,
+             gpxpy::Target &target)
 {
     // declare data structures
     // tiled future data structures
@@ -684,12 +688,12 @@ compute_loss(const std::vector<double> &training_input,
 
     //////////////////////////////////////////////////////////////////////////////
     // Cholesky decomposition
-    right_looking_cholesky_tiled(K_tiles, n_tile_size, n_tiles);
+    right_looking_cholesky_tiled(target.cublas_executors, K_tiles, n_tile_size, n_tiles);
     // Triangular solve K_NxN * alpha = y
-    forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
-    backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
+    forward_solve_tiled(target.cublas_executors, K_tiles, alpha_tiles, n_tile_size, n_tiles);
+    backward_solve_tiled(target.cublas_executors, K_tiles, alpha_tiles, n_tile_size, n_tiles);
     // Compute loss
-    compute_loss_tiled(K_tiles, alpha_tiles, y_tiles, loss_value, n_tile_size, n_tiles);
+    compute_loss_tiled(target.cublas_executors, K_tiles, alpha_tiles, y_tiles, loss_value, n_tile_size, n_tiles);
     // Return loss
     return loss_value;
 }
@@ -702,7 +706,8 @@ optimize(const std::vector<double> &training_input,
          int n_regressors,
          gpxpy_hyper::SEKParams &sek_params,
          std::vector<bool> trainable_params,
-         const gpxpy_hyper::AdamParams &adam_params)
+         const gpxpy_hyper::AdamParams &adam_params,
+         gpxpy::Target &target)
 {
     // declaretiled future data structures
     std::vector<hpx::shared_future<std::vector<double>>> K_tiles;
@@ -869,10 +874,10 @@ optimize(const std::vector<double> &training_input,
 
         //////////////////////////////////////////////////////////////////////////////
         // Cholesky decomposition
-        right_looking_cholesky_tiled(K_tiles, n_tile_size, n_tiles);
+        right_looking_cholesky_tiled(target.cublas_executors, K_tiles, n_tile_size, n_tiles);
         // Compute K^-1 through L*L^T*X = I
-        forward_solve_tiled_matrix(K_tiles, grad_I_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
-        backward_solve_tiled_matrix(K_tiles, grad_I_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
+        forward_solve_tiled_matrix(target.cublas_executors, K_tiles, grad_I_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
+        backward_solve_tiled_matrix(target.cublas_executors, K_tiles, grad_I_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
 
         // Triangular solve K_NxN * alpha = y
         // forward_solve_tiled(grad_I_tiles, alpha_tiles, n_tile_size,
@@ -880,10 +885,10 @@ optimize(const std::vector<double> &training_input,
         // n_tile_size, n_tiles);
 
         // inv(K)*y
-        compute_gemm_of_invK_y(grad_I_tiles, y_tiles, alpha_tiles, n_tile_size, n_tiles);
+        compute_gemm_of_invK_y(target.cublas_executors, grad_I_tiles, y_tiles, alpha_tiles, n_tile_size, n_tiles);
 
         // Compute loss
-        compute_loss_tiled(K_tiles, alpha_tiles, y_tiles, loss_value, n_tile_size, n_tiles);
+        compute_loss_tiled(target.cublas_executors, K_tiles, alpha_tiles, y_tiles, loss_value, n_tile_size, n_tiles);
         losses[iter] = loss_value.get();
 
         // Compute I-y*y^T*inv(K) -> NxN matrix
@@ -925,7 +930,8 @@ optimize_step(const std::vector<double> &training_input,
               int iter,
               gpxpy_hyper::SEKParams &sek_params,
               std::vector<bool> trainable_params,
-              gpxpy_hyper::AdamParams &adam_params)
+              gpxpy_hyper::AdamParams &adam_params,
+              gpxpy::Target &target)
 {
     // declare tiled future data structures
     std::vector<hpx::shared_future<std::vector<double>>> K_tiles;
@@ -1060,18 +1066,18 @@ optimize_step(const std::vector<double> &training_input,
     }
 
     // Cholesky decomposition
-    right_looking_cholesky_tiled(K_tiles, n_tile_size, n_tiles);
+    right_looking_cholesky_tiled(target.cublas_executors, K_tiles, n_tile_size, n_tiles);
 
     // Triangular solve K_NxN * alpha = y
-    forward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
-    backward_solve_tiled(K_tiles, alpha_tiles, n_tile_size, n_tiles);
+    forward_solve_tiled(target.cublas_executors, K_tiles, alpha_tiles, n_tile_size, n_tiles);
+    backward_solve_tiled(target.cublas_executors, K_tiles, alpha_tiles, n_tile_size, n_tiles);
 
     // Compute K^-1 through L*L^T*X = I
-    forward_solve_tiled_matrix(K_tiles, grad_I_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
-    backward_solve_tiled_matrix(K_tiles, grad_I_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
+    forward_solve_tiled_matrix(target.cublas_executors, K_tiles, grad_I_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
+    backward_solve_tiled_matrix(target.cublas_executors, K_tiles, grad_I_tiles, n_tile_size, n_tile_size, n_tiles, n_tiles);
 
     // Compute loss
-    compute_loss_tiled(K_tiles, alpha_tiles, y_tiles, loss_value, n_tile_size, n_tiles);
+    compute_loss_tiled(target.cublas_executors, K_tiles, alpha_tiles, y_tiles, loss_value, n_tile_size, n_tiles);
 
     // // Fill I-y*y^T*inv(K)
     // update_grad_K_tiled(grad_K_tiles, y_tiles, alpha_tiles, n_tile_size,
@@ -1115,7 +1121,8 @@ cholesky(const std::vector<double> &training_input,
          int n_tiles,
          int n_tile_size,
          int n_regressors,
-         gpxpy_hyper::SEKParams sek_params)
+         gpxpy_hyper::SEKParams sek_params,
+         gpxpy::Target &target)
 {
     // Tiled future data structure is matrix represented as vector of tiles.
     // Tiles are represented as vector, each wrapped in a shared_future.
@@ -1140,7 +1147,7 @@ cholesky(const std::vector<double> &training_input,
     }
 
     // Calculate Cholesky decomposition
-    right_looking_cholesky_tiled(K_tiles, n_tile_size, n_tiles);
+    right_looking_cholesky_tiled(target.cublas_executors, K_tiles, n_tile_size, n_tiles);
 
     // Get & return predictions and uncertainty
     std::vector<std::vector<double>> result(n_tiles * n_tiles);
@@ -1155,4 +1162,4 @@ cholesky(const std::vector<double> &training_input,
                       { return result; });
 }
 
-}  // end of namespace cpu
+}  // end of namespace gpu

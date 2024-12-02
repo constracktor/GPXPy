@@ -9,11 +9,15 @@ typedef enum BLAS_TRANSPOSE {
     Blas_no_trans = 111,
     Blas_trans = 112
 } BLAS_TRANSPOSE;
-typedef enum BLAS_SIDE { Blas_left = 141, Blas_right = 142 } BLAS_SIDE;
+
+typedef enum BLAS_SIDE { Blas_left = 141,
+                         Blas_right = 142 } BLAS_SIDE;
+
 // typedef enum BLAS_UPLO {Blas_upper=121, Blas_lower=122} BLAS_UPLO;
 // typedef enum BLAS_ORDERING {Blas_row_major=101, Blas_col_major=102}
 // BLAS_ORDERING;
-typedef enum BLAS_ALPHA { Blas_add = 1, Blas_substract = -1 } BLAS_ALPHA;
+typedef enum BLAS_ALPHA { Blas_add = 1,
+                          Blas_substract = -1 } BLAS_ALPHA;
 
 // =============================================================================
 // BLAS operations on CPU with MKL
@@ -193,4 +197,4 @@ double dot(std::vector<double> a, std::vector<double> b, const std::size_t N);
 
 // }}} ------------------------------------------ end of BLAS level 1 operations
 
-#endif // end of ADAPTER_MKL_H
+#endif  // end of ADAPTER_MKL_H

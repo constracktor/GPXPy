@@ -46,7 +46,7 @@ $CMAKE_COMMAND ../core \
     -DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCH} \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
     ${MKL_CONFIG} \
-    "$@" # e.g. -DGPXPY_WITH_CUBLAS=ON
+    "$@" # e.g. -DGPXPY_WITH_CUDA=ON
 
 # Build project
 make -j all
