@@ -9,7 +9,7 @@ spack env activate gpxpy_cpu_gcc
 module load gcc/13.2.0
 spack compiler find
 # find external packages
-spack external find
+#spack external find
 spack external find python
 spack external find ninja
 # setup environment
