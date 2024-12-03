@@ -30,6 +30,8 @@ class Target
 
     std::vector<hpx::cuda::experimental::cublas_executor> cublas_executors;
 
+    Target(std::string type, int id, int n_executors);
+
     /**
      * @brief Lists available GPUs with their properties.
      */

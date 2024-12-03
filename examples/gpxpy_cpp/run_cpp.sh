@@ -29,10 +29,7 @@ export CUDA_ARCH=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader | \
 
 # }}} ----------------------------------------------------- end of Configuration
 
-# Compilation ------------------------------------------------------------------
-
-# Goto project directory
-cd test_cpp
+# Compilation -------------------------------------------------------------- {{{
 
 # Reset build directory
 rm -rf build && mkdir build && cd build
@@ -52,10 +49,10 @@ $CMAKE_COMMAND .. \
 # Build project
 make -j VERBOSE=1 all
 
-# ----------------------------------------------------------- end of Compilation
+# }}} ------------------------------------------------------- end of Compilation
 
-# Running test code ------------------------------------------------------------
+# Running test code -------------------------------------------------------- {{{
 
-../test_cpp
+./gpxpy_cpp
 
-# ----------------------------------------------------- end of Running test code
+# }}} ------------------------------------------------- end of Running test code

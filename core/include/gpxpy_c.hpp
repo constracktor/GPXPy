@@ -76,9 +76,9 @@ class GP
     std::vector<bool> trainable_params;
 
     /**
-     * @brief Device handle pointing to the device used for computation.
+     * @brief Target handle pointing to the unit used for computation.
      */
-    Target device;
+    Target target;
 
     /**
      * @brief Constructs a Gaussian Process (GP)
@@ -129,7 +129,7 @@ class GP
        double noise_variance,
        int n_regressors,
        std::vector<bool> trainable_bool,
-       Target device);
+       Target target);
 
     /**
      * Returns Gaussian process attributes as string.

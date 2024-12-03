@@ -191,11 +191,9 @@ cython_debug/
 
 # Datafiles
 build_*/
-output.csv
-**/test_cpp/install_cpp/
-**/test_cpp/test_cpp
-**/test_cpp/output.csv
-**/test_gpxpy/output.csv
+**/install_cpp/
+**/test_cpp
+**/output.csv
 /.vscode
 
 # Editor related files

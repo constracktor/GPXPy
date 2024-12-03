@@ -1,21 +1,19 @@
-#include "../core/include/gp_functions.hpp"
+#include "../core/include/gp_optimizer.hpp"
 #include "../core/include/gpxpy_c.hpp"
+#include "../core/include/target.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
 namespace py = pybind11;
 
 /**
- * @brief Adds classes `GP_data`, `Hyperparameters`, `GP` to Python module.
+ * @brief Adds classes `GP_data`, `AdamParams`, `GP` to Python module.
  */
-void init_gpxpy(py::module& m)
+void init_gpxpy(py::module &m)
 {
     // set training data with `GP_data` class
-    py::class_<gpxpy::GP_data>(
-        m, "GP_data", "Class representing Gaussian Process data.")
-        .def(py::init<std::string, int>(),
-             py::arg("file_path"),
-             py::arg("n_samples"),
+    py::class_<gpxpy::GP_data>(m, "GP_data", "Class representing Gaussian Process data.")
+        .def(py::init<std::string, int>(), py::arg("file_path"), py::arg("n_samples"),
              R"pbdoc(
              Loads data for Gaussian Process from file.
 
@@ -23,42 +21,51 @@ void init_gpxpy(py::module& m)
                  file_path (str): Path to the file containing the GP data.
                  n_samples (int): Number of samples in the GP data.
              )pbdoc")
-        .def_readonly("n_samples",
-                      &gpxpy::GP_data::n_samples,
-                      "Number of samples in the GP data")
-        .def_readonly(
-            "file_path", &gpxpy::GP_data::file_path, "File path to the GP data")
-        .def_readonly(
-            "data", &gpxpy::GP_data::data, "Data in the GP data file");
+        .def_readonly("n_samples", &gpxpy::GP_data::n_samples, "Number of samples in the GP data")
+        .def_readonly("file_path", &gpxpy::GP_data::file_path, "File path to the GP data")
+        .def_readonly("data", &gpxpy::GP_data::data, "Data in the GP data file");
 
-    // Set hyperparameters to default values in `Hyperparameters` class, unless
+    // Set hyperparameters to default values in `AdamParams` class, unless
     // specified. Python object has full access to each hyperparameter and a
     // string representation `__repr__`.
-    py::class_<gpxpy_hyper::Hyperparameters>(m, "Hyperparameters")
-        .def(py::init<double,
-                      double,
-                      double,
-                      double,
-                      int,
-                      std::vector<double>,
-                      std::vector<double>>(),
+    py::class_<gpxpy_hyper::AdamParams>(m, "AdamParams")
+        .def(py::init<double, double, double, double, int, std::vector<double>, std::vector<double>>(),
              py::arg("learning_rate") = 0.001,
              py::arg("beta1") = 0.9,
              py::arg("beta2") = 0.999,
              py::arg("epsilon") = 1e-8,
              py::arg("opt_iter") = 0,
-             py::arg("m_T") = std::vector<double>{0.0, 0.0, 0.0},
-             py::arg("v_T") = std::vector<double>{0.0, 0.0, 0.0})
+             py::arg("m_T") = std::vector<double>{ 0.0, 0.0, 0.0 },
+             py::arg("v_T") = std::vector<double>{ 0.0, 0.0, 0.0 })
         .def_readwrite("learning_rate",
-                       &gpxpy_hyper::Hyperparameters::learning_rate)
-        .def_readwrite("beta1", &gpxpy_hyper::Hyperparameters::beta1)
-        .def_readwrite("beta2", &gpxpy_hyper::Hyperparameters::beta2)
-        .def_readwrite("epsilon", &gpxpy_hyper::Hyperparameters::epsilon)
-        .def_readwrite("opt_iter", &gpxpy_hyper::Hyperparameters::opt_iter)
-        .def_readwrite("m_T", &gpxpy_hyper::Hyperparameters::M_T)
-        .def_readwrite("v_T", &gpxpy_hyper::Hyperparameters::V_T)
-        .def("__repr__", &gpxpy_hyper::Hyperparameters::repr);
-    ;
+                       &gpxpy_hyper::AdamParams::learning_rate)
+        .def_readwrite("beta1", &gpxpy_hyper::AdamParams::beta1)
+        .def_readwrite("beta2", &gpxpy_hyper::AdamParams::beta2)
+        .def_readwrite("epsilon", &gpxpy_hyper::AdamParams::epsilon)
+        .def_readwrite("opt_iter", &gpxpy_hyper::AdamParams::opt_iter)
+        .def_readwrite("m_T", &gpxpy_hyper::AdamParams::M_T)
+        .def_readwrite("v_T", &gpxpy_hyper::AdamParams::V_T)
+        .def("__repr__", &gpxpy_hyper::AdamParams::repr);
+
+    // handle for target used for computation as `Target` class
+    py::class_<gpxpy::Target>(
+        m, "Target", "Class representing handle to target (CPU or GPU).")
+        .def(py::init<std::string, int, int>(),
+             py::arg("type"),
+             py::arg("id") = 0,
+             py::arg("n_executors") = 1,
+             R"pbdoc(
+Creates a handle to target (CPU or GPU) for computation.
+
+Parameters:
+    type (str): Type of target: "cpu" or "gpu".
+    id (int): ID of target. For CPU, ID is 0. For GPU, ID is 0, 1, 2, ...
+    n_executors (int): Number of executors on target: 1 for CPU, n for GPU.
+             )pbdoc")
+        .def_readonly("id", &gpxpy::Target::id, "id of target: 0 for CPU, 0, 1, 2, ... for GPU")
+        .def_readonly("n_executors", &gpxpy::Target::id, "Number of executors on target: 1 for CPU, n for GPU")
+        .def("is_cpu", &gpxpy::Target::is_cpu, "Returns True if target is CPU.")
+        .def("is_gpu", &gpxpy::Target::is_gpu, "Returns True if target is GPU.");
 
     // Initializes Gaussian Process with `GP` class. Sets default parameters for
     // squared exponential kernel, number of regressors and trainable, unless
@@ -68,15 +75,7 @@ void init_gpxpy(py::module& m)
     // GPU support is disabled by default and may only be enabled on
     // initialization.
     py::class_<gpxpy::GP>(m, "GP")
-        .def(py::init<std::vector<double>,
-                      std::vector<double>,
-                      int,
-                      int,
-                      double,
-                      double,
-                      double,
-                      int,
-                      std::vector<bool>>(),
+        .def(py::init<std::vector<double>, std::vector<double>, int, int, double, double, double, int, std::vector<bool>, gpxpy::Target>(),
              py::arg("input_data"),
              py::arg("output_data"),
              py::arg("n_tiles"),
@@ -85,16 +84,10 @@ void init_gpxpy(py::module& m)
              py::arg("v_lengthscale") = 1.0,
              py::arg("noise_var") = 0.1,
              py::arg("n_reg") = 100,
-             py::arg("trainable") = std::vector<bool>{true, true, true},
-             py::arg("use_gpu") = false,
+             py::arg("trainable") = std::vector<bool>{ true, true, true },
+             py::arg("target") = gpxpy::Target("cpu", 0, 1),
              R"pbdoc(
 Create Gaussian Process including its data, hyperparameters.
-
-Note: If `use_gpu` is set to `True`, the GP will be initialized
-with GPU support: data and computations are performed on the GPU.
-This requires that the gpxpy library has been compiled with
-GPXPY_WITH_CUBLAS. Otherwise the GP will be initialized with CPU
-support only.
 
 Parameters:
     input_data (list): Input data for the GP.
@@ -110,35 +103,35 @@ Parameters:
     n_reg (int): Number of regressors. Default is 100.
     trainable (list): List of booleans for trainable hyperparameters. Default is
         {true, true, true}.
-    use_gpu (bool): Use GPU for computations. Default is False.
+    target (Target): Target used for computations.
              )pbdoc")
-        .def_readwrite("lengthscale", &gpxpy::GP::lengthscale)
-        .def_readwrite("v_lengthscale", &gpxpy::GP::vertical_lengthscale)
-        .def_readwrite("noise_var", &gpxpy::GP::noise_variance)
+        .def_property(
+            "lengthscale",
+            [](const gpxpy::GP &gp)
+            { return gp.sek_params.lengthscale; },
+            [](gpxpy::GP &gp, double value)
+            { gp.sek_params.lengthscale = value; })
+        .def_property(
+            "v_lengthscale",
+            [](const gpxpy::GP &gp)
+            { return gp.sek_params.vertical_lengthscale; },
+            [](gpxpy::GP &gp, double value)
+            { gp.sek_params.vertical_lengthscale = value; })
+        .def_property(
+            "noise_variance",
+            [](const gpxpy::GP &gp)
+            { return gp.sek_params.noise_variance; },
+            [](gpxpy::GP &gp, double value)
+            { gp.sek_params.noise_variance = value; })
         .def_readwrite("n_reg", &gpxpy::GP::n_regressors)
-        .def_readonly("use_gpu", &gpxpy::GP::use_gpu)
+        .def_readonly("target", &gpxpy::GP::target)
         .def("__repr__", &gpxpy::GP::repr)
         .def("get_input_data", &gpxpy::GP::get_training_input)
         .def("get_output_data", &gpxpy::GP::get_training_output)
-        .def("predict",
-             &gpxpy::GP::predict,
-             py::arg("test_data"),
-             py::arg("m_tiles"),
-             py::arg("m_tile_size"))
-        .def("predict_with_uncertainty",
-             &gpxpy::GP::predict_with_uncertainty,
-             py::arg("test_data"),
-             py::arg("m_tiles"),
-             py::arg("m_tile_size"))
-        .def("predict_with_full_cov",
-             &gpxpy::GP::predict_with_full_cov,
-             py::arg("test_data"),
-             py::arg("m_tiles"),
-             py::arg("m_tile_size"))
+        .def("predict", &gpxpy::GP::predict, py::arg("test_data"), py::arg("m_tiles"), py::arg("m_tile_size"))
+        .def("predict_with_uncertainty", &gpxpy::GP::predict_with_uncertainty, py::arg("test_data"), py::arg("m_tiles"), py::arg("m_tile_size"))
+        .def("predict_with_full_cov", &gpxpy::GP::predict_with_full_cov, py::arg("test_data"), py::arg("m_tiles"), py::arg("m_tile_size"))
         .def("optimize", &gpxpy::GP::optimize, py::arg("hyperparams"))
-        .def("optimize_step",
-             &gpxpy::GP::optimize_step,
-             py::arg("hyperparams"),
-             py::arg("iter"))
+        .def("optimize_step", &gpxpy::GP::optimize_step, py::arg("hyperparams"), py::arg("iter"))
         .def("compute_loss", &gpxpy::GP::calculate_loss);
 }

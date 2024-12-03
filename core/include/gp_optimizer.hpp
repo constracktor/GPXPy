@@ -113,12 +113,12 @@ gen_tile_covariance_opt(std::size_t row,
 /**
  * @brief Generate a derivative tile w.r.t. vertical_lengthscale.
  */
-hpx::shared_future<std::vector<double>> gen_tile_grad_v(std::size_t row,
-                                                        std::size_t col,
-                                                        std::size_t N,
-                                                        std::size_t n_regressors,
-                                                        gpxpy_hyper::SEKParams sek_params,
-                                                        const std::vector<double> &cov_dists);
+std::vector<double> gen_tile_grad_v(std::size_t row,
+                                    std::size_t col,
+                                    std::size_t N,
+                                    std::size_t n_regressors,
+                                    gpxpy_hyper::SEKParams sek_params,
+                                    const std::vector<double> &cov_dists);
 
 /**
  * @brief Generate a derivative tile w.r.t. lengthscale.

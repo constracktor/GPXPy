@@ -162,7 +162,7 @@ std::vector<double> gen_tile_grad_v(std::size_t row,
                                     std::size_t col,
                                     std::size_t N,
                                     std::size_t n_regressors,
-                                    gpxpy_hyper::SEKParams &sek_params,
+                                    gpxpy_hyper::SEKParams sek_params,
                                     const std::vector<double> &cov_dists)
 {
     // Initialize tile

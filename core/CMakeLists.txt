@@ -68,18 +68,20 @@ add_library(gpxpy SHARED ${SOURCE_FILES})
 target_link_libraries(gpxpy PRIVATE ${HPX_LIBRARIES} MKL::MKL)
 
 # Include directories
-target_include_directories(gpxpy PRIVATE include/ ${HPX_INCLUDE_DIRS} $<TARGET_PROPERTY:MKL::MKL,INTERFACE_INCLUDE_DIRECTORIES>)
+target_include_directories(
+  gpxpy PRIVATE include/ ${HPX_INCLUDE_DIRS}
+                $<TARGET_PROPERTY:MKL::MKL,INTERFACE_INCLUDE_DIRECTORIES>)
 
 # Set the RPATH to include the MKL library paths
-set_target_properties(gpxpy PROPERTIES
-    INSTALL_RPATH "${MKL_LIBRARIES}"
-    BUILD_WITH_INSTALL_RPATH ON
-)
+set_target_properties(gpxpy PROPERTIES INSTALL_RPATH "${MKL_LIBRARIES}"
+                                       BUILD_WITH_INSTALL_RPATH ON)
 
 # Set default installation prefix if not specified by user
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    get_filename_component(PARENT_DIR "${CMAKE_CURRENT_LIST_DIR}" DIRECTORY)
-    set(CMAKE_INSTALL_PREFIX "${PARENT_DIR}/test_cpp/install_cpp" CACHE PATH "Installation Directory" FORCE)
+  get_filename_component(PARENT_DIR "${CMAKE_CURRENT_LIST_DIR}" DIRECTORY)
+  set(CMAKE_INSTALL_PREFIX
+      "${PARENT_DIR}/examples/gpxpy_cpp/install_cpp"
+      CACHE PATH "Installation Directory" FORCE)
 endif()
 
 # Install

@@ -28,30 +28,12 @@ GP::GP(std::vector<double> input,
        std::vector<double> output,
        int n_tiles,
        int n_tile_size,
-       gpxpy_hyper::SEKParams sek_params,
-       int n_r,
-       std::vector<bool> trainable_bool,
-       Target device) :
-    _training_input(input),
-    _training_output(output),
-    _n_tiles(n_tiles),
-    _n_tile_size(n_tile_size),
-    sek_params(sek_params),
-    n_regressors(n_r),
-    trainable_params(trainable_bool),
-    device(device)
-{ }
-
-GP::GP(std::vector<double> input,
-       std::vector<double> output,
-       int n_tiles,
-       int n_tile_size,
        double lengthscale,
        double vertical_lengthscale,
        double noise_variance,
        int n_r,
        std::vector<bool> trainable_bool,
-       Target device) :
+       Target target) :
     _training_input(input),
     _training_output(output),
     _n_tiles(n_tiles),
@@ -59,7 +41,7 @@ GP::GP(std::vector<double> input,
     sek_params(lengthscale, vertical_lengthscale, noise_variance),
     n_regressors(n_r),
     trainable_params(trainable_bool),
-    device(device)
+    target(target)
 { }
 
 std::string GP::repr() const
@@ -93,7 +75,7 @@ std::vector<double> GP::predict(const std::vector<double> &test_data,
     std::vector<double> result;
     hpx::run_as_hpx_thread([this, &result, &test_data, m_tiles, m_tile_size]()
                            { result =
-                                 predict_on_target(_training_input, _training_output, test_data, _n_tiles, _n_tile_size, m_tiles, m_tile_size, n_regressors, sek_params, device)
+                                 predict_on_target(_training_input, _training_output, test_data, _n_tiles, _n_tile_size, m_tiles, m_tile_size, n_regressors, sek_params, target)
                                      .get(); });
     return result;
 }
@@ -106,7 +88,7 @@ std::vector<std::vector<double>> GP::predict_with_uncertainty(
         [this, &result, &test_input, m_tiles, m_tile_size]()
         {
             result = predict_with_uncertainty_on_target(
-                         _training_input, _training_output, test_input, _n_tiles, _n_tile_size, m_tiles, m_tile_size, n_regressors, sek_params, device)
+                         _training_input, _training_output, test_input, _n_tiles, _n_tile_size, m_tiles, m_tile_size, n_regressors, sek_params, target)
                          .get();
         });
     return result;
@@ -120,7 +102,7 @@ std::vector<std::vector<double>> GP::predict_with_full_cov(
         [this, &result, &test_input, m_tiles, m_tile_size]()
         {
             result = predict_with_full_cov_on_target(
-                         _training_input, _training_output, test_input, _n_tiles, _n_tile_size, m_tiles, m_tile_size, n_regressors, sek_params, device)
+                         _training_input, _training_output, test_input, _n_tiles, _n_tile_size, m_tiles, m_tile_size, n_regressors, sek_params, target)
                          .get();
         });
     return result;
@@ -132,7 +114,7 @@ GP::optimize(const gpxpy_hyper::AdamParams &adam_hyperparams)
     std::vector<double> losses;
     hpx::run_as_hpx_thread([this, &losses, &adam_hyperparams]()
                            { losses =
-                                 optimize_on_target(_training_input, _training_output, _n_tiles, _n_tile_size, n_regressors, sek_params, trainable_params, adam_hyperparams, device)
+                                 optimize_on_target(_training_input, _training_output, _n_tiles, _n_tile_size, n_regressors, sek_params, trainable_params, adam_hyperparams, target)
                                      .get(); });
     return losses;
 }
@@ -141,7 +123,7 @@ double GP::optimize_step(gpxpy_hyper::AdamParams &adam_params, int iter)
 {
     double loss;
     hpx::run_as_hpx_thread([this, &loss, &adam_params, iter]()
-                           { loss = optimize_step_on_target(_training_input, _training_output, _n_tiles, _n_tile_size, n_regressors, iter, sek_params, trainable_params, adam_params, device)
+                           { loss = optimize_step_on_target(_training_input, _training_output, _n_tiles, _n_tile_size, n_regressors, iter, sek_params, trainable_params, adam_params, target)
                                         .get(); });
     return loss;
 }
@@ -150,7 +132,7 @@ double GP::calculate_loss()
 {
     double loss;
     hpx::run_as_hpx_thread([this, &loss]()
-                           { loss = compute_loss_on_target(_training_input, _training_output, _n_tiles, _n_tile_size, n_regressors, sek_params, device)
+                           { loss = compute_loss_on_target(_training_input, _training_output, _n_tiles, _n_tile_size, n_regressors, sek_params, target)
                                         .get(); });
     return loss;
 }
@@ -160,7 +142,7 @@ std::vector<std::vector<double>> GP::cholesky()
     std::vector<std::vector<double>> result;
     hpx::run_as_hpx_thread([this, &result]()
                            { result =
-                                 cholesky_on_target(_training_input, _training_output, _n_tiles, _n_tile_size, n_regressors, sek_params, device)
+                                 cholesky_on_target(_training_input, _training_output, _n_tiles, _n_tile_size, n_regressors, sek_params, target)
                                      .get(); });
     return result;
 }

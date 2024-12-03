@@ -96,7 +96,6 @@ compute_loss_on_target(const std::vector<double> &training_input,
                        int n_tile_size,
                        int n_regressors,
                        gpxpy_hyper::SEKParams sek_params,
-                       gpxpy_hyper::AdamParams adam_params,
                        gpxpy::Target &target)
 {
 #ifdef GPXPY_WITH_CUDA

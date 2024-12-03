@@ -10,6 +10,40 @@
 namespace gpxpy
 {
 
+Target::Target(std::string type, int id, int n_executors) :
+    id(id),
+    n_executors(n_executors)
+{
+    // lowercase type string
+    std::transform(type.begin(), type.end(), type.begin(), [](unsigned char c)
+                   { return std::tolower(c); });
+    if (type == "cpu")
+    {
+        this->type = TargetType::CPU;
+    }
+    else if (type == "gpu")
+    {
+        this->type = TargetType::GPU;
+    }
+    else
+    {
+        throw std::runtime_error("Invalid target type.");
+    }
+#ifdef GPXPY_WITH_CUDA
+    int deviceCount;
+    cudaGetDeviceCount(&deviceCount);
+    if (this->type == TargetType::GPU && id >= deviceCount)
+    {
+        throw std::runtime_error("Requested GPU device is not available.");
+    }
+    for (int i = 0; i < n_executors; ++i)
+    {
+        cublas_executors.emplace_back(
+            id, CUBLAS_POINTER_MODE_HOST, hpx::cuda::experimental::event_mode{});
+    }
+#endif
+}
+
 Target::Target(Target::TargetType type, int id, int n_executors) :
     type(type),
     id(id),

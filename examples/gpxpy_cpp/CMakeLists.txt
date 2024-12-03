@@ -15,26 +15,25 @@ find_package(MKL CONFIG REQUIRED)
 include_directories(${HPX_INCLUDE_DIR})
 include_directories(${MKL_INCLUDE_DIRS})
 
-# Determine the path to the include directory relative to the current CMakeLists.txt file
-get_filename_component(DIR_ONE_ABOVE ../../ ABSOLUTE)
-message(STATUS "Current list directory: ${DIR_ONE_ABOVE}")
-get_filename_component(INCLUDE_DIR "${DIR_ONE_ABOVE}/test_cpp/install_cpp/include" ABSOLUTE)
+# Determine the path to the include directory
+get_filename_component(DIR_ONE_ABOVE "install_cpp/include" ABSOLUTE)
 # Add the include directory
 include_directories(${INCLUDE_DIR})
 
 # Set the output directory for executables
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-# Determine the path to the library directory relative to the current CMakeLists.txt file
-get_filename_component(LIB_DIR "${DIR_ONE_ABOVE}/gpxpy_library/test_cpp/install_cpp/lib" ABSOLUTE)
+# Determine the path to the library directory relative to the current
+# CMakeLists.txt file
+get_filename_component(LIB_DIR "install_cpp/lib" ABSOLUTE)
 # Find the Gaussian Process library
 find_library(GPXPY_LIB gpxpy HINTS ${LIB_DIR} REQUIRED)
 message(STATUS "GPXPy library found: ${GPXPY_LIB}")
 
 # Add the executable
-add_executable(test_cpp src/execute.cpp)
+add_executable(gpxpy_cpp src/execute.cpp)
 # Link the libraries
-target_link_libraries(test_cpp PUBLIC
+target_link_libraries(gpxpy_cpp PUBLIC
                       "${GPXPY_LIB}"
                       HPX::hpx
                       HPX::wrap_main
