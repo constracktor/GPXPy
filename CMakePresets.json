@@ -24,7 +24,6 @@
     {
       "name": "dev-mode",
       "hidden": true,
-      "inherits": "cmake-pedantic",
       "cacheVariables": {
         "GPXPy_DEVELOPER_MODE": "ON"
       }
