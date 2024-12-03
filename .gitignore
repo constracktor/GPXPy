@@ -9,6 +9,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+build_*/
 develop-eggs/
 dist/
 downloads/
@@ -190,13 +191,8 @@ cython_debug/
 *.app
 
 # Datafiles
-*/build
-*/build_*/
-*/output.csv
-/gpxpy_library/test_cpp/install_cpp/
-/gpxpy_library/test_cpp/test_cpp
-/gpxpy_library/test_cpp/output.csv
-/gpxpy_library/test_gpxpy/output.csv
+examples/*/output.csv
+examples/gpxpy_cpp/install_cpp/
 /.vscode
 
 # Editor related files
