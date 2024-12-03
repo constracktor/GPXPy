@@ -8,6 +8,7 @@ set -e  # Exit immediately if a command exits with a non-zero status.
 ################################################################################
 # Load GCC compiler
 module load gcc/13.2.0
+module load cmake
 CC_COMPILER=gcc
 CXX_COMPILER=g++
 # Activate spack environment

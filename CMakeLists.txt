@@ -69,7 +69,7 @@ if(GPXPY_BUILD_CORE)
 
   file(GLOB SOURCE_FILES "core/src/*.cpp")
   file(GLOB HEADER_FILES "core/include/*.hpp")
-  file(GLOB BINDING_FILES "bindings/*.cpp" "python_code/*.hpp")
+  file(GLOB BINDING_FILES "bindings/*.cpp")
 
   source_group("Source Files" FILES ${SOURCE_FILES})
   source_group("Header Files" FILES ${HEADER_FILES})
@@ -90,15 +90,8 @@ if(GPXPY_BUILD_CORE)
                RUNTIME_OUTPUT_DIRECTORY
                "${PARENT_BINARY_DIR}/examples/gpxpy_python/install_python")
 
-  target_link_libraries(
-    gpxpy
-    PUBLIC HPX::hpx
-           HPX::wrap_main
-           HPX::iostreams_component
-           MKL::mkl_intel_lp64
-           MKL::mkl_core
-           MKL::MKL
-           MKL::mkl_sequential)
+  target_link_libraries(gpxpy PUBLIC HPX::hpx MKL::mkl_intel_lp64 MKL::mkl_core
+                                     MKL::MKL MKL::mkl_sequential)
 
   install(
     TARGETS gpxpy

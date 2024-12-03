@@ -8,6 +8,7 @@ set -e  # Exit immediately if a command exits with a non-zero status.
 ################################################################################
 # Load GCC compiler
 module load gcc/13.2.0
+module load cmake
 CC_COMPILER=gcc
 CXX_COMPILER=g++
 # Activate spack environment
@@ -28,7 +29,7 @@ export MKL_CONFIG='-DMKL_ARCH=intel64 -DMKL_LINK=dynamic -DMKL_INTERFACE_FULL=in
 ################################################################################
 # Compile code
 ################################################################################
-rm -rf build_gpxpy && mkdir build_gpxpy && cd build_gpxpy
+rm -rf build_python && mkdir build_python && cd build_python
 # Configure the project
 $CMAKE_COMMAND .. -DCMAKE_BUILD_TYPE=Release \
                   -DPYTHON_LIBRARY_DIR=$(python3 -c "import site; print(site.getsitepackages()[0])") \
