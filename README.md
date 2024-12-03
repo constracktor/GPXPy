@@ -1,9 +1,6 @@
 # [GPXPy: Leveraging HPX for Gaussian Processes in Python]()
 
-This repository contains the source code for the GPXPy library, as well as two
-reference implementations based on TensorFlow
-([GPflow](https://github.com/GPflow/GPflow)) and PyTorch
-([GPyTorch](https://github.com/cornellius-gp/gpytorch)).
+This repository contains the source code for the GPXPy library.
 
 ## Dependencies
 
@@ -17,30 +14,39 @@ All dependencies can be installed using [Spack](https://github.com/spack/spack).
 A script to install and setup spack for `GPXPy` is provided in [`spack-repo`](spack-repo).
 Spack environment configurations and setup scripts for CPU and GPU use are provided in [`spack-repo/environments`](spack-repo/environments).
 
+## How To Compile
+
+GPXPy can be build with or without Python bindings. Respective scripts can be found in this directory.
+
 ## How To Run
+
+GPXPy contains several examples. One to run the C++ code, one to run the Python code as well as two
+reference implementations based on TensorFlow
+([GPflow](https://github.com/GPflow/GPflow)) and PyTorch
+([GPyTorch](https://github.com/cornellius-gp/gpytorch)).
 
 ### To run the GPXPy C++ code
 
-- Go to [`gpxpy_library`](gpxpy_library/)
-- Run `./compile_cpp.sh` to build the C++ library
-- Set parameters in [`test_cpp/src/execute.cpp`](gpxpy_library/test_cpp/src/execute.cpp)
-- Run `./run_cpp.sh` to build and run example
+- Go to [`examples/gpxpy_cpp`](examples/gpxpy_cpp/)
+- Set parameters in [`execute.cpp`](examples/gpxpy_cpp/src/execute.cpp)
+- Run `./run_gpxpy_cpp.sh` to build and run example
 
 ### To run GPXPy with Python
 
-- Go to [`gpxpy_library`](gpxpy_library/)
-- Run `./compile_gpxpy.sh` to build the bound Python library
-- Set parameters in [`test_gpxpy/config.json`](gpxpy_library/test_gpxpy/config.json)
-- Run `./run_gpxpy.sh` to run example
+- Go to [`examples/gpxpy_python`](examples/gpxpy_python/)
+- Set parameters in [`config.json`](examples/gpxpy_python/config.json)
+- Run `./run_gpxpy_python.sh` to run example
 
 ### To run GPflow reference
 
-- Go to [`gpflow_reference`](gpflow_reference/)
+- Go to [`examples/gpflow_reference`](examples/gpflow_reference/)
+- Set parameters in [`config.json`](examples/gpflow_reference/config.json)
 - Run `./run_gpflow.sh` to run example
 
 ### To run GPflow reference
 
-- Go to [`gpytorch_reference`](gpytorch_reference/)
+- Go to [`examples/gpytorch_reference`](examples/gpytorch_reference/)
+- Set parameters in [`config.json`](examples/gpytorch_reference/config.json)
 - Run `./run_gpytorch.sh` to run example
 
 ## The Team
@@ -60,7 +66,7 @@ We specifically thank the follow contributors:
   [Optimization, Python bindings and reference implementations](tbd.).
 
 - [Henrik Möllmann](https://www.linkedin.com/in/moellh/):
-  [Accelerator Support for GPXPy: A Task-based Gaussian Process Library in Python]().
+  [Accelerator Support for GPXPy: A Task-based Gaussian Process Library in Python](tbd.).
 
 ## How To Cite
 
