@@ -25,6 +25,19 @@ cmake_dependent_option(GPXPY_BUILD_BINDINGS "Build the Python bindings" ON
 option(GPXPY_ENABLE_FORMAT_TARGETS "Enable clang-format / cmake-format targets"
        ${PROJECT_IS_TOP_LEVEL})
 
+# Option for GPU support with CUDA/cuBLAS
+option(GPXPY_WITH_CUDA "Enable GPU support with CUDA/cuBLAS" OFF)
+# Pass variable to C++ code
+add_compile_definitions(GPXPY_WITH_CUDA=$<BOOL:${GPXPY_WITH_CUDA}>)
+
+if(NOT GPXPY_WITH_CUDA)
+    # TODO: configuration without GPU support
+else()
+    # TODO: configuration with GPU support
+    # find_package(CUDA REQUIRED)
+    # target_link_libraries(gpxpy PRIVATE CUDA::cublas)
+endif()
+
 if(GPXPY_ENABLE_FORMAT_TARGETS)
   find_package(format QUIET)
   if(NOT format_FOUND)
