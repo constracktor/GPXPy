@@ -1,11 +1,9 @@
 #!/bin/bash
-# Activate spack environment
-spack env activate gpxpy
-# create python enviroment
+# Create Python environment
 python3 -m venv gpflow_env
-# activate enviroment
+# Activate environment
 source gpflow_env/bin/activate
-# install requirements
+# Install requirements
 pip3 install gpflow
-# 
+#
 python3 execute.py
