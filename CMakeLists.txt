@@ -28,6 +28,12 @@ if(GPXPY_ENABLE_FORMAT_TARGETS)
 endif()
 
 if(GPXPY_BUILD_CORE)
+  set(MKL_INTERFACE_FULL "intel_lp64")
+  set(MKL_THREADING "sequential")
+
+  find_package(HPX REQUIRED)
+  find_package(MKL CONFIG REQUIRED)
+
   add_subdirectory(core)
   if(GPXPY_BUILD_BINDINGS)
     add_subdirectory(bindings)

@@ -1,6 +1,3 @@
-find_package(HPX REQUIRED)
-find_package(MKL CONFIG REQUIRED)
-
 add_library(
   gpxpy_core STATIC
   src/gp_optimizer.cpp
