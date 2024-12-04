@@ -1,70 +1,55 @@
 #include "../include/target.hpp"
 
-#include "../include/cuda_utils.hpp"
-
-#ifdef GPXPY_WITH_CUDA
-    #include <cuda_runtime.h>
-    #include <iostream>
-#endif
+#include <iostream>
 
 namespace gpxpy
 {
 
-Target::Target(std::string type, int id, int n_executors) :
-    id(id),
-    n_executors(n_executors)
-{
-    // lowercase type string
-    std::transform(type.begin(), type.end(), type.begin(), [](unsigned char c)
-                   { return std::tolower(c); });
-    if (type == "cpu")
-    {
-        this->type = TargetType::CPU;
-    }
-    else if (type == "gpu")
-    {
-        this->type = TargetType::GPU;
-    }
-    else
-    {
-        throw std::runtime_error("Invalid target type.");
-    }
-#ifdef GPXPY_WITH_CUDA
-    int deviceCount;
-    cudaGetDeviceCount(&deviceCount);
-    if (this->type == TargetType::GPU && id >= deviceCount)
-    {
-        throw std::runtime_error("Requested GPU device is not available.");
-    }
-    for (int i = 0; i < n_executors; ++i)
-    {
-        cublas_executors.emplace_back(
-            id, CUBLAS_POINTER_MODE_HOST, hpx::cuda::experimental::event_mode{});
-    }
-#endif
-}
+bool CPU::is_cpu() { return false; }
 
-Target::Target(Target::TargetType type, int id, int n_executors) :
-    type(type),
+bool CPU::is_gpu() { return true; }
+
+CUDA_GPU::CUDA_GPU(int id, int n_streams) :
     id(id),
-    n_executors(n_executors)
+    n_streams(n_streams)
 {
 #ifdef GPXPY_WITH_CUDA
     int deviceCount;
     cudaGetDeviceCount(&deviceCount);
-    if (type == TargetType::GPU && id >= deviceCount)
+    if (id >= deviceCount)
     {
         throw std::runtime_error("Requested GPU device is not available.");
     }
-    for (int i = 0; i < n_executors; ++i)
-    {
-        cublas_executors.emplace_back(
-            id, CUBLAS_POINTER_MODE_HOST, hpx::cuda::experimental::event_mode{});
-    }
+#else
+    throw not_compiled_with_cuda_exception();
 #endif
 }
 
-void Target::print_available_gpus()
+bool CUDA_GPU::is_cpu() { return false; }
+
+bool CUDA_GPU::is_gpu() { return true; }
+
+CPU get_cpu() { return CPU(); }
+
+CUDA_GPU get_gpu(int id, int n_executors)
+{
+#ifdef GPXPY_WITH_CUDA
+    return CUDA_GPU(id, n_executors);
+#else
+    throw not_compiled_with_cuda_exception();
+#endif
+}
+
+CUDA_GPU get_gpu()
+{
+#ifdef GPXPY_WITH_CUDA
+    return CUDA_GPU(0, 1);
+#else
+    throw not_compiled_with_cuda_exception();
+#endif
+}
+
+void print_available_gpus()
 {
 #ifdef GPXPY_WITH_CUDA
     int deviceCount;
@@ -89,41 +74,25 @@ void Target::print_available_gpus()
         // clang-format on
     }
 #else
-    std::cerr
-        << "CUDA is not available - There are no GPUs available. You only "
-           "can use `get_cpu()` to utilize the CPU for computation."
+    std::cout
+        << "CUDA is not available - There are no GPUs available. You can only "
+           "`get_cpu()` to utilize the CPU for computation."
         << std::endl;
 #endif
 }
 
-int Target::gpu_count()
+int gpu_count()
 {
 #ifdef GPXPY_WITH_CUDA
     int deviceCount;
     cudaGetDeviceCount(&deviceCount);
     return deviceCount;
 #else
-    throw not_compiled_with_cuda_exception();
-#endif
-}
-
-Target Target::get_cpu() { return Target(TargetType::CPU, 0, 1); }
-
-Target Target::get_gpu(int id, int n_executors)
-{
-#ifdef GPXPY_WITH_CUDA
-    return Target(TargetType::GPU, id, n_executors);
-#else
-    throw not_compiled_with_cuda_exception();
-#endif
-}
-
-Target Target::get_gpu()
-{
-#ifdef GPXPY_WITH_CUDA
-    return Target(TargetType::GPU, 0, 1);
-#else
-    throw not_compiled_with_cuda_exception();
+    std::cout
+        << "CUDA is not available - There are no GPUs available. You can only "
+           "`get_cpu()` to utilize the CPU for computation."
+        << std::endl;
+    return 0;
 #endif
 }
 

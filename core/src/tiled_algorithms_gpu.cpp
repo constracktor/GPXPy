@@ -9,7 +9,7 @@ namespace gpu
 
 void right_looking_cholesky_tiled(
     std::vector<cublas_executor> cublas,
-    std::vector<hpx::shared_future<std::vector<double>>> &ft_tiles,
+    std::vector<hpx::shared_future<double*>> &ft_tiles,
     std::size_t N,
     std::size_t n_tiles)
 {
@@ -23,7 +23,7 @@ void right_looking_cholesky_tiled(
 
     for (std::size_t k = 0; k < n_tiles; k++)
     {
-        // POTRF: Compute Cholesky factor L
+        /* // POTRF: Compute Cholesky factor L
         ft_tiles[k * n_tiles + k] = hpx::dataflow(
             hpx::annotated_function(&potrf, "cholesky_tiled_gpu"), &stream, ft_tiles[k * n_tiles + k], N);
 
@@ -75,7 +75,7 @@ void right_looking_cholesky_tiled(
                     Blas_no_trans,
                     Blas_trans);
             }
-        }
+        } */
     }
 }
 

@@ -73,8 +73,7 @@ void init_utils(py::module &m)
               tuple: A tuple containing the number of test tiles and the adjusted tile size.
           )pbdoc");
 
-    m.def("print", &utils::print, py::arg("vec"), py::arg("start") = 0, py::arg("end") = -1, py::arg("separator") = " ", "Print elements of a vector with optional start, end, and separator "
-                                                                                                                         "parameters");
+    m.def("print", &utils::print, py::arg("vec"), py::arg("start") = 0, py::arg("end") = -1, py::arg("separator") = " ", "Print elements of a vector with optional start, end, and separator parameters");
 
     m.def("start_hpx", &start_hpx_wrapper, py::arg("args"),
           py::arg("n_cores"));  // Using the wrapper function
@@ -84,9 +83,6 @@ void init_utils(py::module &m)
 
     m.def("compiled_with_cuda", &utils::compiled_with_cuda, "Check if the code was compiled with CUDA support");
 
-    m.def("print_available_gpus", &gpxpy::Target::print_available_gpus, "Print available GPUs with their properties");
-    m.def("gpu_count", &gpxpy::Target::gpu_count, "Return the number of available GPUs");
-    m.def("get_cpu", &gpxpy::Target::get_cpu, "Return a handle for the CPU device");
-    m.def("get_gpu", py::overload_cast<int, int>(&gpxpy::Target::get_gpu), py::arg("id"), py::arg("n_executors"), "Return a handle for the GPU device");
-    m.def("get_gpu", py::overload_cast<>(&gpxpy::Target::get_gpu), "Return a handle for the GPU device");
+    m.def("print_available_gpus", &gpxpy::print_available_gpus, "Print available GPUs with their properties");
+    m.def("gpu_count", &gpxpy::gpu_count, "Return the number of available GPUs");
 }

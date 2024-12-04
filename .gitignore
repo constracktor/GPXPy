@@ -199,3 +199,4 @@ build_*/
 # Editor related files
 ltex*
 compile_commands.json
+.clangd

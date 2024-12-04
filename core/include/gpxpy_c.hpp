@@ -4,6 +4,7 @@
 #include "../include/gp_kernels.hpp"
 #include "gp_optimizer.hpp"
 #include "target.hpp"
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -78,7 +79,7 @@ class GP
     /**
      * @brief Target handle pointing to the unit used for computation.
      */
-    Target target;
+    std::shared_ptr<Target> target;
 
     /**
      * @brief Constructs a Gaussian Process (GP)
@@ -101,24 +102,23 @@ class GP
        gpxpy_hyper::SEKParams sek_params,
        int n_regressors,
        std::vector<bool> trainable_bool,
-       Target device);
+       std::shared_ptr<Target> target);
 
     /**
-     * @brief Constructs a Gaussian Process (GP)
-     *
-     * @param input Input data for training of the GP
-     * @param output Expected output data for training of the GP
-     * @param n_tiles Number of tiles
-     * @param n_tile_size Size of each tile in each dimension
-     * @param l Lengthscale Parameter of squared exponential kernel: l
-     * @param v Vertical Lengthscale parameter of squared exponential
-     *     kernel: v
-     * @param n Noise Variance parameter of squared exponential kernel: n
-     * @param n_regressors Number of regressors
-     * @param trainable_bool Vector indicating which parameters are
-     *     trainable
-     * @param device Device handle pointing to the device used for
-     *     computation
+     * @brief TODO: documentation
+     */
+    GP(std::vector<double> input,
+       std::vector<double> output,
+       int n_tiles,
+       int n_tile_size,
+       double lengthscale,
+       double vertical_lengthscale,
+       double noise_variance,
+       int n_regressors,
+       std::vector<bool> trainable_bool);
+
+    /**
+     * @brief TODO: documentation
      */
     GP(std::vector<double> input,
        std::vector<double> output,
@@ -129,7 +129,8 @@ class GP
        double noise_variance,
        int n_regressors,
        std::vector<bool> trainable_bool,
-       Target target);
+       int gpu_id,
+       int n_streams);
 
     /**
      * Returns Gaussian process attributes as string.
@@ -182,7 +183,7 @@ class GP
      * @return losses
      */
     std::vector<double>
-    optimize(const gpxpy_hyper::AdamParams &hyperparams);
+    optimize(const gpxpy_hyper::AdamParams &adam_params);
 
     /**
      * @brief Perform a single optimization step

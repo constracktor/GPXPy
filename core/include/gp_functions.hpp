@@ -5,6 +5,7 @@
 #include "gp_optimizer.hpp"
 #include "target.hpp"
 #include <hpx/future.hpp>
+#include <memory>
 #include <vector>
 
 /**
@@ -20,7 +21,7 @@ predict_on_target(const std::vector<double> &training_input,
                   int m_tile_size,
                   int n_regressors,
                   gpxpy_hyper::SEKParams sek_params,
-                  gpxpy::Target &target);
+                  std::shared_ptr<gpxpy::Target> target);
 
 /**
  * @brief Compute the predictions and uncertainties
@@ -35,7 +36,7 @@ predict_with_uncertainty_on_target(const std::vector<double> &training_input,
                                    int m_tile_size,
                                    int n_regressors,
                                    gpxpy_hyper::SEKParams sek_params,
-                                   gpxpy::Target &target);
+                                   std::shared_ptr<gpxpy::Target> target);
 
 /**
  * @brief Compute the predictions and full covariance matrix
@@ -50,7 +51,7 @@ predict_with_full_cov_on_target(const std::vector<double> &training_input,
                                 int m_tile_size,
                                 int n_regressors,
                                 gpxpy_hyper::SEKParams sek_params,
-                                gpxpy::Target &target);
+                                std::shared_ptr<gpxpy::Target> target);
 
 /**
  * @brief Compute loss for given data and Gaussian process model
@@ -62,7 +63,7 @@ compute_loss_on_target(const std::vector<double> &training_input,
                        int n_tile_size,
                        int n_regressors,
                        gpxpy_hyper::SEKParams sek_params,
-                       gpxpy::Target &target);
+                       std::shared_ptr<gpxpy::Target> target);
 
 /**
  * @brief Perform optimization for a given number of iterations
@@ -76,7 +77,7 @@ optimize_on_target(const std::vector<double> &training_input,
                    gpxpy_hyper::SEKParams &sek_params,
                    std::vector<bool> trainable_params,
                    const gpxpy_hyper::AdamParams &adam_params,
-                   gpxpy::Target &target);
+                   std::shared_ptr<gpxpy::Target> target);
 
 /**
  * @brief Perform a single optimization step
@@ -91,7 +92,7 @@ optimize_step_on_target(const std::vector<double> &training_input,
                         gpxpy_hyper::SEKParams &sek_params,
                         std::vector<bool> trainable_params,
                         gpxpy_hyper::AdamParams &adam_params,
-                        gpxpy::Target &target);
+                        std::shared_ptr<gpxpy::Target> target);
 
 /**
  * @brief Compute Cholesky decomposition
@@ -103,6 +104,6 @@ cholesky_on_target(const std::vector<double> &training_input,
                    int n_tile_size,
                    int n_regressors,
                    gpxpy_hyper::SEKParams sek_params,
-                   gpxpy::Target &target);
+                   std::shared_ptr<gpxpy::Target> target);
 
 #endif  // end of GP_FUNCTIONS_H

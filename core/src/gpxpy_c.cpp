@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <hpx/future.hpp>
 #include <iomanip>
+#include <memory>
 #include <sstream>
 
 #ifdef GPXPY_USE_CUDA
@@ -28,12 +29,50 @@ GP::GP(std::vector<double> input,
        std::vector<double> output,
        int n_tiles,
        int n_tile_size,
+       gpxpy_hyper::SEKParams sek_params,
+       int n_regressors,
+       std::vector<bool> trainable_bool,
+       std::shared_ptr<Target> target) :
+    _training_input(input),
+    _training_output(output),
+    _n_tiles(n_tiles),
+    _n_tile_size(n_tile_size),
+    sek_params(sek_params),
+    n_regressors(n_regressors),
+    trainable_params(trainable_bool),
+    target(target)
+{ }
+
+GP::GP(std::vector<double> input,
+       std::vector<double> output,
+       int n_tiles,
+       int n_tile_size,
+       double lengthscale,
+       double vertical_lengthscale,
+       double noise_variance,
+       int n_regressors,
+       std::vector<bool> trainable_bool) :
+    _training_input(input),
+    _training_output(output),
+    _n_tiles(n_tiles),
+    _n_tile_size(n_tile_size),
+    sek_params(lengthscale, vertical_lengthscale, noise_variance),
+    n_regressors(n_regressors),
+    trainable_params(trainable_bool),
+    target(std::make_shared<CPU>())
+{ }
+
+GP::GP(std::vector<double> input,
+       std::vector<double> output,
+       int n_tiles,
+       int n_tile_size,
        double lengthscale,
        double vertical_lengthscale,
        double noise_variance,
        int n_r,
        std::vector<bool> trainable_bool,
-       Target target) :
+       int gpu_id,
+       int n_streams) :
     _training_input(input),
     _training_output(output),
     _n_tiles(n_tiles),
@@ -41,7 +80,7 @@ GP::GP(std::vector<double> input,
     sek_params(lengthscale, vertical_lengthscale, noise_variance),
     n_regressors(n_r),
     trainable_params(trainable_bool),
-    target(target)
+    target(std::make_shared<CUDA_GPU>(CUDA_GPU(gpu_id, n_streams)))
 { }
 
 std::string GP::repr() const

@@ -1,8 +1,9 @@
-#include "../include/gp_algorithms_gpu.hpp"
+#ifdef GPXPY_WITH_CUDA
+    #include "../include/gp_algorithms_gpu.hpp"
 
-#include "../include/gp_kernels.hpp"
-#include "../include/target.hpp"
-#include "../include/tiled_algorithms_gpu.hpp"
+    #include "../include/gp_kernels.hpp"
+    #include "../include/target.hpp"
+    #include "../include/tiled_algorithms_gpu.hpp"
 
 namespace gpu
 {
@@ -14,7 +15,7 @@ double compute_covariance_function(std::size_t i_global,
                                    const std::vector<double> &i_input,
                                    const std::vector<double> &j_input)
 {
-    // formula in papers:
+    /* // formula in papers:
     // C(z_i,z_j) = vertical_lengthscale * exp(-0.5*lengthscale*(z_i-z_j)^2)
     // noise_variance for diagonal must be added outside this function
 
@@ -38,22 +39,24 @@ double compute_covariance_function(std::size_t i_global,
         }
         distance += pow(z_ik - z_jk, 2);
     }
-    return sek_params.vertical_lengthscale * exp(-1.0 / (2.0 * pow(sek_params.lengthscale, 2.0)) * distance);
+    return sek_params.vertical_lengthscale * exp(-1.0 / (2.0 * pow(sek_params.lengthscale, 2.0)) * distance); */
 }
 
-std::vector<double> gen_tile_covariance(std::size_t row,
-                                        std::size_t col,
-                                        std::size_t N_tile,
-                                        std::size_t n_regressors,
-                                        gpxpy_hyper::SEKParams sek_params,
-                                        const std::vector<double> &input)
+double *
+gen_tile_covariance(std::size_t row,
+                    std::size_t col,
+                    std::size_t N_tile,
+                    std::size_t n_regressors,
+                    gpxpy_hyper::SEKParams sek_params,
+                    const std::vector<double> &input)
 {
-    std::size_t i_global, j_global;
+    /* std::size_t i_global, j_global;
     double covariance_function;
 
     // Initialize tile
-    std::vector<double> tile;
-    tile.resize(N_tile * N_tile);
+    double *tile;
+    hpx::cuda::experimental::check_cuda_error(
+        cudaMalloc((void **) &tile, N_tile * N_tile * sizeof(double)));
 
     for (std::size_t i = 0; i < N_tile; i++)
     {
@@ -74,7 +77,7 @@ std::vector<double> gen_tile_covariance(std::size_t row,
             tile[i * N_tile + j] = covariance_function;
         }
     }
-    return std::move(tile);
+    return std::move(tile); */
 }
 
 std::vector<double>
@@ -85,7 +88,7 @@ gen_tile_full_prior_covariance(std::size_t row,
                                gpxpy_hyper::SEKParams sek_params,
                                const std::vector<double> &input)
 {
-    std::size_t i_global, j_global;
+    /* std::size_t i_global, j_global;
     double covariance_function;
     // Initialize tile
     std::vector<double> tile;
@@ -102,7 +105,7 @@ gen_tile_full_prior_covariance(std::size_t row,
             tile[i * N + j] = covariance_function;
         }
     }
-    return std::move(tile);
+    return std::move(tile); */
 }
 
 std::vector<double>
@@ -113,7 +116,7 @@ gen_tile_prior_covariance(std::size_t row,
                           gpxpy_hyper::SEKParams sek_params,
                           const std::vector<double> &input)
 {
-    std::size_t i_global, j_global;
+    /* std::size_t i_global, j_global;
     double covariance_function;
     // Initialize tile
     std::vector<double> tile;
@@ -127,7 +130,7 @@ gen_tile_prior_covariance(std::size_t row,
             compute_covariance_function(i_global, j_global, n_regressors, sek_params, input, input);
         tile[i] = covariance_function;
     }
-    return std::move(tile);
+    return std::move(tile); */
 }
 
 std::vector<double>
@@ -140,7 +143,7 @@ gen_tile_cross_covariance(std::size_t row,
                           const std::vector<double> &row_input,
                           const std::vector<double> &col_input)
 {
-    std::size_t i_global, j_global;
+    /* std::size_t i_global, j_global;
     double covariance_function;
     // Initialize tile
     std::vector<double> tile;
@@ -157,7 +160,7 @@ gen_tile_cross_covariance(std::size_t row,
             tile[i * N_col + j] = covariance_function;
         }
     }
-    return std::move(tile);
+    return std::move(tile); */
 }
 
 std::vector<double>
@@ -165,7 +168,7 @@ gen_tile_cross_cov_T(std::size_t N_row,
                      std::size_t N_col,
                      const std::vector<double> &cross_covariance_tile)
 {
-    std::vector<double> transposed;
+    /* std::vector<double> transposed;
     transposed.resize(N_row * N_col);
     for (std::size_t i = 0; i < N_row; ++i)
     {
@@ -175,14 +178,14 @@ gen_tile_cross_cov_T(std::size_t N_row,
                 cross_covariance_tile[i * N_col + j];
         }
     }
-    return std::move(transposed);
+    return std::move(transposed); */
 }
 
 std::vector<double> gen_tile_output(std::size_t row,
                                     std::size_t N,
                                     const std::vector<double> &output)
 {
-    std::size_t i_global;
+    /* std::size_t i_global;
     // Initialize tile
     std::vector<double> tile;
     tile.resize(N);
@@ -191,7 +194,7 @@ std::vector<double> gen_tile_output(std::size_t row,
         i_global = N * row + i;
         tile[i] = output[i_global];
     }
-    return std::move(tile);
+    return std::move(tile); */
 }
 
 double compute_error_norm(std::size_t n_tiles,
@@ -199,7 +202,7 @@ double compute_error_norm(std::size_t n_tiles,
                           const std::vector<double> &b,
                           const std::vector<std::vector<double>> &tiles)
 {
-    double error = 0.0;
+    /* double error = 0.0;
     for (std::size_t k = 0; k < n_tiles; k++)
     {
         auto a = tiles[k];
@@ -210,16 +213,16 @@ double compute_error_norm(std::size_t n_tiles,
             error += (b[i_global] - a[i]) * (b[i_global] - a[i]);
         }
     }
-    return std::move(sqrt(error));
+    return std::move(sqrt(error)); */
 }
 
 std::vector<double> gen_tile_zeros(std::size_t N)
 {
-    // Initialize tile
+    /* // Initialize tile
     std::vector<double> tile;
     tile.resize(N);
     std::fill(tile.begin(), tile.end(), 0.0);
-    return std::move(tile);
+    return std::move(tile); */
 }
 
 hpx::shared_future<std::vector<double>>
@@ -232,9 +235,9 @@ predict(const std::vector<double> &training_input,
         int m_tile_size,
         int n_regressors,
         gpxpy_hyper::SEKParams sek_params,
-        gpxpy::Target &target)
+        std::shared_ptr<gpxpy::Target> target)
 {
-    // declare tiled future data structures
+    /* // declare tiled future data structures
     std::vector<hpx::shared_future<std::vector<double>>> K_tiles;
     std::vector<hpx::shared_future<std::vector<double>>> alpha_tiles;
     std::vector<hpx::shared_future<std::vector<double>>>
@@ -317,13 +320,22 @@ predict(const std::vector<double> &training_input,
 
     // Return computed data
     return hpx::async([pred]()
-                      { return pred; });
+                      { return pred; }); */
 }
 
 hpx::shared_future<std::vector<std::vector<double>>>
-predict_with_uncertainty(const std::vector<double> &training_input, const std::vector<double> &training_output, const std::vector<double> &test_input, int n_tiles, int n_tile_size, int m_tiles, int m_tile_size, int n_regressors, gpxpy_hyper::SEKParams sek_params, gpxpy::Target &target)
+predict_with_uncertainty(const std::vector<double> &training_input,
+                         const std::vector<double> &training_output,
+                         const std::vector<double> &test_input,
+                         int n_tiles,
+                         int n_tile_size,
+                         int m_tiles,
+                         int m_tile_size,
+                         int n_regressors,
+                         gpxpy_hyper::SEKParams sek_params,
+                         std::shared_ptr<gpxpy::Target> target)
 {
-    // declare tiled future data structures
+    /* // declare tiled future data structures
     std::vector<hpx::shared_future<std::vector<double>>> K_tiles;
     std::vector<hpx::shared_future<std::vector<double>>> alpha_tiles;
     std::vector<hpx::shared_future<std::vector<double>>> prior_K_tiles;
@@ -469,7 +481,7 @@ predict_with_uncertainty(const std::vector<double> &training_input, const std::v
             std::vector<std::vector<double>> result(2);
             result[0] = pred_full;
             result[1] = pred_var_full;
-            return result; });
+            return result; }); */
 }
 
 hpx::shared_future<std::vector<std::vector<double>>>
@@ -482,9 +494,9 @@ predict_with_full_cov(const std::vector<double> &training_input,
                       int m_tile_size,
                       int n_regressors,
                       gpxpy_hyper::SEKParams sek_params,
-                      gpxpy::Target &target)
+                      std::shared_ptr<gpxpy::Target> target)
 {
-    double hyperparameters[3];
+    /* double hyperparameters[3];
 
     // declare tiled future data structures
     std::vector<hpx::shared_future<std::vector<double>>> K_tiles;
@@ -633,7 +645,7 @@ predict_with_full_cov(const std::vector<double> &training_input,
             std::vector<std::vector<double>> result(2);
             result[0] = pred;
             result[1] = pred_var;
-            return result; });
+            return result; }); */
 }
 
 hpx::shared_future<double>
@@ -643,9 +655,9 @@ compute_loss(const std::vector<double> &training_input,
              int n_tile_size,
              int n_regressors,
              gpxpy_hyper::SEKParams sek_params,
-             gpxpy::Target &target)
+             std::shared_ptr<gpxpy::Target> target)
 {
-    // declare data structures
+    /* // declare data structures
     // tiled future data structures
     std::vector<hpx::shared_future<std::vector<double>>> K_tiles;
     std::vector<hpx::shared_future<std::vector<double>>> alpha_tiles;
@@ -695,7 +707,7 @@ compute_loss(const std::vector<double> &training_input,
     // Compute loss
     compute_loss_tiled(target.cublas_executors, K_tiles, alpha_tiles, y_tiles, loss_value, n_tile_size, n_tiles);
     // Return loss
-    return loss_value;
+    return loss_value; */
 }
 
 hpx::shared_future<std::vector<double>>
@@ -707,9 +719,9 @@ optimize(const std::vector<double> &training_input,
          gpxpy_hyper::SEKParams &sek_params,
          std::vector<bool> trainable_params,
          const gpxpy_hyper::AdamParams &adam_params,
-         gpxpy::Target &target)
+         std::shared_ptr<gpxpy::Target> target)
 {
-    // declaretiled future data structures
+    /* // declaretiled future data structures
     std::vector<hpx::shared_future<std::vector<double>>> K_tiles;
     std::vector<hpx::shared_future<std::vector<double>>> grad_v_tiles;
     std::vector<hpx::shared_future<std::vector<double>>> grad_l_tiles;
@@ -918,7 +930,7 @@ optimize(const std::vector<double> &training_input,
     // Update hyperparameter attributes in Gaussian process model
     // Return losses
     return hpx::async([losses]()
-                      { return losses; });
+                      { return losses; }); */
 }
 
 hpx::shared_future<double>
@@ -931,9 +943,9 @@ optimize_step(const std::vector<double> &training_input,
               gpxpy_hyper::SEKParams &sek_params,
               std::vector<bool> trainable_params,
               gpxpy_hyper::AdamParams &adam_params,
-              gpxpy::Target &target)
+              std::shared_ptr<gpxpy::Target> target)
 {
-    // declare tiled future data structures
+    /* // declare tiled future data structures
     std::vector<hpx::shared_future<std::vector<double>>> K_tiles;
     std::vector<hpx::shared_future<std::vector<double>>> grad_v_tiles;
     std::vector<hpx::shared_future<std::vector<double>>> grad_l_tiles;
@@ -1112,7 +1124,7 @@ optimize_step(const std::vector<double> &training_input,
     // Return loss value
     double loss = loss_value.get();
     return hpx::async([loss]()
-                      { return loss; });
+                      { return loss; }); */
 }
 
 hpx::shared_future<std::vector<std::vector<double>>>
@@ -1122,14 +1134,16 @@ cholesky(const std::vector<double> &training_input,
          int n_tile_size,
          int n_regressors,
          gpxpy_hyper::SEKParams sek_params,
-         gpxpy::Target &target)
+         std::shared_ptr<gpxpy::Target> target)
 {
+    /* hpx::cuda::experimental::enable_user_polling poll("default");
     // Tiled future data structure is matrix represented as vector of tiles.
     // Tiles are represented as vector, each wrapped in a shared_future.
-    std::vector<hpx::shared_future<std::vector<double>>> K_tiles;
+    std::vector<hpx::shared_future<double *>> K_tiles;
 
     // Assemble covariance matrix vector
     K_tiles.resize(n_tiles * n_tiles);
+
     for (std::size_t i = 0; i < n_tiles; i++)
     {
         for (std::size_t j = 0; j <= i; j++)
@@ -1149,17 +1163,33 @@ cholesky(const std::vector<double> &training_input,
     // Calculate Cholesky decomposition
     right_looking_cholesky_tiled(target.cublas_executors, K_tiles, n_tile_size, n_tiles);
 
-    // Get & return predictions and uncertainty
     std::vector<std::vector<double>> result(n_tiles * n_tiles);
+
     for (std::size_t i = 0; i < n_tiles; i++)
     {
         for (std::size_t j = 0; j <= i; j++)
         {
-            result[i * n_tiles + j] = K_tiles[i * n_tiles + j].get();
+            hpx::cuda::experimental::check_cuda_error(
+                cudaMemcpyAsync(result[i * n_tiles + j], K_tiles[i * n_tiles + j].get(), n_tile_size * n_tile_size * sizeof(double), cudaMemcpyDeviceToHost));
         }
     }
-    return hpx::async([result]()
-                      { return result; });
+
+    return hpx::make_ready_future(result);
+
+    // Get & return predictions and uncertainty
+    // std::vector<std::vector<double>> result(n_tiles * n_tiles);
+    // for (std::size_t i = 0; i < n_tiles; i++)
+    // {
+    //     for (std::size_t j = 0; j <= i; j++)
+    //     {
+    //         result[i * n_tiles + j] = K_tiles[i * n_tiles + j].get();
+    //     }
+    // }
+    // return hpx::async([result]()
+    //                   { return result; });
+    */
 }
 
 }  // end of namespace gpu
+
+#endif  // end of GPX_WITH_CUDA

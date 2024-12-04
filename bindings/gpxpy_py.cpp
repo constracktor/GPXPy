@@ -1,6 +1,5 @@
 #include "../core/include/gp_optimizer.hpp"
 #include "../core/include/gpxpy_c.hpp"
-#include "../core/include/target.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
@@ -47,26 +46,6 @@ void init_gpxpy(py::module &m)
         .def_readwrite("v_T", &gpxpy_hyper::AdamParams::V_T)
         .def("__repr__", &gpxpy_hyper::AdamParams::repr);
 
-    // handle for target used for computation as `Target` class
-    py::class_<gpxpy::Target>(
-        m, "Target", "Class representing handle to target (CPU or GPU).")
-        .def(py::init<std::string, int, int>(),
-             py::arg("type"),
-             py::arg("id") = 0,
-             py::arg("n_executors") = 1,
-             R"pbdoc(
-Creates a handle to target (CPU or GPU) for computation.
-
-Parameters:
-    type (str): Type of target: "cpu" or "gpu".
-    id (int): ID of target. For CPU, ID is 0. For GPU, ID is 0, 1, 2, ...
-    n_executors (int): Number of executors on target: 1 for CPU, n for GPU.
-             )pbdoc")
-        .def_readonly("id", &gpxpy::Target::id, "id of target: 0 for CPU, 0, 1, 2, ... for GPU")
-        .def_readonly("n_executors", &gpxpy::Target::id, "Number of executors on target: 1 for CPU, n for GPU")
-        .def("is_cpu", &gpxpy::Target::is_cpu, "Returns True if target is CPU.")
-        .def("is_gpu", &gpxpy::Target::is_gpu, "Returns True if target is GPU.");
-
     // Initializes Gaussian Process with `GP` class. Sets default parameters for
     // squared exponential kernel, number of regressors and trainable, unless
     // specified. Instance object has full access to parameters for squared
@@ -75,7 +54,7 @@ Parameters:
     // GPU support is disabled by default and may only be enabled on
     // initialization.
     py::class_<gpxpy::GP>(m, "GP")
-        .def(py::init<std::vector<double>, std::vector<double>, int, int, double, double, double, int, std::vector<bool>, gpxpy::Target>(),
+        /* .def(py::init<std::vector<double>, std::vector<double>, int, int, double, double, double, int, std::vector<bool>>(),
              py::arg("input_data"),
              py::arg("output_data"),
              py::arg("n_tiles"),
@@ -85,7 +64,6 @@ Parameters:
              py::arg("noise_var") = 0.1,
              py::arg("n_reg") = 100,
              py::arg("trainable") = std::vector<bool>{ true, true, true },
-             py::arg("target") = gpxpy::Target("cpu", 0, 1),
              R"pbdoc(
 Create Gaussian Process including its data, hyperparameters.
 
@@ -103,8 +81,19 @@ Parameters:
     n_reg (int): Number of regressors. Default is 100.
     trainable (list): List of booleans for trainable hyperparameters. Default is
         {true, true, true}.
-    target (Target): Target used for computations.
-             )pbdoc")
+             )pbdoc") */
+        .def(py::init<std::vector<double>, std::vector<double>, int, int, double, double, double, int, std::vector<bool>, int, int>(),
+             py::arg("input_data"),
+             py::arg("output_data"),
+             py::arg("n_tiles"),
+             py::arg("n_tile_size"),
+             py::arg("lengthscale") = 1.0,
+             py::arg("v_lengthscale") = 1.0,
+             py::arg("noise_var") = 0.1,
+             py::arg("n_reg") = 100,
+             py::arg("trainable") = std::vector<bool>{ true, true, true },
+             py::arg("gpu_id") = 0,
+             py::arg("n_streams") = 1)
         .def_property(
             "lengthscale",
             [](const gpxpy::GP &gp)
