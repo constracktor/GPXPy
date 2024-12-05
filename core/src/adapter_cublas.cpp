@@ -1,8 +1,8 @@
 #include "../include/adapter_cublas.hpp"
 
-#include <cusolverDn.h>
 #include <hpx/future.hpp>
 #include <hpx/modules/async_cuda.hpp>
+#include <memory>
 #include <mkl_cblas.h>
 #include <mkl_lapacke.h>
 #include <vector>
@@ -17,37 +17,34 @@ using cublas_future = hpx::cuda::experimental::cuda_executor::future_type;
 
 // BLAS level 3 operations ------------------------------------------------- {{{
 
-hpx::shared_future<std::vector<double>>
-potrf(cudaStream_t *stream,
-      hpx::shared_future<std::vector<double>> f_A,
+hpx::shared_future<double *>
+potrf(std::shared_ptr<cusolverDnHandle_t> cusolver,
+      hpx::shared_future<double *> f_A,
       const std::size_t N)
 {
-    cusolverDnHandle_t cusolver;
-    cusolverDnCreate(&cusolver);
-    cusolverDnSetStream(cusolver, *stream);
+    cudaStream_t stream;
+    cusolverDnGetStream(*cusolver, &stream);
+    check_cuda_error(cudaStreamSynchronize(stream));
 
     cusolverDnParams_t params;
     cusolverDnCreateParams(&params);
 
     int *d_info = nullptr;
+
     size_t workspaceInBytesOnDevice;
     void *d_work = nullptr;
     size_t workspaceInBytesOnHost;
     void *h_work = nullptr;
 
-    std::vector<double> h_A = f_A.get();
-    double *d_A;
-    check_cuda_error(cudaMalloc(reinterpret_cast<void **>(&d_A),
-                                h_A.size() * sizeof(double)));
-    check_cuda_error(cudaMemcpyAsync(d_A, h_A.data(), h_A.size() * sizeof(double), cudaMemcpyHostToDevice, *stream));
+    double *d_A = f_A.get();
 
     cusolverDnXpotrf_bufferSize(
-        cusolver, params, CUBLAS_FILL_MODE_LOWER, N, CUDA_R_64F, d_A, N, CUDA_R_64F, &workspaceInBytesOnDevice, &workspaceInBytesOnHost);
+        *cusolver, params, CUBLAS_FILL_MODE_LOWER, N, CUDA_R_64F, d_A, N, CUDA_R_64F, &workspaceInBytesOnDevice, &workspaceInBytesOnHost);
 
     check_cuda_error(cudaMalloc(reinterpret_cast<void **>(&d_work),
                                 workspaceInBytesOnDevice));
 
-    if (0 < workspaceInBytesOnHost)
+    if (workspaceInBytesOnHost > 0)
     {
         h_work = reinterpret_cast<void *>(malloc(workspaceInBytesOnHost));
         if (h_work == nullptr)
@@ -55,12 +52,7 @@ potrf(cudaStream_t *stream,
             throw std::runtime_error("Error: h_work not allocated.");
         }
     }
-    cusolverDnXpotrf(cusolver, params, CUBLAS_FILL_MODE_LOWER, N, CUDA_R_64F, d_A, N, CUDA_R_64F, d_work, workspaceInBytesOnDevice, h_work, workspaceInBytesOnHost, d_info);
-
-    check_cuda_error(cudaMemcpyAsync(h_A.data(), d_A, sizeof(double) * h_A.size(), cudaMemcpyDeviceToHost, *stream));
-    check_cuda_error(cudaMemcpyAsync(&d_info, d_info, sizeof(int), cudaMemcpyDeviceToHost, *stream));
-
-    check_cuda_error(cudaStreamSynchronize(*stream));
+    cusolverDnXpotrf(*cusolver, params, CUBLAS_FILL_MODE_LOWER, N, CUDA_R_64F, d_A, N, CUDA_R_64F, d_work, workspaceInBytesOnDevice, h_work, workspaceInBytesOnHost, d_info);
 
     check_cuda_error(cudaFree(d_A));
     check_cuda_error(cudaFree(d_work));
@@ -68,17 +60,15 @@ potrf(cudaStream_t *stream,
     {
         free(h_work);
     }
-    check_cuda_error(cudaFree(d_info));
+    check_cuda_error(cudaFree(d_info));  // before this line, we could copy d_info to host and check for errors
 
-    cusolverDnDestroy(cusolver);
-
-    return hpx::make_ready_future(h_A);
+    return hpx::make_ready_future(d_A);
 }
 
-hpx::shared_future<std::vector<double>>
-trsm(cublas_executor *cublas,
-     hpx::shared_future<std::vector<double>> f_L,
-     hpx::shared_future<std::vector<double>> f_A,
+hpx::shared_future<double *>
+trsm(std::shared_ptr<cublas_executor> cublas,
+     hpx::shared_future<double *> f_L,
+     hpx::shared_future<double *> f_A,
      const std::size_t N,
      const std::size_t M,
      const BLAS_TRANSPOSE transpose_L,
@@ -88,40 +78,22 @@ trsm(cublas_executor *cublas,
     const double alpha = 1.0;
     std::size_t matrixSize = N * N;
 
-    // Allocate device memory
-    double *d_L, *d_A;
-    check_cuda_error(cudaMalloc((void **) &d_L, matrixSize * sizeof(double)));
-    check_cuda_error(cudaMalloc((void **) &d_A, matrixSize * sizeof(double)));
-
-    // Copy data from host to device
-    std::vector<double> h_L = f_L.get();
-    hpx::post(*cublas, cudaMemcpyAsync, d_A, h_L.data(), matrixSize * sizeof(double), cudaMemcpyHostToDevice);
-
-    std::vector<double> h_A = f_A.get();
-    hpx::post(*cublas, cudaMemcpyAsync, d_A, h_A.data(), matrixSize * sizeof(double), cudaMemcpyHostToDevice);
+    double *d_L = f_L.get();
+    double *d_A = f_A.get();
 
     // Compute TRSM on device (X, returned as A)
     // formula here:      X * L^T = alpha * A
     // formula in cublas: X * A^T = alpha * B
-    hpx::post(*cublas, cublasDtrsm, static_cast<cublasSideMode_t>(side_L), CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, N, N, &alpha, d_L, N, d_A, N);
-
-    // Copy result back to host
-    cublas_future copy_device_to_host =
-        hpx::async(*cublas, cudaMemcpyAsync, h_A.data(), d_A, matrixSize * sizeof(double), cudaMemcpyDeviceToHost);
-
-    // Synchronize, then free device memory
-    copy_device_to_host.get();
-    check_cuda_error(cudaFree(d_L));
-    check_cuda_error(cudaFree(d_A));
+    hpx::async(*cublas, cublasDtrsm, static_cast<cublasSideMode_t>(side_L), CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, N, N, &alpha, d_L, N, d_A, N).get();
 
     // Return vector
-    return hpx::make_ready_future(h_A);
+    return hpx::make_ready_future(d_A);
 }
 
-hpx::shared_future<std::vector<double>>
-syrk(cublas_executor *cublas,
-     hpx::shared_future<std::vector<double>> f_A,
-     hpx::shared_future<std::vector<double>> f_B,
+hpx::shared_future<double *>
+syrk(std::shared_ptr<cublas_executor> cublas,
+     hpx::shared_future<double *> f_A,
+     hpx::shared_future<double *> f_B,
      const std::size_t N)
 {
     // GEMM constants
@@ -130,40 +102,23 @@ syrk(cublas_executor *cublas,
     std::size_t matrixSize = N * N;
 
     // Allocate device memory
-    double *d_A, *d_B;
-    check_cuda_error(cudaMalloc((void **) &d_A, matrixSize * sizeof(double)));
-    check_cuda_error(cudaMalloc((void **) &d_B, matrixSize * sizeof(double)));
-
-    // Copy data from host to device
-    std::vector<double> h_A = f_A.get();
-    hpx::post(*cublas, cudaMemcpyAsync, d_A, h_A.data(), matrixSize * sizeof(double), cudaMemcpyHostToDevice);
-
-    std::vector<double> h_B = f_B.get();
-    hpx::post(*cublas, cudaMemcpyAsync, d_B, h_B.data(), matrixSize * sizeof(double), cudaMemcpyHostToDevice);
+    double *d_A = f_A.get();
+    double *d_B = f_B.get();
 
     // Compute SYRK on device
     // formula here:      A = beta * A + alpha * B * B^T
     // formula in cublas: C = beta * C + αlpha * A * A^T
-    hpx::post(*cublas, cublasDsyrk, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_N, N, N, &alpha, d_B, N, &beta, d_A, N);
-
-    // Copy result back to host
-    cublas_future copy_device_to_host =
-        hpx::async(*cublas, cudaMemcpyAsync, h_A.data(), d_A, matrixSize * sizeof(double), cudaMemcpyDeviceToHost);
-
-    // Synchronize, then free device memory
-    copy_device_to_host.get();
-    check_cuda_error(cudaFree(d_A));
-    check_cuda_error(cudaFree(d_B));
+    hpx::async(*cublas, cublasDsyrk, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_N, N, N, &alpha, d_B, N, &beta, d_A, N).get();
 
     // Return future
-    return hpx::make_ready_future(h_A);
+    return hpx::make_ready_future(d_A);
 }
 
-hpx::shared_future<std::vector<double>>
-gemm(cublas_executor *cublas,
-     hpx::shared_future<std::vector<double>> f_A,
-     hpx::shared_future<std::vector<double>> f_B,
-     hpx::shared_future<std::vector<double>> f_C,
+hpx::shared_future<double *>
+gemm(std::shared_ptr<cublas_executor> cublas,
+     hpx::shared_future<double *> f_A,
+     hpx::shared_future<double *> f_B,
+     hpx::shared_future<double *> f_C,
      const std::size_t M,
      const std::size_t N,
      const std::size_t K,
@@ -175,36 +130,15 @@ gemm(cublas_executor *cublas,
     const double beta = 1.0;
 
     // Allocate device memory
-    double *d_A, *d_B, *d_C;
-    check_cuda_error(cudaMalloc((void **) &d_A, M * K * sizeof(double)));
-    check_cuda_error(cudaMalloc((void **) &d_B, K * N * sizeof(double)));
-    check_cuda_error(cudaMalloc((void **) &d_C, M * N * sizeof(double)));
-
-    // Copy data from host to device
-    std::vector<double> h_A = f_A.get();
-    hpx::post(*cublas, cudaMemcpyAsync, d_A, h_A.data(), M * K * sizeof(double), cudaMemcpyHostToDevice);
-
-    std::vector<double> h_B = f_B.get();
-    hpx::post(*cublas, cudaMemcpyAsync, d_B, h_B.data(), K * N * sizeof(double), cudaMemcpyHostToDevice);
-
-    std::vector<double> h_C = f_C.get();
-    hpx::post(*cublas, cudaMemcpyAsync, d_C, h_C.data(), M * N * sizeof(double), cudaMemcpyHostToDevice);
+    double *d_A = f_A.get();
+    double *d_B = f_B.get();
+    double *d_C = f_C.get();
 
     // Compute GEMM on device
-    hpx::post(*cublas, cublasDgemm, CUBLAS_OP_N, CUBLAS_OP_T, N, N, N, &alpha, d_A, N, d_B, N, &beta, d_C, N);
-
-    // copy the result back to the host
-    cublas_future copy_device_to_host =
-        hpx::async(*cublas, cudaMemcpyAsync, h_C.data(), d_C, M * N * sizeof(double), cudaMemcpyDeviceToHost);
-
-    // Synchronize, then free device memory
-    copy_device_to_host.get();
-    check_cuda_error(cudaFree(d_A));
-    check_cuda_error(cudaFree(d_B));
-    check_cuda_error(cudaFree(d_C));
+    hpx::async(*cublas, cublasDgemm, CUBLAS_OP_N, CUBLAS_OP_T, N, N, N, &alpha, d_A, N, d_B, N, &beta, d_C, N).get();
 
     // Return future
-    return hpx::make_ready_future(h_C);
+    return hpx::make_ready_future(d_C);
 }
 
 // }}} ------------------------------------------ end of BLAS level 3 operations

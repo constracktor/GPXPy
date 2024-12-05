@@ -1,9 +1,8 @@
-#ifdef GPXPY_WITH_CUDA
-    #include "../include/gp_algorithms_gpu.hpp"
+#include "../include/gp_algorithms_gpu.hpp"
 
-    #include "../include/gp_kernels.hpp"
-    #include "../include/target.hpp"
-    #include "../include/tiled_algorithms_gpu.hpp"
+#include "../include/gp_kernels.hpp"
+#include "../include/target.hpp"
+#include "../include/tiled_algorithms_gpu.hpp"
 
 namespace gpu
 {
@@ -50,7 +49,7 @@ gen_tile_covariance(std::size_t row,
                     gpxpy_hyper::SEKParams sek_params,
                     const std::vector<double> &input)
 {
-    /* std::size_t i_global, j_global;
+    std::size_t i_global, j_global;
     double covariance_function;
 
     // Initialize tile
@@ -77,7 +76,7 @@ gen_tile_covariance(std::size_t row,
             tile[i * N_tile + j] = covariance_function;
         }
     }
-    return std::move(tile); */
+    return tile;
 }
 
 std::vector<double>
@@ -235,7 +234,7 @@ predict(const std::vector<double> &training_input,
         int m_tile_size,
         int n_regressors,
         gpxpy_hyper::SEKParams sek_params,
-        std::shared_ptr<gpxpy::Target> target)
+        gpxpy::CUDA_GPU &gpu)
 {
     /* // declare tiled future data structures
     std::vector<hpx::shared_future<std::vector<double>>> K_tiles;
@@ -333,7 +332,7 @@ predict_with_uncertainty(const std::vector<double> &training_input,
                          int m_tile_size,
                          int n_regressors,
                          gpxpy_hyper::SEKParams sek_params,
-                         std::shared_ptr<gpxpy::Target> target)
+                         gpxpy::CUDA_GPU &gpu)
 {
     /* // declare tiled future data structures
     std::vector<hpx::shared_future<std::vector<double>>> K_tiles;
@@ -494,7 +493,7 @@ predict_with_full_cov(const std::vector<double> &training_input,
                       int m_tile_size,
                       int n_regressors,
                       gpxpy_hyper::SEKParams sek_params,
-                      std::shared_ptr<gpxpy::Target> target)
+                      gpxpy::CUDA_GPU &gpu)
 {
     /* double hyperparameters[3];
 
@@ -655,7 +654,7 @@ compute_loss(const std::vector<double> &training_input,
              int n_tile_size,
              int n_regressors,
              gpxpy_hyper::SEKParams sek_params,
-             std::shared_ptr<gpxpy::Target> target)
+             gpxpy::CUDA_GPU &gpu)
 {
     /* // declare data structures
     // tiled future data structures
@@ -719,7 +718,7 @@ optimize(const std::vector<double> &training_input,
          gpxpy_hyper::SEKParams &sek_params,
          std::vector<bool> trainable_params,
          const gpxpy_hyper::AdamParams &adam_params,
-         std::shared_ptr<gpxpy::Target> target)
+         gpxpy::CUDA_GPU &gpu)
 {
     /* // declaretiled future data structures
     std::vector<hpx::shared_future<std::vector<double>>> K_tiles;
@@ -943,7 +942,7 @@ optimize_step(const std::vector<double> &training_input,
               gpxpy_hyper::SEKParams &sek_params,
               std::vector<bool> trainable_params,
               gpxpy_hyper::AdamParams &adam_params,
-              std::shared_ptr<gpxpy::Target> target)
+              gpxpy::CUDA_GPU &gpu)
 {
     /* // declare tiled future data structures
     std::vector<hpx::shared_future<std::vector<double>>> K_tiles;
@@ -1134,9 +1133,10 @@ cholesky(const std::vector<double> &training_input,
          int n_tile_size,
          int n_regressors,
          gpxpy_hyper::SEKParams sek_params,
-         std::shared_ptr<gpxpy::Target> target)
+         gpxpy::CUDA_GPU &gpu)
 {
-    /* hpx::cuda::experimental::enable_user_polling poll("default");
+    hpx::cuda::experimental::enable_user_polling poll("default");
+
     // Tiled future data structure is matrix represented as vector of tiles.
     // Tiles are represented as vector, each wrapped in a shared_future.
     std::vector<hpx::shared_future<double *>> K_tiles;
@@ -1161,7 +1161,7 @@ cholesky(const std::vector<double> &training_input,
     }
 
     // Calculate Cholesky decomposition
-    right_looking_cholesky_tiled(target.cublas_executors, K_tiles, n_tile_size, n_tiles);
+    right_looking_cholesky_tiled(gpu, K_tiles, n_tile_size, n_tiles);
 
     std::vector<std::vector<double>> result(n_tiles * n_tiles);
 
@@ -1187,9 +1187,6 @@ cholesky(const std::vector<double> &training_input,
     // }
     // return hpx::async([result]()
     //                   { return result; });
-    */
 }
 
 }  // end of namespace gpu
-
-#endif  // end of GPX_WITH_CUDA

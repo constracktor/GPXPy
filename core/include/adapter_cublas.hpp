@@ -1,6 +1,7 @@
 #ifndef ADAPTER_CUBLAS_H
 #define ADAPTER_CUBLAS_H
 
+#include <cusolverDn.h>
 #include <hpx/future.hpp>
 #include <hpx/modules/async_cuda.hpp>
 
@@ -37,9 +38,9 @@ using cublas_executor = hpx::cuda::experimental::cublas_executor;
  *
  * @return factorized, lower triangular matrix f_L
  */
-hpx::shared_future<std::vector<double>>
-potrf(cudaStream_t *stream,
-      hpx::shared_future<std::vector<double>> f_A,
+hpx::shared_future<double *>
+potrf(std::shared_ptr<cusolverDnHandle_t> cusolver,
+      hpx::shared_future<double *> f_A,
       const std::size_t N);
 
 /**
@@ -52,10 +53,10 @@ potrf(cudaStream_t *stream,
  *
  * @return solution matrix f_X
  */
-hpx::shared_future<std::vector<double>>
-trsm(cublas_executor *cublas,
-     hpx::shared_future<std::vector<double>> f_L,
-     hpx::shared_future<std::vector<double>> f_A,
+hpx::shared_future<double *>
+trsm(std::shared_ptr<cublas_executor> cublas,
+     hpx::shared_future<double *> f_L,
+     hpx::shared_future<double *> f_A,
      const std::size_t N,
      const std::size_t M,
      const BLAS_TRANSPOSE transpose_L,
@@ -70,10 +71,10 @@ trsm(cublas_executor *cublas,
  *
  * @return updated matrix f_A
  */
-hpx::shared_future<std::vector<double>>
-syrk(cublas_executor *cublas,
-     hpx::shared_future<std::vector<double>> f_A,
-     hpx::shared_future<std::vector<double>> f_B,
+hpx::shared_future<double *>
+syrk(std::shared_ptr<cublas_executor> cublas,
+     hpx::shared_future<double *> f_A,
+     hpx::shared_future<double *> f_B,
      const std::size_t N);
 
 /**
@@ -90,11 +91,11 @@ syrk(cublas_executor *cublas,
  *
  * @return updated matrix f_X
  */
-hpx::shared_future<std::vector<double>>
-gemm(cublas_executor *cublas,
-     hpx::shared_future<std::vector<double>> f_A,
-     hpx::shared_future<std::vector<double>> f_B,
-     hpx::shared_future<std::vector<double>> f_C,
+hpx::shared_future<double *>
+gemm(std::shared_ptr<cublas_executor> cublas,
+     hpx::shared_future<double *> f_A,
+     hpx::shared_future<double *> f_B,
+     hpx::shared_future<double *> f_C,
      const std::size_t M,
      const std::size_t N,
      const std::size_t K,

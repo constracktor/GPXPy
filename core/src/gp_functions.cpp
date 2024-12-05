@@ -25,7 +25,7 @@ predict_on_target(const std::vector<double> &training_input,
 #ifdef GPXPY_WITH_CUDA
     if (target->is_gpu())
     {
-        return gpu::predict(training_input, training_output, test_input, n_tiles, n_tile_size, m_tiles, m_tile_size, n_regressors, sek_params, target);
+        return gpu::predict(training_input, training_output, test_input, n_tiles, n_tile_size, m_tiles, m_tile_size, n_regressors, sek_params, *std::dynamic_pointer_cast<gpxpy::CUDA_GPU>(target));
     }
     else
     {
@@ -51,7 +51,7 @@ predict_with_uncertainty_on_target(const std::vector<double> &training_input,
 #ifdef GPXPY_WITH_CUDA
     if (target->is_gpu())
     {
-        return gpu::predict_with_uncertainty(training_input, training_output, test_input, n_tiles, n_tile_size, m_tiles, m_tile_size, n_regressors, sek_params, target);
+        return gpu::predict_with_uncertainty(training_input, training_output, test_input, n_tiles, n_tile_size, m_tiles, m_tile_size, n_regressors, sek_params, *std::dynamic_pointer_cast<gpxpy::CUDA_GPU>(target));
     }
     else
     {
@@ -77,7 +77,7 @@ predict_with_full_cov_on_target(const std::vector<double> &training_input,
 #ifdef GPXPY_WITH_CUDA
     if (target->is_gpu())
     {
-        return gpu::predict_with_full_cov(training_input, training_output, test_input, n_tiles, n_tile_size, m_tiles, m_tile_size, n_regressors, sek_params, target);
+        return gpu::predict_with_full_cov(training_input, training_output, test_input, n_tiles, n_tile_size, m_tiles, m_tile_size, n_regressors, sek_params, *std::dynamic_pointer_cast<gpxpy::CUDA_GPU>(target));
     }
     else
     {
@@ -100,7 +100,7 @@ compute_loss_on_target(const std::vector<double> &training_input,
 #ifdef GPXPY_WITH_CUDA
     if (target->is_gpu())
     {
-        return gpu::compute_loss(training_input, training_output, n_tiles, n_tile_size, n_regressors, sek_params, target);
+        return gpu::compute_loss(training_input, training_output, n_tiles, n_tile_size, n_regressors, sek_params, *std::dynamic_pointer_cast<gpxpy::CUDA_GPU>(target));
     }
     else
     {
@@ -125,7 +125,7 @@ optimize_on_target(const std::vector<double> &training_input,
 #ifdef GPXPY_WITH_CUDA
     if (target->is_gpu())
     {
-        return gpu::optimize(training_input, training_output, n_tiles, n_tile_size, n_regressors, sek_params, trainable_params, adam_params, target);
+        return gpu::optimize(training_input, training_output, n_tiles, n_tile_size, n_regressors, sek_params, trainable_params, adam_params, *std::dynamic_pointer_cast<gpxpy::CUDA_GPU>(target));
     }
     else
     {
@@ -151,7 +151,7 @@ optimize_step_on_target(const std::vector<double> &training_input,
 #ifdef GPXPY_WITH_CUDA
     if (target->is_gpu())
     {
-        return gpu::optimize_step(training_input, training_output, n_tiles, n_tile_size, n_regressors, iter, sek_params, trainable_params, adam_params, target);
+        return gpu::optimize_step(training_input, training_output, n_tiles, n_tile_size, n_regressors, iter, sek_params, trainable_params, adam_params, *std::dynamic_pointer_cast<gpxpy::CUDA_GPU>(target));
     }
     else
     {
@@ -174,7 +174,7 @@ cholesky_on_target(const std::vector<double> &training_input,
 #ifdef GPXPY_WITH_CUDA
     if (target->is_gpu())
     {
-        return gpu::cholesky(training_input, training_output, n_tiles, n_tile_size, n_regressors, sek_params, target);
+        return gpu::cholesky(training_input, training_output, n_tiles, n_tile_size, n_regressors, sek_params, *std::dynamic_pointer_cast<gpxpy::CUDA_GPU>(target));
     }
     else
     {

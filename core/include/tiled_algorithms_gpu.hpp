@@ -2,6 +2,7 @@
 #define TILED_ALGORITHMS_GPU_H
 
 #include "gp_optimizer.hpp"
+#include "target.hpp"
 #include <hpx/modules/async_cuda.hpp>
 #include <vector>
 
@@ -13,15 +14,15 @@ namespace gpu
 /**
  * @brief Perform right-looking Cholesky decomposition.
  *
- * @param cublas CUBLAS executor.
+ * @param n_streams Number of CUDA streams.
  * @param ft_tiles Matrix represented as a vector of tiles, containing the
  *        covariance matrix, afterwards the Cholesky decomposition.
  * @param N Size of the matrix.
  * @param n_tiles Number of tiles.
  */
 void right_looking_cholesky_tiled(
-    std::vector<hpx::cuda::experimental::cublas_executor> cublas,
-    std::vector<hpx::shared_future<std::vector<double>>> &ft_tiles,
+    gpxpy::CUDA_GPU &gpu,
+    std::vector<hpx::shared_future<double *>> &ft_tiles,
     std::size_t N,
     std::size_t n_tiles);
 

@@ -9,10 +9,8 @@
 namespace gpxpy
 {
 
-class Target
-
+struct Target
 {
-  public:
     /**
      * @brief Returns true if target is CPU.
      */
@@ -29,7 +27,7 @@ class Target
     Target() = default;
 };
 
-class CPU : public Target
+struct CPU : public Target
 {
   public:
     /**
@@ -48,12 +46,11 @@ class CPU : public Target
     bool is_gpu() override;
 };
 
-class CUDA_GPU : public Target
+struct CUDA_GPU : public Target
 {
     int id;
     int n_streams;
 
-  public:
     /**
      * TODO: documentation
      */

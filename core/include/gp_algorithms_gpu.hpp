@@ -102,7 +102,7 @@ predict(const std::vector<double> &training_input,
         int m_tile_size,
         int n_regressors,
         gpxpy_hyper::SEKParams sek_params,
-        std::shared_ptr<gpxpy::Target> target);
+        gpxpy::CUDA_GPU &gpu);
 
 /**
  * @brief TODO: documentation
@@ -117,7 +117,7 @@ predict_with_uncertainty(const std::vector<double> &training_input,
                          int m_tile_size,
                          int n_regressors,
                          gpxpy_hyper::SEKParams sek_params,
-                         std::shared_ptr<gpxpy::Target> target);
+                         gpxpy::CUDA_GPU &gpu);
 
 /**
  * @brief TODO: documentation
@@ -132,7 +132,7 @@ predict_with_full_cov(const std::vector<double> &training_input,
                       int m_tile_size,
                       int n_regressors,
                       gpxpy_hyper::SEKParams sek_params,
-                      std::shared_ptr<gpxpy::Target> target);
+                      gpxpy::CUDA_GPU &gpu);
 
 /**
  * @brief TODO: documentation
@@ -144,7 +144,7 @@ compute_loss(const std::vector<double> &training_input,
              int n_tile_size,
              int n_regressors,
              gpxpy_hyper::SEKParams sek_params,
-             std::shared_ptr<gpxpy::Target> target);
+             gpxpy::CUDA_GPU &gpu);
 
 /**
  * @brief TODO: documentation
@@ -158,7 +158,7 @@ optimize(const std::vector<double> &training_input,
          gpxpy_hyper::SEKParams &sek_params,
          std::vector<bool> trainable_params,
          const gpxpy_hyper::AdamParams &adam_params,
-         std::shared_ptr<gpxpy::Target> target);
+         gpxpy::CUDA_GPU &gpu);
 
 /**
  * @brief TODO: documentation
@@ -173,7 +173,7 @@ optimize_step(const std::vector<double> &training_input,
               gpxpy_hyper::SEKParams &sek_params,
               std::vector<bool> trainable_params,
               gpxpy_hyper::AdamParams &adam_params,
-              std::shared_ptr<gpxpy::Target> target);
+              gpxpy::CUDA_GPU &gpu);
 
 /**
  * @brief TODO: documentation
@@ -185,7 +185,7 @@ cholesky(const std::vector<double> &training_input,
          int n_tile_size,
          int n_regressors,
          gpxpy_hyper::SEKParams sek_params,
-         std::shared_ptr<gpxpy::Target> target);
+         gpxpy::CUDA_GPU &gpu);
 
 }  // end of namespace gpu
 
