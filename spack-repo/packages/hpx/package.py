@@ -124,7 +124,6 @@ class Hpx(CMakePackage, CudaPackage, ROCmPackage):
     depends_on("cuda", when="+async_cuda")
 
     depends_on("otf2", when="instrumentation=apex")
-    depends_on("apex", when="instrumentation=apex")
     depends_on("gperftools", when="instrumentation=google_perftools")
     depends_on("papi", when="instrumentation=papi")
     depends_on("valgrind", when="instrumentation=valgrind")
@@ -277,7 +276,7 @@ class Hpx(CMakePackage, CudaPackage, ROCmPackage):
 
         if spec.satisfies("instrumentation=apex"):
             args += [
-                self.define("Apex_ROOT", spec["apex"].prefix),
+                self.define("HPX_WITH_FETCH_APEX", True),
                 self.define("APEX_WITH_OTF2", True),
                 self.define("OTF2_ROOT", spec["otf2"].prefix),
             ]
