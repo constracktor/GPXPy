@@ -18,11 +18,13 @@ target_sources(gpxpy_core PRIVATE ${header_files})
 
 # Link HPX libraries
 target_link_libraries(
-  gpxpy_core PUBLIC HPX::hpx MKL::mkl_intel_lp64
-                    MKL::mkl_core MKL::MKL MKL::mkl_sequential)
+  gpxpy_core PUBLIC HPX::hpx MKL::mkl_intel_lp64 MKL::mkl_core MKL::MKL
+                    MKL::mkl_sequential)
 
 # Include directories
 target_include_directories(
   gpxpy_core PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/core/include>")
 
 target_compile_features(gpxpy_core PUBLIC cxx_std_17)
+
+set_property(TARGET gpxpy_core PROPERTY POSITION_INDEPENDENT_CODE ON)
