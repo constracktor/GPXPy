@@ -5,6 +5,7 @@ This repository contains the source code for the GPXPy library.
 ## Dependencies
 
 GPXPy utilizes two external libraries:
+
 - [HPX](https://hpx-docs.stellar-group.org/latest/html/index.html) for asynchronous task-based parallelization
 - [MKL](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html) for CPU-only BLAS computations
 
@@ -16,7 +17,30 @@ Spack environment configurations and setup scripts for CPU and GPU use are provi
 
 ## How To Compile
 
-GPXPy can be build with or without Python bindings. Respective scripts can be found in this directory.
+GPXPy makes use of [CMake presets][1] to simplify the process of configuring
+the project.
+
+For example, building and testing this project on a Linux machine is as easy as running the following commands:
+
+```sh
+cmake --preset=dev-linux
+cmake --build --preset=dev-linux
+ctest --preset=dev-linux
+```
+
+As a developer, you may create a `CMakeUserPresets.json` file at the root of the project that contains additional
+presets local to your machine.
+
+GPXPy can be build with or without Python bindings.
+The following options can be set to include / exclude parts of the project:
+
+| Option name                 | Description                                    | Default value   |
+|-----------------------------|------------------------------------------------|-----------------|
+| GPXPY_BUILD_CORE            | Enable/Disable building of the core library    | ON              |
+| GPXPY_BUILD_BINDINGS        | Enable/Disable building of the Python bindings | ON              |
+| GPXPY_ENABLE_FORMAT_TARGETS | Enable/disable code formatting helper targets  | ON if top-level |
+
+Respective scripts can be found in this directory.
 
 ## How To Run
 
@@ -71,3 +95,5 @@ We specifically thank the follow contributors:
 ## How To Cite
 
 TBD.
+
+[1]: https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html
