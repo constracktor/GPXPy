@@ -22,13 +22,6 @@
       }
     },
     {
-      "name": "dev-mode",
-      "hidden": true,
-      "cacheVariables": {
-        "GPXPy_DEVELOPER_MODE": "ON"
-      }
-    },
-    {
       "name": "cppcheck",
       "hidden": true,
       "cacheVariables": {
@@ -116,7 +109,7 @@
     },
     {
       "name": "ci-coverage",
-      "inherits": ["coverage-linux", "dev-mode"],
+      "inherits": ["coverage-linux"],
       "cacheVariables": {
         "COVERAGE_HTML_COMMAND": ""
       }
@@ -124,7 +117,7 @@
     {
       "name": "ci-sanitize",
       "binaryDir": "${sourceDir}/build/sanitize",
-      "inherits": ["ci-linux", "dev-mode"],
+      "inherits": ["ci-linux"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Sanitize",
         "CMAKE_CXX_FLAGS_SANITIZE": "-U_FORTIFY_SOURCE -O2 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-common"
@@ -140,24 +133,53 @@
       "description": "Speed up multi-config generators by generating only one configuration instead of the defaults",
       "hidden": true,
       "cacheVariables": {
-        "CMAKE_CONFIGURATION_TYPES": "Release"
+        "CMAKE_CONFIGURATION_TYPES": "RelWithDebInfo"
       }
     },
     {
       "name": "ci-macos",
-      "inherits": ["ci-build", "ci-darwin", "dev-mode", "ci-multi-config"]
+      "inherits": ["ci-build", "ci-darwin", "ci-multi-config"]
     },
     {
       "name": "ci-ubuntu",
-      "inherits": ["ci-build", "ci-linux", "dev-mode"]
+      "inherits": ["ci-build", "ci-linux"]
+    },
+    {
+      "name": "ci-windows",
+      "inherits": ["ci-build", "ci-win64", "ci-multi-config"]
     },
     {
       "name": "ci-ubuntu-24.04",
       "inherits": ["ci-ubuntu"]
     },
     {
-      "name": "ci-windows",
-      "inherits": ["ci-build", "ci-win64", "dev-mode", "ci-multi-config"]
+      "name": "dev-linux",
+      "binaryDir": "${sourceDir}/build/dev-linux",
+      "inherits": ["ci-linux"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "dev-linux",
+      "configurePreset": "dev-linux",
+      "configuration": "Debug"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "dev-linux",
+      "configurePreset": "dev-linux",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error"
+      }
     }
   ]
 }
