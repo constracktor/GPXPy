@@ -1,22 +1,26 @@
-#include <iostream>
 #include <chrono>
 #include <fstream>
+#include <iostream>
 // #include <boost/program_options.hpp>
 #include "../install_cpp/include/gpxpy_c.hpp"
 #include "../install_cpp/include/utils_c.hpp"
+#include <cmath>
+#include <hpx/algorithm.hpp>
+
+using hpx::experimental::for_loop;
 
 int main(int argc, char *argv[])
 {
     /////////////////////
     /////// configuration
-    int START = 1024;
-    int END = 1024;
+    int START = 1024;  // 8192;
+    int END = 1024;    // 8192;
     int STEP = 128;
     int LOOP = 1;
     const int OPT_ITER = 1;
 
     int n_test = 1024;
-    const std::size_t N_CORES = 2; // Set this to the number of threads
+    const std::size_t N_CORES = 2;  // Set this to the number of threads
     const int n_tiles = 32;
     const int n_reg = 128;
 
@@ -52,8 +56,8 @@ int main(int argc, char *argv[])
                 auto result = utils::compute_test_tiles(n_test, n_tiles, tile_size);
                 /////////////////////
                 ///// hyperparams
-                std::vector<double> M = {0.0, 0.0, 0.0};
-                gpxpy_hyper::Hyperparameters hpar = {0.1, 0.9, 0.999, 1e-8, OPT_ITER, M};
+                std::vector<double> M = { 0.0, 0.0, 0.0 };
+                gpxpy_hyper::AdamParams hpar = { 0.1, 0.9, 0.999, 1e-8, OPT_ITER, M };
 
                 /////////////////////
                 ////// data loading
@@ -64,8 +68,11 @@ int main(int argc, char *argv[])
                 /////////////////////
                 ///// GP
                 auto start_init = std::chrono::high_resolution_clock::now();
-                std::vector<bool> trainable = {false, false, true};
-                gpxpy::GP gp(training_input.data, training_output.data, n_tiles, tile_size, 1.0, 1.0, 0.1, n_reg, trainable);
+                std::vector<bool> trainable = { false, false, true };
+                gpxpy::GP gp_cpu(training_input.data, training_output.data, n_tiles, tile_size, 1.0, 1.0, 0.1, n_reg, trainable);
+                int device = 0;
+                int n_streams = 1;
+                gpxpy::GP gp_gpu(training_input.data, training_output.data, n_tiles, tile_size, 1.0, 1.0, 0.1, n_reg, trainable, device, n_streams);
                 auto end_init = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double> init_time = end_init - start_init;
 
@@ -74,11 +81,34 @@ int main(int argc, char *argv[])
 
                 // Measure the time taken to execute gp.cholesky();
                 auto start_cholesky = std::chrono::high_resolution_clock::now();
-                // std::vector<std::vector<double>> choleksy = gp.cholesky();
+                std::vector<std::vector<double>> choleksy_cpu = gp_cpu.cholesky();
+                std::vector<std::vector<double>> choleksy_gpu = gp_gpu.cholesky();
+
+                // Compare the results of the CPU and GPU
+                double avg = 0.0;
+                double count = 0.0;
+                double max = 0.0;
+                int nan_count_gpu = 0;
+                for_loop(hpx::execution::seq, 0, choleksy_cpu.size(), [&](int i)
+                         { for_loop(hpx::execution::seq, 0, choleksy_cpu[i].size(), [&](int j)
+                                    {
+                        std::cout << "CPU: " << choleksy_cpu[i][j] << " GPU: " << choleksy_gpu[i][j] << std::endl;
+                        double diff = std::abs(choleksy_cpu[i][j] - choleksy_gpu[i][j]) / std::max(choleksy_cpu[i][j], choleksy_gpu[i][j]);
+                        if (std::isnan(choleksy_gpu[i][j])){
+                            nan_count_gpu++;
+                        } else {
+                            avg = (count*avg + diff) / (count + 1);
+                            count++;
+                            max = std::max(max, diff);
+                        } }); });
+                std::cout << "Average difference: " << avg << std::endl;
+                std::cout << "Max difference: " << max << std::endl;
+                std::cout << "Nan count GPU: " << nan_count_gpu << std::endl;
+
                 auto end_cholesky = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double> cholesky_time = end_cholesky - end_cholesky;
 
-                // Measure the time taken to execute gp.optimize(hpar);
+                /* // Measure the time taken to execute gp.optimize(hpar);
                 auto start_opt = std::chrono::high_resolution_clock::now();
                 // std::vector<double> losses = gp.optimize(hpar);
                 auto end_opt = std::chrono::high_resolution_clock::now();
@@ -97,7 +127,7 @@ int main(int argc, char *argv[])
                 auto start_pred = std::chrono::high_resolution_clock::now();
                 std::vector<double> pred = gp.predict(test_input.data, result.first, result.second);
                 auto end_pred = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double> pred_time = end_pred - start_pred;
+                std::chrono::duration<double> pred_time = end_pred - start_pred; */
 
                 // Stop the HPX runtime
                 utils::stop_hpx_runtime();
@@ -106,7 +136,7 @@ int main(int argc, char *argv[])
                 std::chrono::duration<double> total_time = end_total - start_total;
 
                 // Save parameters and times to a .txt file with a header
-                std::ofstream outfile("../output.csv", std::ios::app); // Append mode
+                std::ofstream outfile("../output.csv", std::ios::app);  // Append mode
                 if (outfile.tellp() == 0)
                 {
                     // If file is empty, write the header
@@ -114,7 +144,7 @@ int main(int argc, char *argv[])
                 }
                 outfile << core << "," << n_train << "," << n_test << "," << n_tiles << "," << n_reg << ","
                         << OPT_ITER << "," << total_time.count() << "," << init_time.count() << "," << cholesky_time.count() << ","
-                        << opt_time.count() << "," << pred_uncer_time.count() << "," << pred_full_cov_time.count() << "," << pred_time.count()
+                        // << opt_time.count() << "," << pred_uncer_time.count() << "," << pred_full_cov_time.count() << "," << pred_time.count()
                         << "," << l << "\n";
                 outfile.close();
             }
