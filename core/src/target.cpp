@@ -5,9 +5,11 @@
 namespace gpxpy
 {
 
-bool CPU::is_cpu() { return false; }
+CPU::CPU() {}
 
-bool CPU::is_gpu() { return true; }
+bool CPU::is_cpu() { return true; }
+
+bool CPU::is_gpu() { return false; }
 
 CUDA_GPU::CUDA_GPU(int id, int n_streams) :
     id(id),

@@ -54,7 +54,7 @@ potrf(std::shared_ptr<cusolverDnHandle_t> cusolver,
  * @return solution matrix f_X
  */
 hpx::shared_future<double *>
-trsm(std::shared_ptr<cublas_executor> cublas,
+trsm(std::shared_ptr<cublasHandle_t> cublas,
      hpx::shared_future<double *> f_L,
      hpx::shared_future<double *> f_A,
      const std::size_t N,
@@ -72,7 +72,7 @@ trsm(std::shared_ptr<cublas_executor> cublas,
  * @return updated matrix f_A
  */
 hpx::shared_future<double *>
-syrk(std::shared_ptr<cublas_executor> cublas,
+syrk(std::shared_ptr<cublasHandle_t> cublas,
      hpx::shared_future<double *> f_A,
      hpx::shared_future<double *> f_B,
      const std::size_t N);
@@ -92,7 +92,7 @@ syrk(std::shared_ptr<cublas_executor> cublas,
  * @return updated matrix f_X
  */
 hpx::shared_future<double *>
-gemm(std::shared_ptr<cublas_executor> cublas,
+gemm(std::shared_ptr<cublasHandle_t> cublas,
      hpx::shared_future<double *> f_A,
      hpx::shared_future<double *> f_B,
      hpx::shared_future<double *> f_C,

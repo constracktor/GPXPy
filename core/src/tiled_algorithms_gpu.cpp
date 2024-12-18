@@ -5,10 +5,12 @@
 #include <cusolverDn.h>
 #include <memory>
 
+using hpx::cuda::experimental::check_cuda_error;
+
 namespace gpu
 {
 
-// Tiled Cholesky Algorithm -------------------------------------------- {{{
+// Tiled Cholesky Algorithm ------------------------------------------------ {{{
 
 void right_looking_cholesky_tiled(
     gpxpy::CUDA_GPU &gpu,
@@ -25,71 +27,46 @@ void right_looking_cholesky_tiled(
     cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
 
     // NOTE: currently only one cusolver handle
-    std::shared_ptr<cusolverDnHandle_t> cusolver;
+    std::shared_ptr<cusolverDnHandle_t> cusolver = std::make_shared<cusolverDnHandle_t>();
     cusolverDnCreate(cusolver.get());
     cusolverDnSetStream(*cusolver, stream);
 
     // NOTE: currently only one cublas executor
-    std::shared_ptr<hpx::cuda::experimental::cublas_executor> cublas = std::make_shared<hpx::cuda::experimental::cublas_executor>(gpu.id, CUBLAS_POINTER_MODE_HOST, hpx::cuda::experimental::event_mode{});
+    std::shared_ptr<cublasHandle_t> cublas = std::make_shared<cublasHandle_t>();
+    cublasCreate_v2(cublas.get());
+    cublasSetStream(*cublas, stream);
 
     for (std::size_t k = 0; k < n_tiles; k++)
     {
         // POTRF: Compute Cholesky factor L
         ft_tiles[k * n_tiles + k] = hpx::dataflow(
             hpx::annotated_function(&potrf, "cholesky_tiled_gpu"), cusolver, ft_tiles[k * n_tiles + k], N);
+        ft_tiles[k * n_tiles + k].get();
 
         for (std::size_t m = k + 1; m < n_tiles; m++)
         {
             // TRSM
             ft_tiles[m * n_tiles + k] = hpx::dataflow(
-                hpx::annotated_function(&trsm, "cholesky_tiled_gpu"),
-                cublas,
-                ft_tiles[k * n_tiles + k],
-                ft_tiles[m * n_tiles + k],
-                N,
-                N,
-                Blas_trans,
-                Blas_right);
+                hpx::annotated_function(&trsm, "cholesky_tiled_gpu"), cublas, ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N, N, Blas_trans, Blas_right);
         }
 
         // using cublas for tile update
         for (std::size_t m = k + 1; m < n_tiles; m++)
         {
-            // TODO: uncomment to use multiple cublas executors
-            // // increase or reset counter
-            // counter = (counter < n_executors - 1) ? counter + 1 : 0;
-
             // SYRK
-            ft_tiles[m * n_tiles + m] = hpx::dataflow(
-                hpx::annotated_function(&syrk, "cholesky_tiled_gpu"),
-                cublas,
-                ft_tiles[m * n_tiles + m],
-                ft_tiles[m * n_tiles + k],
-                N);
+            ft_tiles[m * n_tiles + m] = hpx::dataflow(hpx::annotated_function(&syrk, "cholesky_tiled_gpu"), cublas, ft_tiles[m * n_tiles + m], ft_tiles[m * n_tiles + k], N);
 
             for (std::size_t n = k + 1; n < m; n++)
             {
-                // TODO: uncomment to use multiple cublas executors
-                // // increase or reset counter
-                // counter = (counter < n_executors - 1) ? counter + 1 : 0;
-
                 // GEMM
-                ft_tiles[m * n_tiles + n] = hpx::dataflow(
-                    hpx::annotated_function(&gemm, "cholesky_tiled_gpu"),
-                    cublas,
-                    ft_tiles[m * n_tiles + k],
-                    ft_tiles[n * n_tiles + k],
-                    ft_tiles[m * n_tiles + n],
-                    N,
-                    N,
-                    N,
-                    Blas_no_trans,
-                    Blas_trans);
+                ft_tiles[m * n_tiles + n] = hpx::dataflow(hpx::annotated_function(&gemm, "cholesky_tiled_gpu"), cublas, ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N, N, N, Blas_no_trans, Blas_trans);
             }
         }
     }
-
+    check_cuda_error(cudaStreamSynchronize(stream));
+    check_cuda_error(cudaStreamDestroy(stream));
     cusolverDnDestroy(*cusolver);
+    cublasDestroy_v2(*cublas);
 }
 
 // }}} ----------------------------------------- end of Tiled Cholesky Algorithm

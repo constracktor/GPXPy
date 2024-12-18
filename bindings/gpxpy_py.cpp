@@ -54,7 +54,7 @@ void init_gpxpy(py::module &m)
     // GPU support is disabled by default and may only be enabled on
     // initialization.
     py::class_<gpxpy::GP>(m, "GP")
-        /* .def(py::init<std::vector<double>, std::vector<double>, int, int, double, double, double, int, std::vector<bool>>(),
+        .def(py::init<std::vector<double>, std::vector<double>, int, int, double, double, double, int, std::vector<bool>>(),
              py::arg("input_data"),
              py::arg("output_data"),
              py::arg("n_tiles"),
@@ -81,7 +81,7 @@ Parameters:
     n_reg (int): Number of regressors. Default is 100.
     trainable (list): List of booleans for trainable hyperparameters. Default is
         {true, true, true}.
-             )pbdoc") */
+             )pbdoc")
         .def(py::init<std::vector<double>, std::vector<double>, int, int, double, double, double, int, std::vector<bool>, int, int>(),
              py::arg("input_data"),
              py::arg("output_data"),

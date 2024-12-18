@@ -1,8 +1,15 @@
 #include "../include/gp_algorithms_gpu.hpp"
 
+#include "../include/gp_algorithms_cpu.hpp"
 #include "../include/gp_kernels.hpp"
 #include "../include/target.hpp"
 #include "../include/tiled_algorithms_gpu.hpp"
+#include <cuda_runtime.h>
+#include <hpx/algorithm.hpp>
+#include <hpx/async_cuda/cuda_exception.hpp>
+
+using hpx::cuda::experimental::check_cuda_error;
+using hpx::experimental::for_loop;
 
 namespace gpu
 {
@@ -14,7 +21,7 @@ double compute_covariance_function(std::size_t i_global,
                                    const std::vector<double> &i_input,
                                    const std::vector<double> &j_input)
 {
-    /* // formula in papers:
+    // formula in papers:
     // C(z_i,z_j) = vertical_lengthscale * exp(-0.5*lengthscale*(z_i-z_j)^2)
     // noise_variance for diagonal must be added outside this function
 
@@ -38,7 +45,7 @@ double compute_covariance_function(std::size_t i_global,
         }
         distance += pow(z_ik - z_jk, 2);
     }
-    return sek_params.vertical_lengthscale * exp(-1.0 / (2.0 * pow(sek_params.lengthscale, 2.0)) * distance); */
+    return sek_params.vertical_lengthscale * exp(-1.0 / (2.0 * pow(sek_params.lengthscale, 2.0)) * distance);
 }
 
 double *
@@ -1135,58 +1142,55 @@ cholesky(const std::vector<double> &training_input,
          gpxpy_hyper::SEKParams sek_params,
          gpxpy::CUDA_GPU &gpu)
 {
-    hpx::cuda::experimental::enable_user_polling poll("default");
-
     // Tiled future data structure is matrix represented as vector of tiles.
     // Tiles are represented as vector, each wrapped in a shared_future.
-    std::vector<hpx::shared_future<double *>> K_tiles;
+    std::vector<hpx::shared_future<std::vector<double>>> h_K_tiles(n_tiles * n_tiles);
 
-    // Assemble covariance matrix vector
-    K_tiles.resize(n_tiles * n_tiles);
+    for_loop(hpx::execution::par, 0, n_tiles, [&](std::size_t i)
+             { for_loop(hpx::execution::par, 0, i + 1, [&](std::size_t j)
+                        { h_K_tiles[i * n_tiles + j] =
+                              hpx::async(hpx::annotated_function(&cpu::gen_tile_covariance,
+                                                                 "assemble_tiled"),
+                                         i,
+                                         j,
+                                         n_tile_size,
+                                         n_regressors,
+                                         sek_params,
+                                         training_input); }); });
 
-    for (std::size_t i = 0; i < n_tiles; i++)
-    {
-        for (std::size_t j = 0; j <= i; j++)
-        {
-            K_tiles[i * n_tiles + j] =
-                hpx::async(hpx::annotated_function(&gen_tile_covariance,
-                                                   "assemble_tiled"),
-                           i,
-                           j,
-                           n_tile_size,
-                           n_regressors,
-                           sek_params,
-                           training_input);
-        }
-    }
+    std::vector<hpx::shared_future<double *>> d_K_tiles(n_tiles * n_tiles);
 
-    // Calculate Cholesky decomposition
-    right_looking_cholesky_tiled(gpu, K_tiles, n_tile_size, n_tiles);
+    for_loop(hpx::execution::par, 0, n_tiles, [&](std::size_t i)
+             { for_loop(hpx::execution::par, 0, i + 1, [&](std::size_t j)
+                        {
+            cudaStream_t stream;
+            check_cuda_error(cudaStreamCreate(&stream));
+            d_K_tiles[i * n_tiles + j] = hpx::async([stream, n_tile_size]()
+                                                    {
+                double* d_tile;
+                check_cuda_error(cudaMalloc(reinterpret_cast<void **>(&d_tile), n_tile_size * n_tile_size * sizeof(double)));
+                return d_tile; });
+
+            check_cuda_error(cudaMemcpyAsync(d_K_tiles[i * n_tiles + j].get(), h_K_tiles[i * n_tiles + j].get().data(), n_tile_size * n_tile_size * sizeof(double), cudaMemcpyHostToDevice, stream));
+
+            check_cuda_error(cudaStreamSynchronize(stream));
+            check_cuda_error(cudaStreamDestroy(stream)); }); });
+
+    right_looking_cholesky_tiled(gpu, d_K_tiles, n_tile_size, n_tiles);
 
     std::vector<std::vector<double>> result(n_tiles * n_tiles);
-
-    for (std::size_t i = 0; i < n_tiles; i++)
-    {
-        for (std::size_t j = 0; j <= i; j++)
-        {
-            hpx::cuda::experimental::check_cuda_error(
-                cudaMemcpyAsync(result[i * n_tiles + j], K_tiles[i * n_tiles + j].get(), n_tile_size * n_tile_size * sizeof(double), cudaMemcpyDeviceToHost));
-        }
-    }
+    for_loop(hpx::execution::seq, 0, n_tiles, [&](std::size_t i)
+             { for_loop(hpx::execution::seq, 0, i + 1, [&](std::size_t j)
+                        {
+            result[i * n_tiles + j].resize(n_tile_size * n_tile_size);
+            cudaStream_t stream;
+            check_cuda_error(cudaStreamCreate(&stream));
+            check_cuda_error(cudaMemcpy(result[i * n_tiles + j].data(), d_K_tiles[i * n_tiles + j].get(), n_tile_size * n_tile_size * sizeof(double), cudaMemcpyDeviceToHost));
+            check_cuda_error(cudaStreamSynchronize(stream));
+            check_cuda_error(cudaStreamDestroy(stream));
+            }); });
 
     return hpx::make_ready_future(result);
-
-    // Get & return predictions and uncertainty
-    // std::vector<std::vector<double>> result(n_tiles * n_tiles);
-    // for (std::size_t i = 0; i < n_tiles; i++)
-    // {
-    //     for (std::size_t j = 0; j <= i; j++)
-    //     {
-    //         result[i * n_tiles + j] = K_tiles[i * n_tiles + j].get();
-    //     }
-    // }
-    // return hpx::async([result]()
-    //                   { return result; });
 }
 
 }  // end of namespace gpu
