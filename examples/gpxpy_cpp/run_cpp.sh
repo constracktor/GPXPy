@@ -42,9 +42,11 @@ $CMAKE_COMMAND .. \
     -DCMAKE_CXX_COMPILER=$(which clang++) \
     -DCMAKE_CUDA_COMPILER=$(which clang++) \
     -DCMAKE_CUDA_FLAGS="--cuda-gpu-arch=sm_${CUDA_ARCH} \
-                        --cuda-path=${CUDA_HOME}" \
+                        --cuda-path=${CUDA_HOME} \
+                        -lcusolver" \
     -DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCH} \
-    ${MKL_CONFIG}
+    ${MKL_CONFIG} \
+    "$@"
 
 # Build project
 make -j VERBOSE=1 all

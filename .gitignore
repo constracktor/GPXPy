@@ -129,6 +129,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# do not ignore spack_env
+!spack_env/
+
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -200,3 +203,4 @@ build_*/
 ltex*
 compile_commands.json
 .clangd
+**/log.txt

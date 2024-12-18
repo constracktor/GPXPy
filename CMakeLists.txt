@@ -13,7 +13,7 @@ endif()
 set(CMAKE_CXX_FLAGS "-O3")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-project(gpxpy)
+project(gpxpy LANGUAGES CXX CUDA)
 
 include(CMakeDependentOption)
 
@@ -34,8 +34,12 @@ if(NOT GPXPY_WITH_CUDA)
     # TODO: configuration without GPU support
 else()
     # TODO: configuration with GPU support
+    # set(CMAKE_CUDA_STANDARD 17)
     # find_package(CUDA REQUIRED)
-    # target_link_libraries(gpxpy PRIVATE CUDA::cublas)
+    # target_link_libraries(gpxpy PRIVATE CUDA::cublas CUDA::cusolver)
+    # set_target_properties(gpxpy PROPERTIES
+    #     CUDA_SEPARABLE_COMPILATION ON
+    # )
 endif()
 
 if(GPXPY_ENABLE_FORMAT_TARGETS)
@@ -80,7 +84,7 @@ if(GPXPY_BUILD_CORE)
   include_directories(${HPX_INCLUDE_DIRS})
   include_directories(${MKL_INCLUDE_DIRS})
 
-  file(GLOB SOURCE_FILES "core/src/*.cpp")
+  file(GLOB SOURCE_FILES "core/src/*.cpp" "core/src/*.cu")
   file(GLOB HEADER_FILES "core/include/*.hpp")
   file(GLOB BINDING_FILES "bindings/*.cpp" "python_code/*.hpp")
 

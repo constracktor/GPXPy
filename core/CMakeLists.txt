@@ -65,7 +65,7 @@ set(HEADER_FILES
 add_library(gpxpy SHARED ${SOURCE_FILES})
 
 # Link HPX libraries
-target_link_libraries(gpxpy PRIVATE ${HPX_LIBRARIES} MKL::MKL)
+target_link_libraries(gpxpy PRIVATE ${HPX_LIBRARIES} MKL::MKL CUDA::cublas CUDA::cusolver)
 
 # Include directories
 target_include_directories(

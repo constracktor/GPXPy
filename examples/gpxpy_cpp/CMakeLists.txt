@@ -7,6 +7,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Option for GPU support with CUDA/cuBLAS
+option(GPXPY_WITH_CUDA "Enable GPU support with CUDA/cuBLAS" OFF)
+# Pass variable to C++ code
+add_compile_definitions(GPXPY_WITH_CUDA=$<BOOL:${GPXPY_WITH_CUDA}>)
+
+
 # Find HPX
 find_package(HPX REQUIRED)
 find_package(MKL CONFIG REQUIRED)
@@ -33,6 +39,13 @@ message(STATUS "GPXPy library found: ${GPXPY_LIB}")
 # Add the executable
 add_executable(gpxpy_cpp src/execute.cpp)
 # Link the libraries
+if(NOT GPXPY_WITH_CUDA)
+    # TODO: configuration without GPU support
+else()
+    # TODO: configuration with GPU support
+    find_package(CUDA REQUIRED)
+    target_link_libraries(gpxpy_cpp PRIVATE CUDA::cublas CUDA::cusolver)
+endif()
 target_link_libraries(gpxpy_cpp PUBLIC
                       "${GPXPY_LIB}"
                       HPX::hpx
