@@ -9,7 +9,6 @@ from hpx_logger import setup_logging
 
 import gpxpy as gpx
 
-
 logger = logging.getLogger()
 log_filename = "./hpx_logs.log"
 
@@ -19,55 +18,62 @@ def gpx_run(config, output_csv_obj, n_train, l, cores):
 
     n_tile_size = gpx.compute_train_tile_size(n_train, config["N_TILES"])
     m_tiles, m_tile_size = gpx.compute_test_tiles(config["N_TEST"], config["N_TILES"], n_tile_size)
-    hpar = gpx.Hyperparameters(learning_rate=0.1, opt_iter=config["OPT_ITER"], m_T=[0,0,0], v_T=[0,0,0])
+    hpar = gpx.AdamParams(learning_rate=0.1, opt_iter=config["OPT_ITER"], m_T=[0,0,0], v_T=[0,0,0])
     train_in = gpx.GP_data(config["train_in_file"], n_train)
     train_out = gpx.GP_data(config["train_out_file"], n_train)
     test_in = gpx.GP_data(config["test_in_file"], config["N_TEST"])
 
-    ###### GP object ######
-    init_t = time.time()
-    gp = gpx.GP(train_in.data, train_out.data, config["N_TILES"], n_tile_size, trainable=[True, True, True])
-    init_t = time.time() - init_t
-
     # Init hpx runtime but do not start it yet
     gpx.start_hpx(sys.argv, cores)
 
-    # Perform optmization
-    opti_t = time.time()
-    losses = gp.optimize(hpar)
-    opti_t = time.time() - opti_t
-    logger.info("Finished optimization.")
+    ###### GP object ######
+    init_t = time.time()
+    gp_cpu = gpx.GP(train_in.data, train_out.data, config["N_TILES"], n_tile_size, trainable=[True, True, True])
+    gp_gpu = gpx.GP(train_in.data, train_out.data, config["N_TILES"], n_tile_size, trainable=[True, True, True], gpu_id=0, n_streams=1)
+    init_t = time.time() - init_t
 
     gpx.suspend_hpx()
     gpx.resume_hpx()
 
-    # Predict
-    pred_uncer_t = time.time()
-    pr, var = gp.predict_with_uncertainty(test_in.data, m_tiles, m_tile_size)
-    pred_uncer_t = time.time() - pred_uncer_t
-    logger.info("Finished predictions.")
+    # Calculate Cholesky decomposition
+    chol_t = time.time()
+    matrix_cpu = gp_cpu.cholesky()
+    matrix_gpu = gp_gpu.cholesky()
+    chol_t = time.time() - chol_t
+
+    # Perform optmization
+    # chol_t = time.time()
+    # losses = gp_cpu.optimize(hpar)
+    # chol_t = time.time() - chol_t
+    # logger.info("Finished optimization.")
+
+    # # Predict
+    # pred_uncer_t = time.time()
+    # pr, var = gp_cpu.predict_with_uncertainty(test_in.data, m_tiles, m_tile_size)
+    # pred_uncer_t = time.time() - pred_uncer_t
+    # logger.info("Finished predictions.")
 
     # Predict
-    pred_full_t = time.time()
-    pr__, var__ = gp.predict_with_full_cov(test_in.data, m_tiles, m_tile_size)
-    pred_full_t = time.time() - pred_full_t
-    logger.info("Finished predictions with full cov.")
+    # pred_full_t = time.time()
+    # pr__, var__ = gp_cpu.predict_with_full_cov(test_in.data, m_tiles, m_tile_size)
+    # pred_full_t = time.time() - pred_full_t
+    # logger.info("Finished predictions with full cov.")
 
     # Predict
-    pred_t = time.time()
-    pr_ = gp.predict(test_in.data, m_tiles, m_tile_size)
-    pred_t = time.time() - pred_t
-    logger.info("Finished predictions.")
+    # pred_t = time.time()
+    # pr_ = gp_cpu.predict(test_in.data, m_tiles, m_tile_size)
+    # pred_t = time.time() - pred_t
+    # logger.info("Finished predictions.")
 
     # Stop HPX runtime
     gpx.stop_hpx()
 
     TOTAL_TIME = time.time() - total_t
     INIT_TIME = init_t
-    OPTI_TIME = opti_t
-    PRED_UNCER_TIME = pred_uncer_t
-    PRED_FULL_TIME = pred_full_t
-    PREDICTION_TIME = pred_t
+    OPTI_TIME = chol_t
+    PRED_UNCER_TIME = 0 # pred_uncer_t
+    PRED_FULL_TIME = 0 # pred_full_t
+    PREDICTION_TIME = 0 # pred_t
 
     # config and measurements
     row_data = [cores, n_train, config["N_TEST"], config["N_TILES"], config["N_REG"], config["OPT_ITER"],

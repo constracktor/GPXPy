@@ -7,21 +7,19 @@
 #include <cmath>
 #include <hpx/algorithm.hpp>
 
-using hpx::experimental::for_loop;
-
 int main(int argc, char *argv[])
 {
     /////////////////////
     /////// configuration
-    int START = 1024;  // 8192;
+    int START = 1024;  // 8192; // number of training points (also number of rows/columns in the kernel matrix)
     int END = 1024;    // 8192;
     int STEP = 128;
     int LOOP = 1;
     const int OPT_ITER = 1;
 
     int n_test = 1024;
-    const std::size_t N_CORES = 2;  // Set this to the number of threads
-    const int n_tiles = 32;
+    const std::size_t N_CORES = 2;  // Set this to the number of threads, maybe higher previously
+    const int n_tiles = 32;          // 32; // number of tiles per dimension
     const int n_reg = 128;
 
     std::string train_path = "../../../data/training/training_input.txt";
@@ -83,27 +81,6 @@ int main(int argc, char *argv[])
                 auto start_cholesky = std::chrono::high_resolution_clock::now();
                 std::vector<std::vector<double>> choleksy_cpu = gp_cpu.cholesky();
                 std::vector<std::vector<double>> choleksy_gpu = gp_gpu.cholesky();
-
-                // Compare the results of the CPU and GPU
-                double avg = 0.0;
-                double count = 0.0;
-                double max = 0.0;
-                int nan_count_gpu = 0;
-                for_loop(hpx::execution::seq, 0, choleksy_cpu.size(), [&](int i)
-                         { for_loop(hpx::execution::seq, 0, choleksy_cpu[i].size(), [&](int j)
-                                    {
-                        std::cout << "CPU: " << choleksy_cpu[i][j] << " GPU: " << choleksy_gpu[i][j] << std::endl;
-                        double diff = std::abs(choleksy_cpu[i][j] - choleksy_gpu[i][j]) / std::max(choleksy_cpu[i][j], choleksy_gpu[i][j]);
-                        if (std::isnan(choleksy_gpu[i][j])){
-                            nan_count_gpu++;
-                        } else {
-                            avg = (count*avg + diff) / (count + 1);
-                            count++;
-                            max = std::max(max, diff);
-                        } }); });
-                std::cout << "Average difference: " << avg << std::endl;
-                std::cout << "Max difference: " << max << std::endl;
-                std::cout << "Nan count GPU: " << nan_count_gpu << std::endl;
 
                 auto end_cholesky = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double> cholesky_time = end_cholesky - end_cholesky;

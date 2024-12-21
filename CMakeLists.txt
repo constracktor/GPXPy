@@ -115,7 +115,9 @@ if(GPXPY_BUILD_CORE)
            MKL::mkl_intel_lp64
            MKL::mkl_core
            MKL::MKL
-           MKL::mkl_sequential)
+           MKL::mkl_sequential
+           CUDA::cublas
+           CUDA::cusolver)
 
   install(
     TARGETS gpxpy
