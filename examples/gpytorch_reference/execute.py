@@ -33,7 +33,6 @@ def gpytorch_run(config, output_file, size_train, l, cores):
     """
     total_t = time.time()
     device = torch.device("cuda" if args.use_gpu and torch.cuda.is_available() else "cpu")
-    print(device)
     X_train, Y_train, X_test, Y_test = load_data(
         train_in_path=config["train_in_file"],
         train_out_path=config["train_out_file"],
@@ -55,7 +54,6 @@ def gpytorch_run(config, output_file, size_train, l, cores):
     if args.use_gpu and torch.cuda.is_available():
         model = model.to(device)
         likelihood = likelihood.to(device)
-    likelihood = likelihood.to(device)
     init_t = time.time() - init_t
     # logger.info("Initialized model.")
 
