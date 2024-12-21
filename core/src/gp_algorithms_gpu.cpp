@@ -1187,8 +1187,7 @@ cholesky(const std::vector<double> &training_input,
             check_cuda_error(cudaStreamCreate(&stream));
             check_cuda_error(cudaMemcpy(result[i * n_tiles + j].data(), d_K_tiles[i * n_tiles + j].get(), n_tile_size * n_tile_size * sizeof(double), cudaMemcpyDeviceToHost));
             check_cuda_error(cudaStreamSynchronize(stream));
-            check_cuda_error(cudaStreamDestroy(stream));
-            }); });
+            check_cuda_error(cudaStreamDestroy(stream)); }); });
 
     return hpx::make_ready_future(result);
 }

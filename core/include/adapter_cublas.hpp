@@ -23,7 +23,7 @@ using cublas_executor = hpx::cuda::experimental::cublas_executor;
 // BLAS operations on GPU with cuBLAS (and cuSOLVER)
 // =============================================================================
 
-// BLAS level 3 operations ------------------------------------------------- {{{
+// BLAS level 3 operations {{{
 
 /**
  * @brief In-place Cholesky decomposition of A
@@ -92,19 +92,15 @@ syrk(std::shared_ptr<cublasHandle_t> cublas,
  * @return updated matrix f_X
  */
 hpx::shared_future<double *>
-gemm(std::shared_ptr<cublasHandle_t> cublas,
+gemm_cholesky(std::shared_ptr<cublasHandle_t> cublas,
      hpx::shared_future<double *> f_A,
      hpx::shared_future<double *> f_B,
      hpx::shared_future<double *> f_C,
-     const std::size_t M,
-     const std::size_t N,
-     const std::size_t K,
-     const BLAS_TRANSPOSE transpose_A,
-     const BLAS_TRANSPOSE transpose_B);
+     const std::size_t N);
 
-// }}} ------------------------------------------ end of BLAS level 3 operations
+// }}} end of BLAS level 3 operations
 
-// BLAS level 2 operations ------------------------------------------------- {{{
+// BLAS level 2 operations {{{
 
 /**
  * @brief In-place solve L(^T) * x = a where L lower triangular
@@ -197,9 +193,9 @@ dot_diag_gemm(cublas_executor *cublas,
               const std::size_t N,
               const std::size_t M);
 
-// }}} ------------------------------------------ end of BLAS level 2 operations
+// }}} end of BLAS level 2 operations
 
-// BLAS level 1 operations ------------------------------------------------- {{{
+// BLAS level 1 operations {{{
 
 /**
  * @brief Dot product: a * b
@@ -213,27 +209,30 @@ double dot(cublas_executor *cublas,
            std::vector<double> b,
            const std::size_t N);
 
-// }}} ------------------------------------------ end of BLAS level 1 operations
+// }}} end of BLAS level 1 operations
 
-// Helper functions -------------------------------------------------------- {{{
+// Helper functions {{{
 
-/**
- * @brief Inverts the value of a BLAS_TRANSPOSE enum
- *
- * This function has been added because cuBLAS computes in column-major order.
- * Therefore the implementations of adapter_cublas.cpp call the cuBLAS routines
- * with inversely transposed matrices and utilize this function to invert the
- * parameter given by the callee.
- *
- * @param trans The BLAS_TRANSPOSE value to invert
- *
- * @return The inverted BLAS_TRANSPOSE value
- */
-inline BLAS_TRANSPOSE invert_transpose(BLAS_TRANSPOSE trans)
+inline cublasOperation_t cublas_transpose(BLAS_TRANSPOSE trans)
 {
-    return (trans == Blas_no_trans) ? Blas_trans : Blas_no_trans;
+    return (trans == Blas_no_trans) ? CUBLAS_OP_N : CUBLAS_OP_T;
 }
 
-// }}} ------------------------------------------------- end of Helper functions
+inline cublasOperation_t cublas_transpose_invert(BLAS_TRANSPOSE trans)
+{
+    return (trans == Blas_no_trans) ? CUBLAS_OP_T : CUBLAS_OP_N;
+}
+
+inline cublasSideMode_t cublas_side(BLAS_SIDE side)
+{
+    return (side == Blas_left) ? CUBLAS_SIDE_LEFT : CUBLAS_SIDE_RIGHT;
+}
+
+inline cublasSideMode_t cublas_side_invert(BLAS_SIDE side)
+{
+    return (side == Blas_left) ? CUBLAS_SIDE_RIGHT : CUBLAS_SIDE_LEFT;
+}
+
+// }}} end of Helper functions
 
 #endif  // end of ADAPTER_CUBLAS_H

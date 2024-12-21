@@ -9,8 +9,7 @@
 namespace cpu
 {
 
-// Tiled Cholesky Algorithm ------------------------------------------------
-// {{{
+// Tiled Cholesky Algorithm {{{
 
 void right_looking_cholesky_tiled(
     std::vector<hpx::shared_future<std::vector<double>>> &ft_tiles,
@@ -24,6 +23,7 @@ void right_looking_cholesky_tiled(
             hpx::dataflow(hpx::annotated_function(&potrf, "cholesky_tiled"),
                           ft_tiles[k * n_tiles + k],
                           N);
+
         for (std::size_t m = k + 1; m < n_tiles; m++)
         {
             // TRSM:  Solve X * L^T = A
@@ -582,15 +582,15 @@ update_hyperparameter(
     // update unconstrained parameter
     hpx::shared_future<double> updated_param =
         hpx::dataflow(hpx::annotated_function(hpx::unwrapping(&update_param),
-                                "gradient_tiled"),
-        unconstrained_param,
-        sek_params,
-        adam_params,
-        m_T[param_idx],
-        v_T[param_idx],
-        beta1_T,
-        beta2_T,
-        iter);
+                                              "gradient_tiled"),
+                      unconstrained_param,
+                      sek_params,
+                      adam_params,
+                      m_T[param_idx],
+                      v_T[param_idx],
+                      beta1_T,
+                      beta2_T,
+                      iter);
     // transform hyperparameter to constrained form
     return hpx::dataflow(
                hpx::annotated_function(hpx::unwrapping(&to_constrained),

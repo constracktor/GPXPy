@@ -41,11 +41,12 @@ void right_looking_cholesky_tiled(
         // POTRF: Compute Cholesky factor L
         ft_tiles[k * n_tiles + k] = hpx::dataflow(
             hpx::annotated_function(&potrf, "cholesky_tiled_gpu"), cusolver, ft_tiles[k * n_tiles + k], N);
-        ft_tiles[k * n_tiles + k].get();
 
         for (std::size_t m = k + 1; m < n_tiles; m++)
         {
-            // TRSM
+            // TRSM:  Solve X * L^T = A for X:
+            // - f_tiles[k * n_tiles + k] is L
+            // - f_tiles[m * n_tiles + k] is A (same as X)
             ft_tiles[m * n_tiles + k] = hpx::dataflow(
                 hpx::annotated_function(&trsm, "cholesky_tiled_gpu"), cublas, ft_tiles[k * n_tiles + k], ft_tiles[m * n_tiles + k], N, N, Blas_trans, Blas_right);
         }
@@ -59,10 +60,11 @@ void right_looking_cholesky_tiled(
             for (std::size_t n = k + 1; n < m; n++)
             {
                 // GEMM
-                ft_tiles[m * n_tiles + n] = hpx::dataflow(hpx::annotated_function(&gemm, "cholesky_tiled_gpu"), cublas, ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N, N, N, Blas_no_trans, Blas_trans);
+                ft_tiles[m * n_tiles + n] = hpx::dataflow(hpx::annotated_function(&gemm_cholesky, "cholesky_tiled_gpu"), cublas, ft_tiles[m * n_tiles + k], ft_tiles[n * n_tiles + k], ft_tiles[m * n_tiles + n], N);
             }
         }
     }
+    hpx::wait_all(ft_tiles);
     check_cuda_error(cudaStreamSynchronize(stream));
     check_cuda_error(cudaStreamDestroy(stream));
     cusolverDnDestroy(*cusolver);

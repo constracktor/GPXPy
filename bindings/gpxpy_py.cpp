@@ -93,7 +93,27 @@ Parameters:
              py::arg("n_reg") = 100,
              py::arg("trainable") = std::vector<bool>{ true, true, true },
              py::arg("gpu_id") = 0,
-             py::arg("n_streams") = 1)
+             py::arg("n_streams") = 1,
+             R"pbdoc(
+Create Gaussian Process including its data, hyperparameters.
+
+Parameters:
+    input_data (list): Input data for the GP.
+    output_data (list): Output data for the GP.
+    n_tiles (int): Number of tiles to split the input data.
+    n_tile_size (int): Size of each tile.
+    lengthscale (float): Lengthscale hyperparameter for the squared exponential
+        kernel. Default is 1.
+    v_lengthscale (float): Vertical lengthscale for the squared exponential
+        kernel. Default is 1.
+    noise_var (float): Noise variance for the squared exponential kernel.
+        Default is 0.1.
+    n_reg (int): Number of regressors. Default is 100.
+    trainable (list): List of booleans for trainable hyperparameters. Default is
+        {true, true, true}.
+    gpu_id (int): ID of the GPU to use. Default is -1 (CPU only).
+    n_streams (int): Number of streams for GPU computation. Default is 1.
+             )pbdoc")
         .def_property(
             "lengthscale",
             [](const gpxpy::GP &gp)
@@ -122,5 +142,6 @@ Parameters:
         .def("predict_with_full_cov", &gpxpy::GP::predict_with_full_cov, py::arg("test_data"), py::arg("m_tiles"), py::arg("m_tile_size"))
         .def("optimize", &gpxpy::GP::optimize, py::arg("hyperparams"))
         .def("optimize_step", &gpxpy::GP::optimize_step, py::arg("hyperparams"), py::arg("iter"))
-        .def("compute_loss", &gpxpy::GP::calculate_loss);
+        .def("compute_loss", &gpxpy::GP::calculate_loss)
+        .def("cholesky", &gpxpy::GP::cholesky);
 }

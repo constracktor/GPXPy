@@ -39,8 +39,12 @@ potrf(std::shared_ptr<cusolverDnHandle_t> cusolver,
 
     double *d_A = f_A.get();
 
+    // NOTE: Using CUBLAS_FILL_MODE_UPPER because of column-major matrix layout,
+    // but actually only modifying the lower triangular part of d_A
+    cublasFillMode_t fillMode = CUBLAS_FILL_MODE_UPPER;
+
     cusolverDnXpotrf_bufferSize(
-        *cusolver, params, CUBLAS_FILL_MODE_LOWER, N, CUDA_R_64F, d_A, N, CUDA_R_64F, &workspaceInBytesOnDevice, &workspaceInBytesOnHost);
+        *cusolver, params, fillMode, N, CUDA_R_64F, d_A, N, CUDA_R_64F, &workspaceInBytesOnDevice, &workspaceInBytesOnHost);
 
     check_cuda_error(cudaMalloc(reinterpret_cast<void **>(&d_work), workspaceInBytesOnDevice));
 
@@ -53,7 +57,8 @@ potrf(std::shared_ptr<cusolverDnHandle_t> cusolver,
         }
     }
 
-    cusolverDnXpotrf(*cusolver, params, CUBLAS_FILL_MODE_LOWER, N, CUDA_R_64F, d_A, N, CUDA_R_64F, d_work, workspaceInBytesOnDevice, h_work, workspaceInBytesOnHost, d_info);
+    cusolverDnXpotrf(*cusolver, params, fillMode, N, CUDA_R_64F, d_A, N, CUDA_R_64F, d_work, workspaceInBytesOnDevice, h_work, workspaceInBytesOnHost, d_info);
+
     check_cuda_error(cudaStreamSynchronize(stream));
 
     check_cuda_error(cudaFree(d_work));
@@ -62,6 +67,7 @@ potrf(std::shared_ptr<cusolverDnHandle_t> cusolver,
         free(h_work);
     }
     check_cuda_error(cudaFree(d_info));
+
 
     return hpx::make_ready_future(d_A);
 }
@@ -85,10 +91,14 @@ trsm(std::shared_ptr<cublasHandle_t> cublas,
     double *d_L = f_L.get();
     double *d_A = f_A.get();
 
+    // NOTE: Changed cublasSideMode_t and CUBLAS_FILL_MODE_UPPER according to
+    // cuBLAS column-major ordering
+
+    cublasOperation_t cublas_transpose_L = cublas_transpose(transpose_L);
+    cublasSideMode_t cublas_side_L = cublas_side_invert(side_L);
+
     // Compute TRSM on device (X, returned as A)
-    // formula here:      X * L^T = alpha * A
-    // formula in cublas: X * A^T = alpha * B
-    cublasDtrsm(*cublas, static_cast<cublasSideMode_t>(side_L), CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, N, N, &alpha, d_L, N, d_A, N);
+    cublasDtrsm(*cublas, cublas_side_L, CUBLAS_FILL_MODE_UPPER, cublas_transpose_L, CUBLAS_DIAG_NON_UNIT, N, N, &alpha, d_L, N, d_A, N);
     check_cuda_error(cudaStreamSynchronize(stream));
 
     return hpx::make_ready_future(d_A);
@@ -103,7 +113,7 @@ syrk(std::shared_ptr<cublasHandle_t> cublas,
     cudaStream_t stream;
     cublasGetStream_v2(*cublas, &stream);
 
-    // GEMM constants
+    // SYRK constants
     const double alpha = -1.0;
     const double beta = 1.0;
     std::size_t matrixSize = N * N;
@@ -113,24 +123,20 @@ syrk(std::shared_ptr<cublasHandle_t> cublas,
     double *d_B = f_B.get();
 
     // Compute SYRK on device
-    // formula here:      A = beta * A + alpha * B * B^T
-    // formula in cublas: C = beta * C + αlpha * A * A^T
-    cublasDsyrk(*cublas, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_N, N, N, &alpha, d_B, N, &beta, d_A, N);
+    // NOTE: Changed CUBLAS_FILL_MODE_UPPER & CUBLAS_OP_T according to cuBLAS
+    // column-major ordering
+    cublasDsyrk(*cublas, CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_T, N, N, &alpha, d_B, N, &beta, d_A, N);
     check_cuda_error(cudaStreamSynchronize(stream));
 
     return hpx::make_ready_future(d_A);
 }
 
 hpx::shared_future<double *>
-gemm(std::shared_ptr<cublasHandle_t> cublas,
+gemm_cholesky(std::shared_ptr<cublasHandle_t> cublas,
      hpx::shared_future<double *> f_A,
      hpx::shared_future<double *> f_B,
      hpx::shared_future<double *> f_C,
-     const std::size_t M,
-     const std::size_t N,
-     const std::size_t K,
-     const BLAS_TRANSPOSE transpose_A,
-     const BLAS_TRANSPOSE transpose_B)
+     const std::size_t N)
 {
     cudaStream_t stream;
     cublasGetStream_v2(*cublas, &stream);
@@ -139,13 +145,19 @@ gemm(std::shared_ptr<cublasHandle_t> cublas,
     const double alpha = -1.0;
     const double beta = 1.0;
 
-    // Allocate device memory
     double *d_A = f_A.get();
     double *d_B = f_B.get();
     double *d_C = f_C.get();
 
+    // Copy each vector d_X from device to host and print it
+    std::vector<double> h_A(N * N);
+    std::vector<double> h_B(N * N);
+    std::vector<double> h_C(N * N);
+
     // Compute GEMM on device
-    cublasDgemm(*cublas, CUBLAS_OP_N, CUBLAS_OP_T, N, N, N, &alpha, d_A, N, d_B, N, &beta, d_C, N);
+    // NOTE: swapped order of d_A and d_B according to cuBLAS column-major
+    // ordering
+    cublasDgemm(*cublas, CUBLAS_OP_T, CUBLAS_OP_N, N, N, N, &alpha, d_B, N, d_A, N, &beta, d_C, N);
     check_cuda_error(cudaStreamSynchronize(stream));
 
     return hpx::make_ready_future(d_C);
@@ -176,7 +188,7 @@ trsv(cublas_executor *cublas,
 
     // TRSV: In-place solve L(^T) * x = a where L lower triangular
     // notes regarding cuBLAS:
-    hpx::post(*cublas, cublasDtrsv, CUBLAS_FILL_MODE_UPPER, static_cast<cublasOperation_t>(invert_transpose(transpose_L)), CUBLAS_DIAG_NON_UNIT, N, d_L, N, d_a, 1);
+    hpx::post(*cublas, cublasDtrsv, CUBLAS_FILL_MODE_UPPER, cublas_transpose(transpose_L), CUBLAS_DIAG_NON_UNIT, N, d_L, N, d_a, 1);
 
     // copy the result back to the host
     cublas_future copy_device_to_host =
