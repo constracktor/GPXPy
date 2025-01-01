@@ -1,0 +1,70 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+    - main
+
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-24.04]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install compilers and static analyzers
+      if: matrix.os == 'ubuntu-24.04'
+      run: >-
+        sudo apt-get install cppcheck -y -q
+
+        sudo update-alternatives --install
+        /usr/bin/clang-tidy clang-tidy
+        /usr/bin/clang-tidy-18 150
+
+        sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-18 150
+
+    - name: Set up Spack
+      uses: spack/setup-spack@v2
+      with:
+        ref: releases/v0.23
+        buildcache: true  # Configure oci://ghcr.io/spack/github-actions-buildcache
+        color: true       # Force color output (SPACK_COLOR=always)
+        path: spack
+
+    - name: Choose environment
+      run: |
+        cp spack-repo/environments/spack_cpu_gcc.yaml spack.yaml
+
+    - name: Concretize
+      run: spack -e . concretize
+
+    - name: Install
+      run: spack -e . install --no-check-signature
+
+    - name: Configure
+      run: cmake "--preset=ci-${{ matrix.os }}"
+
+    - name: Build
+      run: cmake --build build --config RelWithDebInfo -j 2
+
+    - name: Install
+      run: cmake --install build --config RelWithDebInfo --prefix prefix
+
+    - name: Test
+      working-directory: build
+      run: ctest --output-on-failure --no-tests=error -C RelWithDebInfo -j 2
+
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: binaries-${{ matrix.os }}
+        path: |
+          prefix/
