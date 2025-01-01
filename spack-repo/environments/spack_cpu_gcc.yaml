@@ -1,7 +1,7 @@
 spack:
   specs:
-  - hpx@1.10.0%gcc@13.2.0 networking=none max_cpu_count=256 instrumentation=apex ^cmake@3.30 ^curl@8.10.1 ^ninja@1.12.1
-  - intel-oneapi-mkl@2024.2.1%gcc@13.2.0
+  - hpx@1.10.0%gcc networking=none max_cpu_count=256 instrumentation=apex ^cmake@3.30 ^curl@8.10.1 ^ninja@1.12.1
+  - intel-oneapi-mkl@2024.2.1%gcc
   view: true
   concretizer:
     unify: true
