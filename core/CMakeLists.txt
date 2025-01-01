@@ -1,65 +1,34 @@
-cmake_minimum_required(VERSION 3.16)
+add_library(
+  gpxpy_core STATIC
+  src/gp_optimizer.cpp
+  src/gp_functions.cpp
+  src/gp_algorithms_mkl.cpp
+  src/gpxpy_c.cpp
+  src/adapter_mkl.cpp
+  src/tiled_algorithms_cpu.cpp
+  src/gp_uncertainty.cpp
+  src/utils_c.cpp)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+add_library(GPXPy::core ALIAS gpxpy_core)
 
-project(gpxpy VERSION 0.1.0)
-
-find_package(HPX REQUIRED)
-find_package(MKL CONFIG REQUIRED)
-
-# Include dir
-include_directories(${HPX_INCLUDE_DIRS})
-include_directories(${MKL_INCLUDE_DIRS})
-
-# Source files
-set(SOURCE_FILES
-    src/gp_optimizer.cpp
-    src/gp_functions.cpp
-    src/gp_algorithms_mkl.cpp
-    src/gpxpy_c.cpp
-    src/adapter_mkl.cpp
-    src/tiled_algorithms_cpu.cpp
-    src/gp_uncertainty.cpp
-    src/utils_c.cpp)
-
-# Headers (to be installed)
-set(HEADER_FILES
-    include/gp_optimizer.hpp
-    include/gp_functions.hpp
-    include/gp_algorithms_cpu.hpp
-    include/gpxpy_c.hpp
-    include/adapter_mkl.hpp
-    include/tiled_algorithms_cpu.hpp
-    include/gp_uncertainty.hpp
-    include/utils_c.hpp)
-
-# Add library
-add_library(gpxpy SHARED ${SOURCE_FILES})
+# Add them as PRIVATE sources here so they show up in project files Can't use
+# PUBLIC etc., see: https://stackoverflow.com/a/62465051
+file(GLOB_RECURSE header_files CONFIGURE_DEPENDS include/*.hpp)
+target_sources(gpxpy_core PRIVATE ${header_files})
 
 # Link HPX libraries
-target_link_libraries(gpxpy PRIVATE ${HPX_LIBRARIES} MKL::MKL)
+target_link_libraries(
+  gpxpy_core PUBLIC HPX::hpx MKL::mkl_intel_lp64
+                    MKL::mkl_core MKL::MKL MKL::mkl_sequential)
 
 # Include directories
 target_include_directories(
-  gpxpy PRIVATE include/ ${HPX_INCLUDE_DIRS}
-                $<TARGET_PROPERTY:MKL::MKL,INTERFACE_INCLUDE_DIRECTORIES>)
+  gpxpy_core PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/core/include>")
 
-# Set the RPATH to include the MKL library paths
-set_target_properties(gpxpy PROPERTIES INSTALL_RPATH "${MKL_LIBRARIES}"
-                                       BUILD_WITH_INSTALL_RPATH ON)
+target_compile_features(gpxpy_core PUBLIC cxx_std_17)
 
-# Set default installation prefix if not specified by user
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  get_filename_component(PARENT_DIR "${CMAKE_CURRENT_LIST_DIR}" DIRECTORY)
-  set(CMAKE_INSTALL_PREFIX
-      "${PARENT_DIR}/examples/gpxpy_cpp/install_cpp"
-      CACHE PATH "Installation Directory" FORCE)
-endif()
+set_property(TARGET gpxpy_core PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-# Install
-install(TARGETS gpxpy DESTINATION lib)
+install(TARGETS gpxpy_core DESTINATION "${CMAKE_INSTALL_PREFIX}/install/lib")
 
-# Create base directory
-install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY include/ DESTINATION "${CMAKE_INSTALL_PREFIX}/install/include")
