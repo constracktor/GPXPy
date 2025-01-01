@@ -2,8 +2,8 @@
 #include <fstream>
 #include <iostream>
 // #include <boost/program_options.hpp>
-#include "../install_cpp/include/gpxpy_c.hpp"
-#include "../install_cpp/include/utils_c.hpp"
+#include "../install/include/gpxpy_c.hpp"
+#include "../install/include/utils_c.hpp"
 
 int main(int argc, char *argv[])
 {

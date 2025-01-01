@@ -7,7 +7,7 @@ from csv import writer
 from config import get_config
 from hpx_logger import setup_logging
 
-import install_python.gpxpy as gpx
+import gpxpy as gpx
 
 
 logger = logging.getLogger()

@@ -192,7 +192,7 @@ cython_debug/
 
 # Datafiles
 examples/*/output.csv
-examples/gpxpy_cpp/install_cpp/
+examples/gpxpy_*/install/
 /.vscode
 
 # Editor related files
