@@ -29,12 +29,8 @@ pybind11_add_module(gpxpy ${SOURCE_FILES} ${HEADER_FILES})
 # Set the output directory for the automobile target
 set_target_properties(
   gpxpy
-  PROPERTIES
-               LIBRARY_OUTPUT_DIRECTORY
-               ${CMAKE_INSTALL_PREFIX}
-               ARCHIVE_OUTPUT_DIRECTORY
-               ${CMAKE_INSTALL_PREFIX}
-               RUNTIME_OUTPUT_DIRECTORY
-               ${CMAKE_INSTALL_PREFIX})
- 
+  PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_INSTALL_PREFIX}
+             ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_INSTALL_PREFIX}
+             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+
 target_link_libraries(gpxpy PUBLIC GPXPy::core)

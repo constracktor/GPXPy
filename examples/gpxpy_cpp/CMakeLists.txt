@@ -34,5 +34,5 @@ message(STATUS "GPXPy core library found: ${GPXPY_LIB}")
 add_executable(gpxpy_cpp src/execute.cpp)
 # Link the libraries
 target_link_libraries(
-  gpxpy_cpp
-  PUBLIC "${GPXPY_LIB}" HPX::hpx MKL::mkl_intel_lp64 MKL::mkl_core MKL::MKL MKL::mkl_sequential)
+  gpxpy_cpp PUBLIC "${GPXPY_LIB}" HPX::hpx MKL::mkl_intel_lp64 MKL::mkl_core
+                   MKL::MKL MKL::mkl_sequential)
