@@ -36,7 +36,6 @@ export PRESET=ci-ubuntu
 ################################################################################
 # Compile code
 ################################################################################
-# note: dev defaults to debug builds!
 cmake --preset $PRESET -DGPXPY_BUILD_BINDINGS=$BINDINGS -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR
 cmake --build --preset $PRESET
 cmake --install build/$PRESET
