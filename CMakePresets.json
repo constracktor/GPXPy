@@ -142,7 +142,8 @@
     },
     {
       "name": "ci-ubuntu",
-      "inherits": ["ci-build", "ci-linux"]
+      "inherits": ["ci-build", "ci-linux"],
+      "binaryDir": "${sourceDir}/build/ci-ubuntu"
     },
     {
       "name": "ci-windows",
@@ -167,6 +168,11 @@
       "name": "dev-linux",
       "configurePreset": "dev-linux",
       "configuration": "Debug"
+    },
+    {
+      "name": "ci-ubuntu",
+      "configurePreset": "ci-ubuntu",
+      "configuration": "Release"
     }
   ],
   "testPresets": [
