@@ -142,8 +142,7 @@
     },
     {
       "name": "ci-ubuntu",
-      "inherits": ["ci-build", "ci-linux"],
-      "binaryDir": "${sourceDir}/build/ci-ubuntu"
+      "inherits": ["ci-build", "ci-linux"]
     },
     {
       "name": "ci-windows",
@@ -161,6 +160,15 @@
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
+    },
+    {
+      "name": "release-linux",
+      "binaryDir": "${sourceDir}/build/release-linux",
+      "inherits": ["ci-linux"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
     }
   ],
   "buildPresets": [
@@ -170,14 +178,25 @@
       "configuration": "Debug"
     },
     {
-      "name": "ci-ubuntu",
-      "configurePreset": "ci-ubuntu",
-      "configuration": "Release"
+      "name": "release-linux",
+      "configurePreset": "release-linux",
+      "configuration": "RelWithDebInfo"
     }
   ],
   "testPresets": [
     {
       "name": "dev-linux",
+      "configurePreset": "dev-linux",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "release-linux",
       "configurePreset": "dev-linux",
       "configuration": "Debug",
       "output": {
