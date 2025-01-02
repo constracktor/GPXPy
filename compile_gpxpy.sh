@@ -29,9 +29,9 @@ export INSTALL_DIR=$(pwd)/examples/gpxpy_python
 # export BINDINGS=OFF
 # export INSTALL_DIR=$(pwd)/examples/gpxpy_cpp
 
-# Release:	ci-ubuntu
+# Release:	release-linux
 # Debug:	dev-linux
-export PRESET=ci-ubuntu
+export PRESET=release-linux
 
 ################################################################################
 # Compile code
