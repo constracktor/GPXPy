@@ -3,6 +3,7 @@ import logging
 import torch
 import gpytorch
 import os
+import argparse
 
 from config import get_config
 from gpytorch_logger import setup_logging
@@ -10,6 +11,14 @@ from utils import load_data, ExactGPModel, train, predict, predict_with_var
 
 logger = logging.getLogger()
 log_filename = "./gpytorch_logs.log"
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--use-gpu",
+    action="store_true",
+    help="Flag to use GPU (assuming available)",
+)
+args = parser.parse_args()
 
 
 def gpytorch_run(config, output_file, size_train, l, cores):
@@ -23,6 +32,7 @@ def gpytorch_run(config, output_file, size_train, l, cores):
         l (int): Loop index.
     """
     total_t = time.time()
+    device = torch.device("cuda" if args.use_gpu and torch.cuda.is_available() else "cpu")
     X_train, Y_train, X_test, Y_test = load_data(
         train_in_path=config["train_in_file"],
         train_out_path=config["train_out_file"],
@@ -32,6 +42,8 @@ def gpytorch_run(config, output_file, size_train, l, cores):
         size_test=config["N_TEST"],
         n_regressors=config["N_REG"],
     )
+    if args.use_gpu and torch.cuda.is_available():
+        X_train, Y_train, X_test, Y_test = X_train.to(device), Y_train.to(device), X_test.to(device), Y_test.to(device)
 
     # logger.info("Finished loading the data.")
 
@@ -39,6 +51,9 @@ def gpytorch_run(config, output_file, size_train, l, cores):
     likelihood = gpytorch.likelihoods.GaussianLikelihood()
     likelihood.noise = 0.1
     model = ExactGPModel(X_train, Y_train, likelihood)
+    if args.use_gpu and torch.cuda.is_available():
+        model = model.to(device)
+        likelihood = likelihood.to(device)
     init_t = time.time() - init_t
     # logger.info("Initialized model.")
 
@@ -69,7 +84,7 @@ def gpytorch_run(config, output_file, size_train, l, cores):
 
     logger.info(f"{cores},{size_train},{config['N_TEST']},{config['N_REG']},{config['OPT_ITER']},{TOTAL_TIME},{INIT_TIME},{OPT_TIME},{PRED_UNCER_TIME},{PREDICTION_TIME},{l}")
     #logger.info("Completed iteration.")
-    
+
 
 def execute():
     """
@@ -115,7 +130,7 @@ def execute():
                     logger.info(f"Train Size: {data}, Loop: {l}")
                     gpytorch_run(config, output_file, data, l, 2**core)
 
-    
+
     logger.info("Completed the program.")
 
 

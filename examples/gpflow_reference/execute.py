@@ -1,16 +1,33 @@
-import time
-import os
+import argparse
 import logging
+import os
+import time
 
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-import tensorflow as tf
 import gpflow
 import numpy as np
+import tensorflow as tf
 
 from config import get_config
 from gpflow_logger import setup_logging
-from utils import load_data, init_model, optimize_model, predict, predict_with_var
+from utils import (
+    init_model,
+    load_data,
+    optimize_model,
+    predict,
+    predict_with_var,
+)
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--use-gpu",
+    action="store_true",
+    help="Flag to use GPU (assuming available)",
+)
+args = parser.parse_args()
+
+if not args.use_gpu:
+    os.environ["CUDA_VISIBLE_DEVICES"] = ""
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 logger = logging.getLogger()
 log_filename = "./gpflow_logs.log"
@@ -30,7 +47,7 @@ def gpflow_run(config, output_file, size_train, l, cores):
         None
     """
     total_t = time.time()
-    
+
     X_train, Y_train, X_test, Y_test = load_data(
         train_in_path=config["train_in_file"],
         train_out_path=config["train_out_file"],
@@ -45,25 +62,30 @@ def gpflow_run(config, output_file, size_train, l, cores):
 
     init_t = time.time()
     model = init_model(
-        X_train, Y_train, k_var=1.0, k_lscale=1.0, noise_var=0.1, params_summary=False
+        X_train,
+        Y_train,
+        k_var=1.0,
+        k_lscale=1.0,
+        noise_var=0.1,
+        params_summary=False,
     )
     init_t = time.time() - init_t
-    
+
     opti_t = time.perf_counter()
-    optimize_model(model, training_iter=config['OPT_ITER'])
+    optimize_model(model, training_iter=config["OPT_ITER"])
     opti_t = time.perf_counter() - opti_t
     # logger.info("Finished optimization.")
-      
+
     pred_var_t = time.time()
     f_pred, f_var = predict_with_var(model, X_test)
     pred_var_t = time.time() - pred_var_t
     # logger.info("Finished making predictions.")
-    
+
     pred_t = time.time()
     f_pred = predict(model, X_test)
     pred_t = time.time() - pred_t
-    # logger.info("Finished making predictions.") 
-    
+    # logger.info("Finished making predictions.")
+
     TOTAL_TIME = time.time() - total_t
     INIT_TIME = init_t
     OPT_TIME = opti_t
@@ -74,8 +96,10 @@ def gpflow_run(config, output_file, size_train, l, cores):
     row_data = f"{cores},{size_train},{config['N_TEST']},{config['N_REG']},{config['OPT_ITER']},{TOTAL_TIME},{INIT_TIME},{OPT_TIME},{PRED_UNCER_TIME},{PREDICTION_TIME},{l}\n"
     output_file.write(row_data)
 
-    logger.info(f"{cores},{size_train},{config['N_TEST']},{config['N_REG']},{config['OPT_ITER']},{TOTAL_TIME},{INIT_TIME},{OPT_TIME},{PRED_UNCER_TIME},{PREDICTION_TIME},{l}")
-    #logger.info("Completed iteration.")
+    logger.info(
+        f"{cores},{size_train},{config['N_TEST']},{config['N_REG']},{config['OPT_ITER']},{TOTAL_TIME},{INIT_TIME},{OPT_TIME},{PRED_UNCER_TIME},{PREDICTION_TIME},{l}"
+    )
+    # logger.info("Completed iteration.")
 
 
 def execute():
@@ -90,18 +114,28 @@ def execute():
         loop for a specified amount of times while executing `gpflow_run` function.
     """
     setup_logging(log_filename, True, logger)
+
+    # Check if TensorFlow is using GPU
+    physical_devices = tf.config.list_physical_devices("GPU")
+    if len(physical_devices) > 0:
+        logger.info(f"GPUs available: {physical_devices}")
+    else:
+        logger.info("No GPUs found. Using CPU.")
+
     # logger.info("\n")
     # logger.info("-" * 40)
     # logger.info("Load config file.")
     config = get_config()
-    
+
     file_path = "./output.csv"
     file_exists = os.path.isfile(file_path)
 
     with open(file_path, "a") as output_file:
         if not file_exists or os.stat(file_path).st_size == 0:
             # logger.info("Write output file header")
-            logger.info("Cores,N_train,N_test,N_reg,Opt_iter,Total_time,Init_time,Opt_Time,Pred_Var_time,Pred_time,N_loop")
+            logger.info(
+                "Cores,N_train,N_test,N_reg,Opt_iter,Total_time,Init_time,Opt_Time,Pred_Var_time,Pred_time,N_loop"
+            )
             header = "Cores,N_train,N_test,N_regressor,Opt_iter,Total_time,Init_time,Opt_time,Pred_Uncer_time,Predict_time,N_loop\n"
             output_file.write(header)
 
@@ -113,15 +147,17 @@ def execute():
             gpflow.config.set_default_float(np.float32)
         else:
             gpflow.config.set_default_float(np.float64)
-    
+
         for core in range(0, config["N_CORES"]):
-                tf.config.threading.set_intra_op_parallelism_threads(config["N_CORES"])
-                # tf.config.threading.set_inter_op_parallelism_threads(config["N_CORES"])
-                for data in range(start, end+step, step):
-                    for l in range(config["LOOP"]):
-                        # logger.info("*" * 40)
-                        # logger.info(f"Train Size: {data}, Loop: {l}")
-                        gpflow_run(config, output_file, data, l, 2**core)
+            tf.config.threading.set_intra_op_parallelism_threads(
+                config["N_CORES"]
+            )
+            # tf.config.threading.set_inter_op_parallelism_threads(config["N_CORES"])
+            for data in range(start, end + step, step):
+                for l in range(config["LOOP"]):
+                    # logger.info("*" * 40)
+                    # logger.info(f"Train Size: {data}, Loop: {l}")
+                    gpflow_run(config, output_file, data, l, 2**core)
 
     # logger.info("Completed the program.")
 
