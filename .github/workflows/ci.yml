@@ -61,9 +61,10 @@ jobs:
         CC: gcc-14
         CXX: g++-14
       shell: spack-bash {0}
+      # TODO: we shouldn't have to set the prefix here!
       run: |
         spack env activate .
-        cmake "--preset=ci-${{ matrix.os }}"
+        cmake "--preset=ci-${{ matrix.os }}" -DCMAKE_INSTALL_PREFIX=prefix
 
     - name: Build
       run: cmake --build build --config RelWithDebInfo -j 2
