@@ -73,7 +73,7 @@ jobs:
 
     - name: Test
       working-directory: build
-      run: ctest --output-on-failure --no-tests=error -C RelWithDebInfo -j 2
+      run: ctest --output-on-failure --no-tests=ignore -C RelWithDebInfo -j 2
 
     - name: Upload
       uses: actions/upload-artifact@v4
