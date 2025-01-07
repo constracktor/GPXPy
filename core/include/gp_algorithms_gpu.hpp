@@ -11,6 +11,9 @@
 namespace gpu
 {
 
+template <typename T>
+extern void cuda_trivial_kernel(T, cudaStream_t stream);
+
 // compute the squared exponential kernel of two feature vectors
 double
 compute_covariance_function(std::size_t i_global,
