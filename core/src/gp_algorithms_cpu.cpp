@@ -256,6 +256,7 @@ predict(const std::vector<double> &training_input,
                            training_input);
         }
     }
+
     // Assemble alpha
     alpha_tiles.resize(n_tiles);
     for (std::size_t i = 0; i < n_tiles; i++)
@@ -308,7 +309,7 @@ predict(const std::vector<double> &training_input,
     // Get predictions and uncertainty to return them
     std::vector<double> pred;
     pred.reserve(test_input.size());  // preallocate memory
-    for (std::size_t i; i < m_tiles; i++)
+    for (std::size_t i = 0; i < m_tiles; i++)
     {
         pred.insert(pred.end(), prediction_tiles[i].get().begin(), prediction_tiles[i].get().end());
     }
@@ -453,7 +454,7 @@ predict_with_uncertainty(const std::vector<double> &training_input, const std::v
     std::vector<double> pred_var_full;
     pred_full.reserve(test_input.size());      // preallocate memory
     pred_var_full.reserve(test_input.size());  // preallocate memory
-    for (std::size_t i; i < m_tiles; i++)
+    for (std::size_t i = 0; i < m_tiles; i++)
     {
         pred_full.insert(pred_full.end(), prediction_tiles[i].get().begin(), prediction_tiles[i].get().end());
         pred_var_full.insert(pred_var_full.end(),
@@ -616,7 +617,7 @@ predict_with_full_cov(const std::vector<double> &training_input,
     std::vector<double> pred_var;
     pred.reserve(test_input.size());      // preallocate memory
     pred_var.reserve(test_input.size());  // preallocate memory
-    for (std::size_t i; i < m_tiles; i++)
+    for (std::size_t i = 0; i < m_tiles; i++)
     {
         pred.insert(pred.end(), prediction_tiles[i].get().begin(), prediction_tiles[i].get().end());
         pred_var.insert(pred_var.end(),
@@ -943,7 +944,7 @@ optimize_step(const std::vector<double> &training_input,
     // data holder for loss
     hpx::shared_future<double> loss_value;
     // make shared future
-    for (std::size_t i; i < 3; i++)
+    for (std::size_t i = 0; i < 3; i++)
     {
         hpx::shared_future<double> m =
             hpx::make_ready_future(adam_params.M_T[i]);  //.share();
@@ -1097,7 +1098,7 @@ optimize_step(const std::vector<double> &training_input,
     }
 
     // Update hyperparameter attributes (first and second moment) for Adam
-    for (std::size_t i; i < 3; i++)
+    for (std::size_t i = 0; i < 3; i++)
     {
         adam_params.M_T[i] = m_T[i].get();
         adam_params.V_T[i] = v_T[i].get();
