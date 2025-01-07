@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(test_cpp)
+project(test_cpp LANGUAGES CXX CUDA)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -38,14 +38,14 @@ message(STATUS "GPXPy library found: ${GPXPY_LIB}")
 
 # Add the executable
 add_executable(gpxpy_cpp src/execute.cpp)
-# Link the libraries
-if(NOT GPXPY_WITH_CUDA)
-    # TODO: configuration without GPU support
-else()
-    # TODO: configuration with GPU support
-    find_package(CUDA REQUIRED)
+
+if(GPXPY_WITH_CUDA)
+    # Additional CUDA-specific setup
     target_link_libraries(gpxpy_cpp PRIVATE CUDA::cublas CUDA::cusolver)
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lineinfo")
 endif()
+
+# Link the libraries
 target_link_libraries(gpxpy_cpp PUBLIC
                       "${GPXPY_LIB}"
                       HPX::hpx

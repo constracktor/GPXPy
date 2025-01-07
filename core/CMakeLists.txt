@@ -4,20 +4,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-project(gpxpy VERSION 0.1.0)
+project(gpxpy VERSION 0.1.0 LANGUAGES CXX CUDA)
 
 # Option for GPU support with CUDA/cuBLAS
 option(GPXPY_WITH_CUDA "Enable GPU support with CUDA/cuBLAS" OFF)
 # Pass variable to C++ code
 add_compile_definitions(GPXPY_WITH_CUDA=$<BOOL:${GPXPY_WITH_CUDA}>)
-
-if(NOT GPXPY_WITH_CUDA)
-    # TODO: configuration without GPU support
-else()
-    # TODO: configuration with GPU support
-    # find_package(CUDA REQUIRED)
-    # target_link_libraries(gpxpy PRIVATE CUDA::cublas)
-endif()
 
 find_package(HPX REQUIRED)
 find_package(MKL CONFIG REQUIRED)
@@ -31,7 +23,6 @@ set(SOURCE_FILES
     src/adapter_cublas.cpp
     src/adapter_mkl.cpp
     src/gp_algorithms_cpu.cpp
-    src/gp_algorithms_gpu.cpp
     src/gp_functions.cpp
     src/gp_kernel.cpp
     src/gp_optimizer.cpp
@@ -39,9 +30,16 @@ set(SOURCE_FILES
     src/gpxpy_c.cpp
     src/target.cpp
     src/tiled_algorithms_cpu.cpp
-    src/tiled_algorithms_gpu.cpp
     src/utils_c.cpp
 )
+
+if(GPXPY_WITH_CUDA)
+    list(APPEND SOURCE_FILES
+        src/cuda_kernels.cu
+        src/gp_algorithms_gpu.cpp
+        src/tiled_algorithms_gpu.cpp
+    )
+endif()
 
 # Headers (to be installed)
 set(HEADER_FILES
@@ -65,7 +63,11 @@ set(HEADER_FILES
 add_library(gpxpy SHARED ${SOURCE_FILES})
 
 # Link HPX libraries
-target_link_libraries(gpxpy PRIVATE ${HPX_LIBRARIES} MKL::MKL CUDA::cublas CUDA::cusolver)
+target_link_libraries(gpxpy PRIVATE ${HPX_LIBRARIES} MKL::MKL)
+
+if(GPXPY_WITH_CUDA)
+    target_link_libraries(gpxpy PRIVATE CUDA::cublas CUDA::cusolver)
+endif()
 
 # Include directories
 target_include_directories(
@@ -73,8 +75,7 @@ target_include_directories(
                 $<TARGET_PROPERTY:MKL::MKL,INTERFACE_INCLUDE_DIRECTORIES>)
 
 # Set the RPATH to include the MKL library paths
-set_target_properties(gpxpy PROPERTIES INSTALL_RPATH "${MKL_LIBRARIES}"
-                                       BUILD_WITH_INSTALL_RPATH ON)
+set_target_properties(gpxpy PROPERTIES INSTALL_RPATH "${MKL_LIBRARIES}")
 
 # Set default installation prefix if not specified by user
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
