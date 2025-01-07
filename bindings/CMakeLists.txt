@@ -24,13 +24,9 @@ file(GLOB HEADER_FILES CONFIGURE_DEPENDS "*.hpp")
 source_group("Source Files" FILES ${SOURCE_FILES})
 source_group("Header Files" FILES ${HEADER_FILES})
 
-pybind11_add_module(gpxpy ${SOURCE_FILES} ${HEADER_FILES})
+pybind11_add_module(gpxpy_bindings ${SOURCE_FILES} ${HEADER_FILES})
+# must match the Python module name!
+set_target_properties(gpxpy_bindings PROPERTIES OUTPUT_NAME "gpxpy")
 
-# Set the output directory for the automobile target
-set_target_properties(
-  gpxpy
-  PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_INSTALL_PREFIX}
-             ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_INSTALL_PREFIX}
-             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_INSTALL_PREFIX})
-
-target_link_libraries(gpxpy PUBLIC GPXPy::core)
+install(TARGETS gpxpy_bindings DESTINATION "${CMAKE_INSTALL_PREFIX}")
+target_link_libraries(gpxpy_bindings PUBLIC GPXPy::core)
