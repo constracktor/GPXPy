@@ -17,9 +17,11 @@ spack:
       max_cpu_count=256
       +cuda
       build_type=Debug
+      malloc=system
   - intel-oneapi-mkl
     %clang
   - cuda %clang
+  - py-matplotlib
 
   view: true
 

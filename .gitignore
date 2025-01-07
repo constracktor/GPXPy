@@ -204,3 +204,5 @@ ltex*
 compile_commands.json
 .clangd
 **/log.txt
+**/plot.png
+data/generators/msd_simulator/data

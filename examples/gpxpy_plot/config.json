@@ -1,0 +1,13 @@
+{
+    "train_in_file": "./data/input_data.txt",
+    "train_out_file": "./data/output_data.txt",
+    "test_in_file": "./data/test_in.txt",
+    "test_out_file": "./data/test_out.txt",
+    "N_TRAIN": 1024,
+    "N_TILES": 5,
+    "N_CORES": 2,
+    "N_TEST": 101,
+    "N_REG": 128,
+    "LOOP": 1,
+    "OPT_ITER": 1
+}

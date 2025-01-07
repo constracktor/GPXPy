@@ -9,11 +9,6 @@
 #include <memory>
 #include <sstream>
 
-#ifdef GPXPY_USE_CUDA
-    #include <cuda_runtime.h>
-    #include <hpx/modules/async_cuda.hpp>
-#endif
-
 // namespace for GPXPy library entities
 namespace gpxpy
 {
