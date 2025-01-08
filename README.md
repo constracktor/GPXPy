@@ -58,6 +58,13 @@ suffix `_simcl1` (if available).
 - Set parameters in [`test_gpxpy/config.json`](gpxpy_library/test_gpxpy/config.json)
 - Run `./run_gpxpy.sh` to run example
 
+If you use `gpxpy` with other libraries, e.g. `matplotlib` you may encounter issues with `tcmalloc`, a library for more efficient memory allocation.
+You can either resolve those issues by installing HPX with the `malloc=system` option to use the system allocator.
+However, this allocator is less efficient that `tcmalloc`, especially regarding the highly multithreaded implementation with the HPX library.
+To use the `tcmalloc` instead, you can (compile using `malloc=tcmalloc` which is the default option of the spack package) and prepend your call of the python script with `LD_PRELOAD=/path/to/libtcmalloc.so`.
+(Replace `/path/to` with the path to the library `libtcmalloc.so`.)
+For example call `examples/gpxpy_plot/run_gpxpy.sh` with `LD_PRELOAD=/path/to/libtcmalloc.so ./run_gpxpy.sh` inside the directory `examples/gpxpy_plot`.
+
 ### To run GPflow reference
 
 - Go to [`gpflow_reference`](gpflow_reference/)
