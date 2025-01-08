@@ -421,12 +421,6 @@ predict_with_uncertainty(const std::vector<double> &training_input, const std::v
     }
     // Assemble placeholder for uncertainty
     prediction_uncertainty_tiles.resize(m_tiles);
-    for (std::size_t i = 0; i < m_tiles; i++)
-    {
-        prediction_uncertainty_tiles[i] = hpx::async(
-            hpx::annotated_function(&gen_tile_zeros, "assemble_tiled"),
-            m_tile_size);
-    }
 
     //////////////////////////////////////////////////////////////////////////////
     //// Compute Cholesky decomposition
