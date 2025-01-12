@@ -1160,21 +1160,18 @@ cholesky(const std::vector<double> &training_input,
 
     std::vector<hpx::shared_future<double *>> d_K_tiles(n_tiles * n_tiles);
 
+    cudaStream_t stream;
+    check_cuda_error(cudaStreamCreate(&stream));
     for_loop(hpx::execution::par, 0, n_tiles, [&](std::size_t i)
              { for_loop(hpx::execution::par, 0, i + 1, [&](std::size_t j)
                         {
-            cudaStream_t stream;
-            check_cuda_error(cudaStreamCreate(&stream));
-            d_K_tiles[i * n_tiles + j] = hpx::async([stream, n_tile_size]()
-                                                    {
+                            d_K_tiles[i * n_tiles + j] = hpx::async([stream, n_tile_size]()
+                                                                    {
                 double* d_tile;
                 check_cuda_error(cudaMalloc(reinterpret_cast<void **>(&d_tile), n_tile_size * n_tile_size * sizeof(double)));
                 return d_tile; });
 
-            check_cuda_error(cudaMemcpyAsync(d_K_tiles[i * n_tiles + j].get(), h_K_tiles[i * n_tiles + j].get().data(), n_tile_size * n_tile_size * sizeof(double), cudaMemcpyHostToDevice, stream));
-
-            check_cuda_error(cudaStreamSynchronize(stream));
-            check_cuda_error(cudaStreamDestroy(stream)); }); });
+                            check_cuda_error(cudaMemcpyAsync(d_K_tiles[i * n_tiles + j].get(), h_K_tiles[i * n_tiles + j].get().data(), n_tile_size * n_tile_size * sizeof(double), cudaMemcpyHostToDevice, stream)); }); });
 
     right_looking_cholesky_tiled(gpu, d_K_tiles, n_tile_size, n_tiles);
 
@@ -1183,11 +1180,9 @@ cholesky(const std::vector<double> &training_input,
              { for_loop(hpx::execution::seq, 0, i + 1, [&](std::size_t j)
                         {
             result[i * n_tiles + j].resize(n_tile_size * n_tile_size);
-            cudaStream_t stream;
-            check_cuda_error(cudaStreamCreate(&stream));
-            check_cuda_error(cudaMemcpy(result[i * n_tiles + j].data(), d_K_tiles[i * n_tiles + j].get(), n_tile_size * n_tile_size * sizeof(double), cudaMemcpyDeviceToHost));
-            check_cuda_error(cudaStreamSynchronize(stream));
-            check_cuda_error(cudaStreamDestroy(stream)); }); });
+            check_cuda_error(cudaMemcpy(result[i * n_tiles + j].data(), d_K_tiles[i * n_tiles + j].get(), n_tile_size * n_tile_size * sizeof(double), cudaMemcpyDeviceToHost)); }); });
+    check_cuda_error(cudaStreamSynchronize(stream));
+    check_cuda_error(cudaStreamDestroy(stream));
 
     return hpx::make_ready_future(result);
 }

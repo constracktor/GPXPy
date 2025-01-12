@@ -1,131 +1,172 @@
-#include <chrono>
-#include <fstream>
-#include <iostream>
-// #include <boost/program_options.hpp>
 #include "../install_cpp/include/gpxpy_c.hpp"
 #include "../install_cpp/include/utils_c.hpp"
+#include <chrono>
 #include <cmath>
+#include <fstream>
 #include <hpx/algorithm.hpp>
+#include <iostream>
+
+auto now = std::chrono::high_resolution_clock::now;
+
+// NOTE: my vec, to remove later
+std::vector<double> cholesky_times;
 
 int main(int argc, char *argv[])
 {
-    /////////////////////
-    /////// configuration
-    int START = 1024;  // 8192; // number of training points (also number of rows/columns in the kernel matrix)
-    int END = 1024;    // 8192;
-    int STEP = 128;
-    int LOOP = 1;
-    const int OPT_ITER = 1;
+    // number of training points, number of rows/columns in the kernel matrix
+    const int N_TRAIN_START = 512;  // 128, 256, 512, 1024, 2048, 4096, 8192, 16384
+    const int N_TRAIN_END = 1024;
+    const int N_TRAIN_STEP = 512;
 
-    int n_test = 1024;
-    const std::size_t N_CORES = 2;  // Set this to the number of threads, maybe higher previously
-    const int n_tiles = 32;          // 32; // number of tiles per dimension
+    const int N_TEST = 1024;
+
+    const int LOOPS = 8;
+    const int OPTIMIZE_ITERATIONS = 1;
+
+    // 2^NUM_CORES_EXPONENT CPU cores are used by HPX
+    const std::size_t NUM_CORES_EXPONENT = 2;
+
+    // number of tiles per dimension
+    const int n_train_tiles = 1;
+
+    // number of regressors, i.e. number of previous points incl. current point
+    // considered for each entry in the kernel matrix
     const int n_reg = 128;
 
-    std::string train_path = "../../../data/training/training_input.txt";
-    std::string out_path = "../../../data/training/training_output.txt";
-    std::string test_path = "../../../data/test/test_input.txt";
+    // path to training input & output data
+    std::string train_in_path = "../../../data/training/training_input.txt";
+    std::string train_out_path = "../../../data/training/training_output.txt";
 
-    for (std::size_t core = 2; core <= pow(2, N_CORES); core = core * 2)
+    // path to test input data, output data is predicted
+    std::string test_in_path = "../../../data/test/test_input.txt";
+
+    for (std::size_t cores = 4; cores <= pow(2, NUM_CORES_EXPONENT); cores *= 2) // NOTE: currently all cores
     {
-        // Create new argc and argv to include the --hpx:threads argument
+        // Add number of threads to arguments
         std::vector<std::string> args(argv, argv + argc);
-        args.push_back("--hpx:threads=" + std::to_string(core));
+        args.push_back("--hpx:threads=" + std::to_string(cores));
 
-        // Convert the arguments to char* array
+        // Convert arguments to char* array
         std::vector<char *> cstr_args;
         for (auto &arg : args)
         {
             cstr_args.push_back(const_cast<char *>(arg.c_str()));
         }
+        int hpx_argc = static_cast<int>(cstr_args.size());
+        char **hpx_argv = cstr_args.data();
 
-        int new_argc = static_cast<int>(cstr_args.size());
-        char **new_argv = cstr_args.data();
-
-        for (std::size_t start = START; start <= END; start = start + STEP)
+        for (std::size_t n_train = N_TRAIN_START; n_train <= N_TRAIN_END; n_train += N_TRAIN_STEP)
         {
-            int n_train = start;
-            for (std::size_t l = 0; l < LOOP; l++)
+            for (std::size_t loop = 0; loop < LOOPS; loop++)
             {
-                auto start_total = std::chrono::high_resolution_clock::now();
+                // Total time ---------------------------------------------- {{{
+                auto start_total = now();
 
                 // Compute tile sizes and number of predict tiles
-                int tile_size = utils::compute_train_tile_size(n_train, n_tiles);
-                auto result = utils::compute_test_tiles(n_test, n_tiles, tile_size);
-                /////////////////////
-                ///// hyperparams
+                int n_train_tile_size = utils::compute_train_tile_size(n_train, n_train_tiles);
+                auto [n_test_tiles, n_test_tile_size] = utils::compute_test_tiles(N_TEST, n_train_tiles, n_train_tile_size);
+
+                // Hyperparameters for Adam optimizer
                 std::vector<double> M = { 0.0, 0.0, 0.0 };
-                gpxpy_hyper::AdamParams hpar = { 0.1, 0.9, 0.999, 1e-8, OPT_ITER, M };
+                gpxpy_hyper::AdamParams hpar = { 0.1, 0.9, 0.999, 1e-8, OPTIMIZE_ITERATIONS, M };
 
-                /////////////////////
-                ////// data loading
-                gpxpy::GP_data training_input(train_path, n_train);
-                gpxpy::GP_data training_output(out_path, n_train);
-                gpxpy::GP_data test_input(test_path, n_test);
+                // Load data from files
+                gpxpy::GP_data training_input(train_in_path, n_train);
+                gpxpy::GP_data training_output(train_out_path, n_train);
+                gpxpy::GP_data test_input(test_in_path, N_TEST);
 
-                /////////////////////
-                ///// GP
-                auto start_init = std::chrono::high_resolution_clock::now();
-                std::vector<bool> trainable = { false, false, true };
-                gpxpy::GP gp_cpu(training_input.data, training_output.data, n_tiles, tile_size, 1.0, 1.0, 0.1, n_reg, trainable);
+                // GP construct time --------------------------------------- {{{
+                auto start_init_gp = now();
+
+                std::vector<bool> trainable = { true, true, true };
+
+                // GP for CPU computation
+                // std::string target = "cpu";
+                // gpxpy::GP gp_cpu(training_input.data, training_output.data, n_train_tiles, n_train_tile_size, 1.0, 1.0, 0.1, n_reg, trainable);
+
+                // GP for GPU computation
+                std::string target = "gpu";
                 int device = 0;
                 int n_streams = 1;
-                gpxpy::GP gp_gpu(training_input.data, training_output.data, n_tiles, tile_size, 1.0, 1.0, 0.1, n_reg, trainable, device, n_streams);
-                auto end_init = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double> init_time = end_init - start_init;
+                gpxpy::GP gp_gpu(training_input.data, training_output.data, n_train_tiles, n_train_tile_size, 1.0, 1.0, 0.1, n_reg, trainable, device, n_streams);
 
-                // Initialize HPX with the new arguments, don't run hpx_main
-                utils::start_hpx_runtime(new_argc, new_argv);
+                auto init_time = now() - start_init_gp;  // ----------------- }}}
 
-                // Measure the time taken to execute gp.cholesky();
-                auto start_cholesky = std::chrono::high_resolution_clock::now();
-                std::vector<std::vector<double>> choleksy_cpu = gp_cpu.cholesky();
-                std::vector<std::vector<double>> choleksy_gpu = gp_gpu.cholesky();
+                // Start HPX runtime with arguments
+                utils::start_hpx_runtime(hpx_argc, hpx_argv);
 
-                auto end_cholesky = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double> cholesky_time = end_cholesky - end_cholesky;
+                // Cholesky factorization time ----------------------------- {{{
+                auto start_cholesky = now();
+                auto choleksy_gpu = gp_gpu.cholesky();
+                auto cholesky_time = now() - start_cholesky;
+                cholesky_times.push_back(cholesky_time.count()); // NOTE: to remove later
+                // ------------ }}}
 
-                /* // Measure the time taken to execute gp.optimize(hpar);
-                auto start_opt = std::chrono::high_resolution_clock::now();
-                // std::vector<double> losses = gp.optimize(hpar);
-                auto end_opt = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double> opt_time = end_opt - start_opt;
+                /*
 
-                auto start_pred_uncer = std::chrono::high_resolution_clock::now();
+                // Optimize time (for OPTIMIZE_ITERATIONS) ----------------- {{{
+                auto start_opt = now();
+                std::vector<double> losses = gp.optimize(hpar);
+                auto opt_time = now() - start_opt; // ---------------------- }}}
+
+
+                // Predict & Uncertainty time  ----------------------------- {{{
+                auto start_pred_uncer = now();
                 std::vector<std::vector<double>> sum = gp.predict_with_uncertainty(test_input.data, result.first, result.second);
-                auto end_pred_uncer = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double> pred_uncer_time = end_pred_uncer - start_pred_uncer;
+                auto pred_uncer_time = now() - start_pred_uncer; // -------- }}}
 
-                auto start_pred_full_cov = std::chrono::high_resolution_clock::now();
+
+                // Predictions with full covariance time ------------------- {{{
+                auto start_pred_full_cov = now();
                 std::vector<std::vector<double>> full = gp.predict_with_full_cov(test_input.data, result.first, result.second);
-                auto end_pred_full_cov = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double> pred_full_cov_time = end_pred_full_cov - start_pred_full_cov;
+                auto pred_full_cov_time = now() - start_pred_full_cov; // -- }}}
 
-                auto start_pred = std::chrono::high_resolution_clock::now();
+
+                // Predict time -------------------------------------------- {{{
+                auto start_pred = now();
                 std::vector<double> pred = gp.predict(test_input.data, result.first, result.second);
-                auto end_pred = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double> pred_time = end_pred - start_pred; */
+                auto pred_time = end_pred - start_pred; // ----------------- }}}
 
-                // Stop the HPX runtime
+                */
+
+                // Stop HPX runtime
                 utils::stop_hpx_runtime();
 
-                auto end_total = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double> total_time = end_total - start_total;
+                auto total_time = now() - start_total;  // ------------------ }}}
 
-                // Save parameters and times to a .txt file with a header
-                std::ofstream outfile("../output.csv", std::ios::app);  // Append mode
+                // Append parameters & times as CSV
+                std::ofstream outfile("../output.csv", std::ios::app);
+
+                // If file is empty, write the header
                 if (outfile.tellp() == 0)
                 {
-                    // If file is empty, write the header
-                    outfile << "Cores,N_train,N_test,N_tiles,N_regressor,Opt_iter,Total_time,Init_time,Cholesky_time,Opt_time,Pred_Uncer_time,Pred_Full_time,Pred_time,N_loop\n";
+                    outfile << "target,cores,n_train,n_test,n_tiles,n_regressor,opt_iter,";
+                    outfile << "total_time,init_time,cholesky_time,";
+                    // outfile << "Opt_time,Pred_Uncer_time,Pred_Full_time,Pred_time,"
+                    outfile << "n_loop\n";
                 }
-                outfile << core << "," << n_train << "," << n_test << "," << n_tiles << "," << n_reg << ","
-                        << OPT_ITER << "," << total_time.count() << "," << init_time.count() << "," << cholesky_time.count() << ","
-                        // << opt_time.count() << "," << pred_uncer_time.count() << "," << pred_full_cov_time.count() << "," << pred_time.count()
-                        << "," << l << "\n";
+                outfile << target << ","
+                        << cores << ","
+                        << n_train << ","
+                        << N_TEST << ","
+                        << n_train_tiles << ","
+                        << n_reg << ","
+                        << OPTIMIZE_ITERATIONS << ","
+                        << total_time.count() << ","
+                        << init_time.count() << ","
+                        << cholesky_time.count() << ","
+                        // << opt_time.count() << "," << pred_uncer_time.count() << "," << pred_full_cov_time.count() << "," << pred_time.count() << ","
+                        << loop << "\n";
                 outfile.close();
             }
         }
     }
+
+    for (auto &time : cholesky_times) // NOTE: to remove later
+    {
+        std::cout << time << ",";
+    }
+    std::cout << std::endl;
+
     return 0;
 }
