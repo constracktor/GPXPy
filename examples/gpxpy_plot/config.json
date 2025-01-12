@@ -4,6 +4,6 @@
     "test_in_file": "./data/test_in.txt",
     "N_TRAIN": 10,
     "N_TILES": 1,
-    "N_TEST": 91,
+    "N_TEST": 111,
     "N_REG": 1
 }
