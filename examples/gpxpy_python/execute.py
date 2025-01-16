@@ -20,9 +20,9 @@ def gpx_run(config, output_csv_obj, n_train, l, cores):
     n_tile_size = gpx.compute_train_tile_size(n_train, config["N_TILES"])
     m_tiles, m_tile_size = gpx.compute_test_tiles(config["N_TEST"], config["N_TILES"], n_tile_size)
     hpar = gpx.Hyperparameters(learning_rate=0.1, opt_iter=config["OPT_ITER"], m_T=[0,0,0], v_T=[0,0,0])
-    train_in = gpx.GP_data(config["train_in_file"], n_train)
-    train_out = gpx.GP_data(config["train_out_file"], n_train)
-    test_in = gpx.GP_data(config["test_in_file"], config["N_TEST"])
+    train_in = gpx.GP_data(config["train_in_file"], n_train, config["N_REG"])
+    train_out = gpx.GP_data(config["train_out_file"], n_train, config["N_REG"])
+    test_in = gpx.GP_data(config["test_in_file"], config["N_TEST"], config["N_REG"])
 
     ###### GP object ######
     init_t = time.time()
