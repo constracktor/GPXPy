@@ -23,6 +23,9 @@ struct GP_data
     /** @brief Number of samples in the data */
     int n_samples;
 
+    /** @brief Number of GP regressors */
+    int n_regressors;
+
     /** @brief Vector containing the data */
     std::vector<double> data;
 
@@ -35,7 +38,7 @@ struct GP_data
      * @param f_path Path to the file
      * @param n Number of samples
      */
-    GP_data(const std::string &file_path, int n);
+    GP_data(const std::string &file_path, int n, int n_reg);
 };
 
 /**

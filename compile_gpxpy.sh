@@ -36,7 +36,7 @@ export PRESET=ci-ubuntu
 ################################################################################
 # Compile code
 ################################################################################
-cmake --preset $PRESET -DGPXPY_BUILD_BINDINGS=$BINDINGS -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR
+cmake --preset $PRESET -DGPXPY_BUILD_BINDINGS=$BINDINGS -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR -DHPX_IGNORE_BOOST_COMPATIBILITY=ON -DGPXPY_ENABLE_FORMAT_TARGETS=OFF
 cmake --build --preset $PRESET
 cmake --install build/$PRESET
 # ctest --preset $PRESET

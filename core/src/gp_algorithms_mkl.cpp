@@ -16,36 +16,24 @@
 double compute_covariance_function(std::size_t i_global,
                                    std::size_t j_global,
                                    std::size_t n_regressors,
-                                   double *hyperparameters,
+                                   const std::vector<double> &hyperparameters,
                                    const std::vector<double> &i_input,
                                    const std::vector<double> &j_input)
 {
     // formula in papers:
-    // C(z_i,z_j) = vertical_lengthscale * exp(-0.5*lengthscale*(z_i-z_j)^2)
+    // C(z_i,z_j) = vertical_lengthscale * exp(-0.5/lengthscale^2*(z_i-z_j)^2)
 
-    double &lengthscale = hyperparameters[0];
-    double &vertical_lengthscale = hyperparameters[1];
-    double z_ik = 0.0;
-    double z_jk = 0.0;
+    double lengthscale = hyperparameters[0];
+    double vertical_lengthscale = hyperparameters[1];
     double distance = 0.0;
+    double z_ik_minus_z_jk;
 
     for (std::size_t k = 0; k < n_regressors; k++)
     {
-        int offset = -n_regressors + 1 + k;
-        int i_local = i_global + offset;
-        int j_local = j_global + offset;
-
-        if (i_local >= 0)
-        {
-            z_ik = i_input[i_local];
-        }
-        if (j_local >= 0)
-        {
-            z_jk = j_input[j_local];
-        }
-        distance += pow(z_ik - z_jk, 2);
+        z_ik_minus_z_jk = i_input[i_global + k] - j_input[j_global + k];
+        distance += z_ik_minus_z_jk * z_ik_minus_z_jk;
     }
-    return vertical_lengthscale * exp(-1.0 / (2.0 * pow(lengthscale, 2.0)) * distance);
+    return vertical_lengthscale * exp(-0.5 / (lengthscale * lengthscale) * distance);
 }
 
 /**
@@ -62,12 +50,12 @@ std::vector<double> gen_tile_covariance(std::size_t row,
                                         std::size_t col,
                                         std::size_t N,
                                         std::size_t n_regressors,
-                                        double *hyperparameters,
+                                        const std::vector<double> &hyperparameters,
                                         const std::vector<double> &input)
 {
     std::size_t i_global, j_global;
     double covariance_function;
-    double &noise_variance = hyperparameters[2];
+    double noise_variance = hyperparameters[2];
     // Initialize tile
     std::vector<double> tile;
     tile.resize(N * N);
@@ -92,7 +80,7 @@ std::vector<double> gen_tile_covariance(std::size_t row,
             tile[i * N + j] = covariance_function;
         }
     }
-    return std::move(tile);
+    return tile;
 }
 
 // generate a tile of the prior covariance matrix
@@ -101,7 +89,7 @@ gen_tile_full_prior_covariance(std::size_t row,
                                std::size_t col,
                                std::size_t N,
                                std::size_t n_regressors,
-                               double *hyperparameters,
+                               const std::vector<double> &hyperparameters,
                                const std::vector<double> &input)
 {
     std::size_t i_global, j_global;
@@ -125,7 +113,7 @@ gen_tile_full_prior_covariance(std::size_t row,
             tile[i * N + j] = covariance_function;
         }
     }
-    return std::move(tile);
+    return tile;
 }
 
 // generate a tile of the prior covariance matrix
@@ -133,7 +121,7 @@ std::vector<double> gen_tile_prior_covariance(std::size_t row,
                                               std::size_t col,
                                               std::size_t N,
                                               std::size_t n_regressors,
-                                              double *hyperparameters,
+                                              const std::vector<double> &hyperparameters,
                                               const std::vector<double> &input)
 {
     std::size_t i_global, j_global;
@@ -150,7 +138,7 @@ std::vector<double> gen_tile_prior_covariance(std::size_t row,
             i_global, j_global, n_regressors, hyperparameters, input, input);
         tile[i] = covariance_function;
     }
-    return std::move(tile);
+    return tile;
 }
 
 // generate a tile of the cross-covariance matrix
@@ -160,7 +148,7 @@ gen_tile_cross_covariance(std::size_t row,
                           std::size_t N_row,
                           std::size_t N_col,
                           std::size_t n_regressors,
-                          double *hyperparameters,
+                          const std::vector<double> &hyperparameters,
                           const std::vector<double> &row_input,
                           const std::vector<double> &col_input)
 {
@@ -185,7 +173,7 @@ gen_tile_cross_covariance(std::size_t row,
             tile[i * N_col + j] = covariance_function;
         }
     }
-    return std::move(tile);
+    return tile;
 }
 
 // generate a tile of the cross-covariance matrix
@@ -203,7 +191,7 @@ gen_tile_cross_cov_T(std::size_t N_row,
             transposed[j * N_row + i] = cross_covariance_tile[i * N_col + j];
         }
     }
-    return std::move(transposed);
+    return transposed;
 }
 
 // generate a tile containing the output observations
@@ -220,7 +208,7 @@ std::vector<double> gen_tile_output(std::size_t row,
         i_global = N * row + i;
         tile[i] = output[i_global];
     }
-    return std::move(tile);
+    return tile;
 }
 
 // compute the total 2-norm error
@@ -240,7 +228,7 @@ double compute_error_norm(std::size_t n_tiles,
             error += (b[i_global] - a[i]) * (b[i_global] - a[i]);
         }
     }
-    return std::move(sqrt(error));
+    return sqrt(error);
 }
 
 // generate an empty tile
@@ -250,5 +238,5 @@ std::vector<double> gen_tile_zeros(std::size_t N)
     std::vector<double> tile;
     tile.resize(N);
     std::fill(tile.begin(), tile.end(), 0.0);
-    return std::move(tile);
+    return tile;
 }
